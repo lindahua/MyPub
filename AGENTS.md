@@ -2,9 +2,9 @@
 
 ## Design and requirements
 
-Read [DESIGN.md](DESIGN.md) before developing this project. Follow it as the primary reference for architecture, data structures, workflows, and implementation scope.
+Read [DESIGN.md](DESIGN.md) and [SCHEMAS.md](SCHEMAS.md) before developing this project. Follow DESIGN.md for architecture, workflows, and implementation scope. Follow SCHEMAS.md as the authoritative specification of JSON file formats, field semantics, and catalog-wide schema constraints.
 
-Requirements will evolve. Follow the user's latest explicit instructions when they change the design, and update DESIGN.md to reflect agreed changes. Add lasting agent guidance to this file as needed. Keep detailed product requirements in DESIGN.md rather than duplicating them here.
+Requirements will evolve. Follow the user's latest explicit instructions when they change the design, and update DESIGN.md and SCHEMAS.md as applicable. Add lasting agent guidance to this file as needed. Keep detailed product requirements in DESIGN.md and format requirements in SCHEMAS.md rather than duplicating them here.
 
 ## Development
 
