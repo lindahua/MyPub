@@ -21,6 +21,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
+    "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-functions=80 dist/**/*.test.js",
     "test": "node --test dist/**/*.test.js",
     "prepack": "npm run build"
   },

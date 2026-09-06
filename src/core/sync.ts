@@ -30,7 +30,7 @@ export async function listConflicts(catalog: Catalog): Promise<SyncConflict[]> {
 export async function sync(catalog: Catalog, message = "mypub: synchronize catalog"): Promise<SyncResult> {
   return withLock(join(catalog.localDir, "write.lock"), async () => {
     const validation = await catalog.validate(false); if (!validation.valid) throw new MyPubError("Catalog validation failed before synchronization", "VALIDATION_FAILED", validation);
-    await initializeGit(catalog); await git(catalog, ["add", "catalog", "attachments", ".gitattributes", ".gitignore"]);
+    await initializeGit(catalog); const paths = ["catalog", ".gitattributes", ".gitignore"]; if (await fileExists(catalog.attachmentsDir)) paths.push("attachments"); await git(catalog, ["add", ...paths]);
     if ((await git(catalog, ["diff", "--cached", "--quiet"], true)).code !== 0) await git(catalog, ["commit", "-m", message]);
     const upstream = await git(catalog, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], true);
     if (upstream.code !== 0) return { state: "up-to-date", commit: (await git(catalog, ["rev-parse", "HEAD"])).stdout.trim(), conflicts: [] };

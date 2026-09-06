@@ -49,6 +49,9 @@ DOI and arXiv lookups are available with `mypub add --doi ...` and `mypub add --
 npm run check
 npm run build
 npm test
+npm run coverage
 ```
+
+The coverage command enforces minimum aggregate thresholds of 90% for lines and 80% for functions.
 
 Electron, graphical previews, browser capture, and hosted services are deliberately not part of this phase. See [DESIGN.md](DESIGN.md) for architecture and requirements.

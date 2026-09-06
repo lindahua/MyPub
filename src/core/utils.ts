@@ -8,7 +8,7 @@ export const now = (): string => new Date().toISOString();
 export const uuid = (): string => randomUUID();
 export const normalizeDoi = (value: string): string => value.trim().toLowerCase().replace(/^https?:\/\/(?:dx\.)?doi\.org\//, "").replace(/^doi:\s*/, "");
 export const normalizeArxiv = (value: string): string => value.trim().toLowerCase().replace(/^https?:\/\/arxiv\.org\/(?:abs|pdf)\//, "").replace(/\.pdf$/, "").replace(/^arxiv:\s*/, "").replace(/v\d+$/, "");
-export const normalizeText = (value: string): string => value.normalize("NFKD").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+export const normalizeText = (value: string): string => value.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
 export const fingerprint = (value: unknown): string => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 export const sha256 = async (path: string): Promise<string> => createHash("sha256").update(await readFile(path)).digest("hex");
 
