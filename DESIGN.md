@@ -241,7 +241,9 @@ Invoke the installed Git and Git LFS executables through Node's asynchronous `sp
 
 Use one package initially, organized into `src/core` (schemas and catalog operations), `src/cli` (commands and formatting), and `src/adapters` (filesystem, Git/LFS, search, metadata providers, and optional OS file opening). Export the core through a public module entry point. A rebuildable SQLite full-text index is sufficient for local search. Keep metadata adapters separate from catalog logic so provider changes remain contained.
 
-Proposed CLI surface, to implement after the design is settled:
+The CLI executable must be named `mypub` (lowercase). Use this name consistently in package executable configuration, help output, documentation, and examples.
+
+Proposed subcommands, to implement after the design is settled:
 
 ```text
 mypub list / show / search

@@ -9,6 +9,7 @@ Requirements will evolve. Follow the user's latest explicit instructions when th
 ## Development
 
 - Implement the current phase described in DESIGN.md: the TypeScript core and CLI. Electron UI development belongs to a later phase.
+- Name the CLI executable `mypub`, as specified in DESIGN.md.
 - Keep changes focused on the requested task and consistent with the design. Resolve routine implementation details using reasonable judgment.
 - Preserve existing publication data and user changes.
 - Validate changes with appropriate checks, using DESIGN.md's acceptance criteria where relevant.
