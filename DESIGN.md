@@ -1,6 +1,6 @@
-# MyPub — proposed design
+# MyPub — design
 
-Draft for discussion · 6 September 2026 · No implementation or external account setup yet.
+Originally drafted 6 September 2026. The TypeScript core and `mypub` CLI described here are now implemented in this repository; external account and private-remote setup remain user-managed. Electron remains a later phase.
 
 Build a reusable TypeScript core and a command-line interface over a portable, versioned publication catalog. Add an Electron UI in the next phase. Store curated metadata as one readable JSON file per publication and synchronize through a private Git repository. Store publication PDFs and other attachments under the same repository layout using Git LFS, with selective downloads on each computer. Use external sources to propose metadata changes and supply dated citation observations. Your accepted records remain authoritative. Publications are the only bibliographic entity; optional relations connect related publications without a parent “Work” layer.
 
@@ -272,7 +272,7 @@ The later Electron UI can provide Library, Publication details, Review queue, an
 | Next phase: Electron UI | Reuse the core through IPC; add forms, review/conflict screens, drag-and-drop, PDF/video previews, and desktop packaging |
 | Later, if useful | Citation history charts, generated homepage/CV lists, attachment text search, thumbnails, and assisted capture |
 
-The first implementation phase covers steps 1–4 as a library and CLI. Electron is explicitly the next phase. The current deliverable remains this design; no implementation has started. Treat scraping, multiuser collaboration, a PDF annotation editor, mobile editing, and a hosted write service as separate scope decisions.
+The first implementation phase covers steps 1–4 as a library and CLI. Electron is explicitly the next phase. The implemented deliverable is the TypeScript library and CLI. Treat scraping, multiuser collaboration, a PDF annotation editor, mobile editing, and a hosted write service as separate scope decisions.
 
 Acceptance checks should demonstrate that the same import creates no duplicates; a preprint and later conference publication remain separate records connected by an optional relation; incoming relation labels appear on the target publication without duplicate storage; an extended journal paper remains separately addressable; related identifiers do not cause unintended merges; shared Scholar counts are labeled and not double-counted; curated author lists survive refreshes; two offline computers converge without losing conflicting edits; interrupted writes and rejected pushes preserve local edits; stale or partial Scholar data is labeled correctly; and a new installation can restore the catalog, rebuild its index, and reproduce exports.
 
