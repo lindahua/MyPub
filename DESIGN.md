@@ -340,6 +340,8 @@ Use the conventional label “corresponding author” in displays. A “first au
 
 Omitted or empty `roles` means no special role recorded, not verified absence. Never infer correspondence from last position, or co-first authorship from name order alone. Roles require supplied evidence or a manual assertion. Preserve the source statement and its reference in the review evidence history; a publication-level `authorship_note` may retain a useful readable statement. If there are multiple distinct equal-contribution groups, use an optional `equal_contribution_group` on the relevant credits; its label is local to that publication and does not imply a first/last role. A missing group leaves the grouping unspecified.
 
+Keep supported authorship annotations separate from clean author names and structured name suffixes, retaining original marked text in review evidence. Roles belong to publication credits and do not become global author properties.
+
 Validate known roles and reject repeated role values. A singleton co-first/co-last designation or equal-contribution group warrants a warning for review; partial source lists may explain it. Roles remain valid on unresolved credits. Unsupported or contradictory source statements are review items, never silently normalized into stronger claims. Detailed contribution taxonomies and affiliation histories are outside this revision.
 
 #### Linking, ambiguity, and correction
@@ -464,6 +466,8 @@ Exact identifiers can attach incoming evidence automatically when unambiguous. F
 During initial import, populate empty fields in the preview. After acceptance, curated values change only through an accepted proposal or your own edit. Preserve field provenance and protect manually corrected values from later imports. Missing from a source means “not observed,” not “delete from catalog.”
 
 ## 6. Google Scholar profile mirror — proposed revision, not implemented
+
+Google Scholar is the **only citation source**. Do not add other citation providers or substitute their counts; DOI/arXiv integration is for bibliographic metadata only. Missing Scholar counts remain unknown rather than triggering another provider lookup.
 
 Use `catalog/gscholar/` as a local mirror of **your selected Google Scholar profile**, replacing the generic `observations/` catalog. It contains the external entries as observed, independently of your curated publications. Profile edits remain a separate activity in Scholar. Coauthors' profile IDs in author records identify those people; they do not cause their profiles to be mirrored here.
 
@@ -701,3 +705,5 @@ Acceptance scenarios for the future implementation:
 | An author has reviewed family/given names | Its filename starts with the family name and lives under the surname initial; display and publication-credit names retain their order |
 | An author has a compound, accented, non-Latin, or unresolved surname | Documented initial rules or fallback directories apply without guessing or losing name text |
 | A corrected year or surname moves a record between directories | One active record remains, full-ID links and attachments survive, and interrupted or conflicting moves are recoverable |
+
+One-time PubMan2 migration plans and scripts are isolated under [migrate_pubman/](migrate_pubman/README.md). They are separate from the application architecture and runtime.
