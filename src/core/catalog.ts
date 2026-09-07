@@ -15,7 +15,7 @@ export const clean = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 export const touch = (record: { updated_at: string }): void => { record.updated_at = new Date(Math.ceil(Math.max(Date.parse(record.updated_at), Date.parse(now())) / 1000) * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"); };
 export function publicationFromInput(input: AddPublicationInput): Publication {
   for (const key of ["status", "dates", "schema_version", "created_at", "updated_at"]) if (Object.hasOwn(input, key)) throw new MyPubError(`Unsupported add field: ${key}`, "SCHEMA_INVALID");
-  const time = now(); const value = clean({ urls: [], tags: [], relations: [], attachments: [], identifiers: {}, ...input, schema_version: 2, id: input.id ?? uuid(), created_at: time, updated_at: time }) as Publication;
+  const time = now(); const value = clean({ extra_urls: [], tags: [], relations: [], attachments: [], identifiers: {}, ...input, schema_version: 2, id: input.id ?? uuid(), created_at: time, updated_at: time }) as Publication;
   if (value.identifiers?.doi) value.identifiers.doi = normalizeDoi(value.identifiers.doi);
   if (value.identifiers?.arxiv) value.identifiers.arxiv = normalizeArxiv(value.identifiers.arxiv);
   if (value.identifiers?.isbn) value.identifiers.isbn = value.identifiers.isbn.replace(/[- ]/g, "").toUpperCase();

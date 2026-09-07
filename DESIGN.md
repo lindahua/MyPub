@@ -350,7 +350,7 @@ Complete illustrative publication JSON under the version-2 schema (fictional met
   },
   "publication_date": "2026-08-15",
   "identifiers": {},
-  "urls": [],
+  "extra_urls": [],
   "tags": [
     "computer-vision"
   ],
@@ -834,9 +834,14 @@ For arXiv, `publication_date` and `submission_date` always equal the full UTC da
 
 ### Labeled venue resources
 
-Venue `urls` contain objects with a required `url` and `role` (`homepage`, `proceedings`, `submission`, or `other`), plus an optional display `label`. Multiple resources can share a role; URL strings are unique within each venue. The viewer displays the custom label or a role-based default. Merging venues preserves the survivor’s metadata for duplicate URLs and appends new resources in source order. Publication URLs remain plain strings. SCHEMAS.md section 6.1 defines the implemented format.
+Venue `urls` contain objects with a required `url` and `role` (`homepage`, `proceedings`, `submission`, or `other`), plus an optional display `label`. Multiple resources can share a role; URL strings are unique within each venue. The viewer displays the custom label or a role-based default. Merging venues preserves the survivor’s metadata for duplicate URLs and appends new resources in source order. Publication `extra_urls` remain plain strings. SCHEMAS.md section 6.1 defines the implemented format.
 
 
 ### Publication abstracts
 
 Publications support an optional plain-text `abstract`, separate from private notes. Preserve paragraphs and mathematical notation. The field is supported by core add/update, reviewed metadata import, native JSON, CSV/BibTeX import/export, and the expanded desktop details. DOI lookup retains supplied abstracts after removing JATS/XML markup; arXiv lookup uses the latest version’s abstract while preserving all version snapshots. Missing source abstracts never clear existing content. Existing records remain valid without an abstract; adding this field does not automatically backfill the catalog.
+
+
+### Publication landing pages and paper files
+
+A publication may have an `official_url` to its official title/authors/abstract page and a `paper_url` directly to its paper file (normally PDF). Both are optional and refer to this publication, not another version published at a different venue. Additional resources remain in `extra_urls`. Core add/update and reviewed import preserve the two roles; native JSON, CSV and BibTeX export them, and expanded desktop details label them “Official page” and “Paper”. arXiv lookup supplies its canonical abstract and PDF links. DOI lookup uses the supplied landing-page URL; it does not guess a PDF URL. Existing links are not automatically reclassified. Remote paper URLs are independent of managed, downloaded attachments.

@@ -18,10 +18,10 @@ test("venue URLs round-trip with roles and labels and merge by URL", async () =>
     await mergeIdentity(c, "venue", source.id, survivor.id, true);
     const urls = (await c.read()).venues.find(v => v.id === survivor.id)!.urls;
     assert.deepEqual(urls, [home, proceedings, { url: "https://example.org/submit", role: "submission" }]);
-    const p = await c.add({ citation_key: "paper", type: "conference", title: "Paper", authors: [], venue: { name: "Conference", venue_id: survivor.id }, urls: ["https://example.org/article"] });
+    const p = await c.add({ citation_key: "paper", type: "conference", title: "Paper", authors: [], venue: { name: "Conference", venue_id: survivor.id }, extra_urls: ["https://example.org/article"] });
     const exported = parseNative(JSON.parse(JSON.stringify(nativeExport(await c.read(), [p.id]))));
     assert.deepEqual(exported.venues.find(v => v.id === survivor.id)!.urls, urls);
-    assert.deepEqual(exported.publications[0]!.urls, ["https://example.org/article"]);
+    assert.deepEqual(exported.publications[0]!.extra_urls, ["https://example.org/article"]);
     for (const invalid of [["https://example.org/"], [{ url: "https://example.org/" }], [{ ...home, role: "invalid" }], [{ ...home, url: "relative/path" }], [{ ...home, label: "" }], [home, { ...home, role: "proceedings" }]]) {
       await assert.rejects(updateIdentity(c, "venue", survivor.id, { urls: invalid }));
     }

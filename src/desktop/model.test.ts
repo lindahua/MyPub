@@ -23,7 +23,7 @@ const paper = (id: string, patch: Partial<Publication> = {}): Publication => ({
   authors: [],
   identifiers: {},
   tags: [],
-  urls: [],
+  extra_urls: [],
   relations: [],
   attachments: [],
   ...patch,

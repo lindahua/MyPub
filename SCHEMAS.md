@@ -134,7 +134,7 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
   "volume": "42",
   "issue": "3",
   "pages": "101-118",
-  "urls": ["https://doi.org/10.1000/example"],
+  "extra_urls": ["https://doi.org/10.1000/example"],
   "tags": ["computer-vision"],
   "relations": [],
   "attachments": [],
@@ -154,6 +154,8 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `authors` | required array of author credits | Ordered printed byline. It may be empty only for a genuinely anonymous/unknown work and produces a warning. |
 | `authorship_note` | optional non-empty string | Readable publication-level statement about credited contribution/correspondence. It does not create roles by itself. |
 | `venue` | optional publication venue | Exact publication-specific venue wording and optional identity link. Absence means no venue is recorded. |
+| `official_url` | optional absolute URI | Official landing page for this publication, showing its title, authors, and abstract. Belongs to this specific publication/version, not a related conference/journal record. |
+| `paper_url` | optional absolute URI | Direct link to the paper file, normally a PDF. Not a landing page, project page, or local attachment path. |
 | `abstract` | optional non-empty string | The publication’s abstract as plain text; preserve paragraphs and mathematical notation. Omit when unknown, rather than using an empty string or `null`. This is bibliographic content, distinct from private `notes`. |
 | `publication_date` | optional local date | Main bibliographic date, with the supplied year/month/day precision. For journal papers, this is the issue publication date; for arXiv papers, the first-version date. See section 4.4. |
 | `submission_date`, `acceptance_date`, `online_date`, `issued_date` | optional local dates | Independently supported lifecycle dates; see section 4.4. They are not required to record a publication date. |
@@ -163,7 +165,7 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `issue` | optional non-empty string | Bibliographic issue/number, preserved as text. |
 | `pages` | optional non-empty string | Page or electronic-location range as printed. Do not parse it into numbers. |
 | `article_number` | optional non-empty string | Article/eLocator when distinct from pages. |
-| `urls` | required array of unique absolute URIs | Curated landing pages or resources. Order is preferred display order. A URL is not a managed attachment. |
+| `extra_urls` | required array of unique absolute URIs | Additional publication resources, such as project pages or code repositories. Order is preferred display order. A URL is not a managed attachment. |
 | `tags` | required array of unique non-empty strings | User-curated labels. Exact spelling is stored; matching may be normalized by search. |
 | `notes` | optional non-empty string | Free-form private catalog notes. It is not external evidence. |
 | `relations` | required array of relations | Outgoing publication relations stored only on this source publication. |
@@ -171,6 +173,8 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `primary_attachment_id` | optional UUID | ID of one attachment in this record, normally the default paper to open. It must not name another publication's attachment. |
 | `archived_at` | optional timestamp | Presence means the publication is archived (soft-deleted). Removed on restoration; absence means active in the catalog, without implying a publication lifecycle status. |
 | `created_at`, `updated_at` | required timestamps | Local record lifecycle; see section 2.2. |
+
+`official_url` and `paper_url` are independently optional; omit unknown values. Keep additional resources in `extra_urls`. Do not classify an arbitrary existing URL by array position or assume a URL is a direct paper link just because it contains “pdf”; verify its target or use a trusted provider’s explicit link. A direct file URL need not end in `.pdf` and may redirect to the file. These remote links do not download or register managed attachments. For arXiv, use `https://arxiv.org/abs/<id>` and `https://arxiv.org/pdf/<id>` for the latest version. Native JSON and CSV preserve both named fields; BibTeX exports the official page as `url` and also uses explicit `official_url`/`paper_url` extension fields to preserve their roles. An unclassified imported BibTeX/CSV `url` remains in `extra_urls`. Missing source values never erase existing named links. URL format is validated locally; page contents and file availability require source verification.
 
 There is no publication `status` field in version 2. Do not substitute a required status-like field or infer publication stage from absence of `archived_at`.
 

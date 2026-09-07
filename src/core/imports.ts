@@ -18,7 +18,7 @@ function parseCsv(contents: string): Imported[] {
     return { citation_key: row.citation_key || row.key || `import-${fingerprint(row).slice(0, 12)}`, title, type: type(row.type), authors: authors(row.authors || row.author),
       ...(row.abstract?.trim() ? { abstract: row.abstract } : {}), ...(date ? { publication_date: date } : {}), ...(venue ? { venue: { name: venue } } : {}),
       identifiers: { ...(row.doi ? { doi: normalizeDoi(row.doi) } : {}), ...(row.arxiv ? { arxiv: normalizeArxiv(row.arxiv) } : {}) },
-      ...(row.url ? { urls: [row.url] } : {}), ...(row.tags ? { tags: row.tags.split(/[;,]/).map(x => x.trim()).filter(Boolean) } : {}), raw: row };
+      ...(row.official_url ? { official_url: row.official_url } : {}), ...(row.paper_url ? { paper_url: row.paper_url } : {}), ...(row.extra_urls !== undefined ? { extra_urls: row.extra_urls.split(/\s+/).filter(Boolean) } : row.url ? { extra_urls: [row.url] } : {}), ...(row.tags ? { tags: row.tags.split(/[;,]/).map(x => x.trim()).filter(Boolean) } : {}), raw: row };
   });
 }
 function parseBibtex(contents: string): Imported[] {
@@ -28,7 +28,7 @@ function parseBibtex(contents: string): Imported[] {
     const fieldPattern = /(\w[\w-]*)\s*=\s*(?:\{((?:[^{}]|\{[^{}]*\})*)\}|"([^"]*)"|([^,\n]+))\s*,?/g;
     for (const field of body.matchAll(fieldPattern)) fields[field[1]!.toLowerCase()] = (field[2] ?? field[3] ?? field[4] ?? "").trim();
     if (!fields.title) continue;
-    records.push({ citation_key: match[2]!.trim(), type: type(match[1]), title: fields.title.replace(/[{}]/g, ""), authors: authors(fields.author), ...(fields.abstract ? { abstract: fields.abstract } : {}), ...(fields.journal || fields.booktitle ? { venue: { name: fields.journal ?? fields.booktitle! } } : {}), ...(fields.year ? { publication_date: fields.year } : {}), ...(fields.doi || fields.eprint ? { identifiers: { ...(fields.doi ? { doi: normalizeDoi(fields.doi) } : {}), ...(fields.eprint ? { arxiv: normalizeArxiv(fields.eprint) } : {}) } } : {}), ...(fields.url ? { urls: [fields.url] } : {}), ...(fields.keywords ? { tags: fields.keywords.split(/[,;]/).map((tag) => tag.trim()).filter(Boolean) } : {}), raw: fields });
+    records.push({ citation_key: match[2]!.trim(), type: type(match[1]), title: fields.title.replace(/[{}]/g, ""), authors: authors(fields.author), ...(fields.abstract ? { abstract: fields.abstract } : {}), ...(fields.journal || fields.booktitle ? { venue: { name: fields.journal ?? fields.booktitle! } } : {}), ...(fields.year ? { publication_date: fields.year } : {}), ...(fields.doi || fields.eprint ? { identifiers: { ...(fields.doi ? { doi: normalizeDoi(fields.doi) } : {}), ...(fields.eprint ? { arxiv: normalizeArxiv(fields.eprint) } : {}) } } : {}), ...(fields.official_url ? { official_url: fields.official_url } : {}), ...(fields.paper_url ? { paper_url: fields.paper_url } : {}), ...(fields.extra_urls !== undefined ? { extra_urls: fields.extra_urls.split(/\s+/).filter(Boolean) } : fields.url && fields.url !== fields.official_url ? { extra_urls: [fields.url] } : {}), ...(fields.keywords ? { tags: fields.keywords.split(/[,;]/).map((tag) => tag.trim()).filter(Boolean) } : {}), raw: fields });
   }
   if (!records.length) throw new MyPubError("No BibTeX entries found", "IMPORT_INVALID");
   return records;
@@ -45,7 +45,7 @@ function fromJson(value: unknown): Imported[] {
 }
 function proposalsFor(current: Publication, incoming: Imported, completeness: Coverage): Proposal[] {
   const proposals: Proposal[] = [];
-  const fields = ["title", "abstract", "authors", "venue", "publication_date", "submission_date", "acceptance_date", "online_date", "issued_date", "identifiers", "arxiv_versions", "urls", "tags", "type", "volume", "issue", "pages"] as const;
+  const fields = ["title", "abstract", "official_url", "paper_url", "authors", "venue", "publication_date", "submission_date", "acceptance_date", "online_date", "issued_date", "identifiers", "arxiv_versions", "extra_urls", "tags", "type", "volume", "issue", "pages"] as const;
   for (const field of fields) {
     let proposed: unknown = incoming[field]; if (proposed === undefined) continue;
     if (field === "authors") {

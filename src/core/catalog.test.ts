@@ -14,8 +14,8 @@ test("catalog workflows preserve distinct publications and derive incoming relat
   const root = await mkdtemp(join(tmpdir(), "mypub-test-"));
   try {
     const catalog = new Catalog({ root }); await catalog.initialize("Test Library");
-    const preprint = await catalog.add({ citation_key: "Ada2025Example", type: "arxiv", title: "An Example Paper", authors: [{ name: "Ada Lovelace" }], publication_date: "2025-01-01", arxiv_versions: [{ version: 1, submission_date: "2025-01-01", title: "An Example Paper", authors: ["Ada Lovelace"], abstract: "Original abstract" }], submission_date: "2025-01-01", identifiers: { arxiv: "2501.00001v2" }, urls: [], tags: ["example"] });
-    const conference = await catalog.add({ citation_key: "Ada2026Example", type: "conference", title: "An Example Paper, Revised", authors: [{ name: "Ada Lovelace" }], publication_date: "2026", identifiers: { doi: "https://doi.org/10.1000/EXAMPLE" }, urls: [], tags: [] });
+    const preprint = await catalog.add({ citation_key: "Ada2025Example", type: "arxiv", title: "An Example Paper", authors: [{ name: "Ada Lovelace" }], publication_date: "2025-01-01", arxiv_versions: [{ version: 1, submission_date: "2025-01-01", title: "An Example Paper", authors: ["Ada Lovelace"], abstract: "Original abstract" }], submission_date: "2025-01-01", identifiers: { arxiv: "2501.00001v2" }, extra_urls: [], tags: ["example"] });
+    const conference = await catalog.add({ citation_key: "Ada2026Example", type: "conference", title: "An Example Paper, Revised", authors: [{ name: "Ada Lovelace" }], publication_date: "2026", identifiers: { doi: "https://doi.org/10.1000/EXAMPLE" }, extra_urls: [], tags: [] });
     await catalog.addRelation(conference.id, preprint.id, "published_version_of");
     const details = await catalog.details(preprint.id); assert.equal(details.incoming_relations[0]?.source_id, conference.id); assert.equal(details.incoming_relations[0]?.label, "Published version");
     assert.equal((await catalog.get("10.1000/example")).id, conference.id); assert.equal((await catalog.get("2501.00001")).id, preprint.id);
@@ -52,8 +52,8 @@ test("partial Scholar snapshots preserve unknown counts and do not claim local o
 test("refresh imports do not erase unobserved fields or truncate curated authors", async () => {
   const root = await mkdtemp(join(tmpdir(), "mypub-refresh-test-"));
   try {
-    const catalog = new Catalog({ root }); await catalog.initialize(); await catalog.add({ citation_key: "complete2026", type: "journal", title: "Complete Record", authors: [{ name: "First Author" }, { name: "Second Author" }], publication_date: "2026", identifiers: { doi: "10.1000/complete" }, urls: ["https://example.test/paper"], tags: ["kept"] }); const source = join(root, "refresh.csv");
-    await writeFile(source, "title,year,doi,authors\nComplete Record,2026,10.1000/complete,First Author\n", "utf8"); await importFile(catalog, source); const review = (await listReviews(catalog, "pending"))[0]!; assert.equal(review.proposals.some((change) => ["/authors", "/urls", "/tags"].includes(change.path ?? "")), false);
+    const catalog = new Catalog({ root }); await catalog.initialize(); await catalog.add({ citation_key: "complete2026", type: "journal", title: "Complete Record", authors: [{ name: "First Author" }, { name: "Second Author" }], publication_date: "2026", identifiers: { doi: "10.1000/complete" }, extra_urls: ["https://example.test/paper"], tags: ["kept"] }); const source = join(root, "refresh.csv");
+    await writeFile(source, "title,year,doi,authors\nComplete Record,2026,10.1000/complete,First Author\n", "utf8"); await importFile(catalog, source); const review = (await listReviews(catalog, "pending"))[0]!; assert.equal(review.proposals.some((change) => ["/authors", "/extra_urls", "/tags"].includes(change.path ?? "")), false);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

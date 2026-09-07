@@ -527,7 +527,9 @@ function RecordDetails({
                 </EntityLink>
               )}
               <div className="actions">
-                {pub.identifiers.doi && (
+                {pub.official_url && <LinkButton url={pub.official_url}>Official page</LinkButton>}
+                {pub.paper_url && <LinkButton url={pub.paper_url}>Paper</LinkButton>}
+                {pub.identifiers.doi && pub.official_url !== `https://doi.org/${pub.identifiers.doi}` && (
                   <LinkButton url={`https://doi.org/${pub.identifiers.doi}`}>
                     DOI: {pub.identifiers.doi}
                   </LinkButton>
@@ -539,7 +541,7 @@ function RecordDetails({
                     arXiv: {pub.identifiers.arxiv}
                   </LinkButton>
                 )}
-                {pub.urls.map((url) => (
+                {pub.extra_urls.filter(url => url !== pub.official_url && url !== pub.paper_url).map((url) => (
                   <LinkButton key={url} url={url}>
                     {url}
                   </LinkButton>
