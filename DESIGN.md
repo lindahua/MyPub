@@ -2,6 +2,19 @@
 
 Originally drafted 6 September 2026. The existing TypeScript core and `mypub` CLI implement the original publication catalog; external account and private-remote setup remain user-managed. The author, venue, and Google Scholar revision below is proposed for review on 6 September 2026 and is **not implemented**. It requires a schema migration and additional core/CLI operations. Electron remains a later phase. [SCHEMAS.md](SCHEMAS.md) is the authoritative specification of JSON file formats and field semantics; this document controls architecture and behavior.
 
+Revised 7 September 2026 with the following user decisions. They are part of the version-2 design and remain unimplemented:
+
+| Decision | Resulting design |
+| --- | --- |
+| Detailed matching, including exclusion | Durable entry eligibility/exclusion, pair-specific rejection, reviewed linking/unlinking, and explicit reopening; source refresh does not reset decisions |
+| Optional Scholar details | Preserve source publication date, volume, issue, pages, publisher, patent fields, description, and source/cited-by URLs |
+| Literal Scholar authors and completeness | `authors_text` plus `authors_completeness` alongside the ordered source `authors` array |
+| Scholar-only citations, updateable or null | Dated citation samples contain a number or `null`; the latest observation determines the current count |
+| Record-level metadata time | Keep `updated_at` per record; no per-field timestamps. Citations retain their own observation times |
+| No publication status | Omit lifecycle status; optional `archived_at` retains catalog archive/restore behavior |
+| Admit duplicate arXiv IDs | Save all publication UUIDs and report duplicate IDs as audit errors, without rejecting writes or synchronization |
+| Main publication date with optional lifecycle dates | Top-level `publication_date` is normally sufficient; `submission_date`, `acceptance_date`, `online_date`, and `issued_date` are optional, preserving supplied precision |
+
 Build a reusable TypeScript core and a command-line interface over a portable, versioned publication catalog. Add an Electron UI in the next phase. Store curated metadata as one readable JSON file per publication and synchronize through a private Git repository. Store publication PDFs and other attachments under the same repository layout using Git LFS, with selective downloads on each computer. Use external sources to propose metadata changes and refresh a local mirror of your Google Scholar profile and its dated citation counts. Your accepted records remain authoritative. Publications are the only publication-level bibliographic entity; optional relations connect related publications without a parent “Work” layer. Shared author records identify people, while each publication stores their ordered credits, publication-specific names, and authorship roles. Shared venue records identify journals, conference/workshop series, and repositories; publications link to them while preserving their own bibliographic venue wording.
 
 The first phase runs locally through a CLI and an importable TypeScript API. The later Electron application will call the same operations. A browser interface, HTTP server, desktop packaging, and graphical previews are deferred; the core has no dependency on Electron or a UI framework.
@@ -111,7 +124,7 @@ Use **`<snake_case_name_or_title>_<uuid_prefix>.json`** for catalog entity and r
 | `gscholar/entries/` | Last observed source year; entry `title` | `2026/an_example_paper_593de6b0.json` |
 | `reviews/` | A stored, readable `summary`, such as “Import Google Scholar 2026-09-06” | `import_google_scholar_2026_09_06_74c6a5ce.json` |
 
-Derive a publication's year from `dates.issued`, falling back to `dates.online`. For an arXiv preprint without either date, use the year of its original `dates.submitted`; a later revision does not change that year. If no applicable bibliographic date is known, use `unknown_year/`. Do not substitute import/creation time, acceptance year, or `venue.event_year`. Use the same definition for the default publication-year filter and show which date supplies it. Scholar entries use their own last observed `year`, or `unknown_year/` if it has never been supplied. A linked publication and Scholar entry may therefore live in different year directories without breaking their association or hiding a year discrepancy. Valid known years use four-digit directory names.
+Derive a publication's year from `publication_date`, falling back to `issued_date`, then `online_date`. For an arXiv preprint without those dates, use the year of its original `submission_date`; a later revision does not change that year. If no applicable bibliographic date is known, use `unknown_year/`. Do not substitute import/creation time, acceptance year, or `venue.event_year`. Use the same definition for the default publication-year filter and show which date supplies it. Scholar entries use their own last observed `year`, or `unknown_year/` if it has never been supplied. A linked publication and Scholar entry may therefore live in different year directories without breaking their association or hiding a year discrepancy. Valid known years use four-digit directory names.
 
 Store optional identity-level `name_parts` with `family`, `given`, and `suffix` on author records. `family` is the full reviewed surname, including compound names or particles; `given` includes middle names. Build the filename stem in that order, omitting absent parts: Jane Quinn Doe becomes `doe_jane_quinn`, and a supplied family name “de la Cruz” groups under `d/`. These identity fields describe the preferred name; publication-level name parts still describe each paper's actual credit. `preferred_name` remains the natural display name and is not rewritten into surname-first order merely for filing.
 
@@ -160,18 +173,22 @@ Each record represents one publication: an arXiv preprint, conference paper, wor
 
 | Object | Essential fields |
 | --- | --- |
-| Publication | Stable UUID, stable citation key, type, status, title, ordered authors, venue, dates, DOI/arXiv ID, volume/issue/pages or article number, URLs, tags, notes, optional relations, attachments, optional primary attachment ID |
+| Publication | Stable UUID, stable citation key, type, title, ordered authors, venue, dates, DOI/arXiv ID, volume/issue/pages or article number, URLs, tags, notes, optional relations, attachments, optional primary attachment ID, optional archive timestamp |
 | Author (proposed) | Stable UUID, readable author key, preferred name, optional structured name parts, aliases, identifiers, disambiguation note, archive/merge state |
 | Author credit (proposed) | Name as credited, optional linked author UUID, optional structured name and roles; embedded in the ordered publication authors array |
 | Venue (proposed) | Stable UUID, readable venue key, kind, preferred name, optional abbreviation, aliases, URLs, notes, archive/merge state |
 | Publication venue (proposed) | Bibliographic venue name, optional linked venue UUID, optional event year; embedded in the publication |
 | Relation | Type, target publication UUID, optional note; stored on the source publication |
-| Google Scholar entry (proposed) | Local stable UUID, profile ID, external entry ID, last observed bibliographic metadata, citation history, presence state |
+| Google Scholar entry (proposed) | Local stable UUID, profile ID, external entry ID, source names/text/completeness, optional bibliographic details, matching policy, citation history, presence state, record update time |
 | Scholar profile mirror (proposed) | Selected profile ID, dated capture coverage, optional profile-level totals |
 | Review/import evidence | Typed entity targets, immutable source payload and capture metadata, proposed changes, review state and decisions |
 | Attachment | Stable ID, role, label, original filename, MIME type, byte size, storage backend, repository-relative path, SHA-256, optional source URL; embedded in its publication JSON |
 
 Keep the author order and full supplied names; preserve Unicode and bibliographic capitalization. Keep preprint submission, acceptance, online publication, and issue dates distinct. Use a stable citation key that does not automatically change when the title or venue changes.
+
+Most publications need only a top-level `publication_date`. It accepts a year (`"2024"`), year/month (`"2024-06"`), or full date (`"2024-06-18"`) according to what is known. Optional top-level `submission_date`, `acceptance_date`, `online_date`, and `issued_date` retain more specific lifecycle facts when available. A generic date does not assert one of those lifecycle meanings. Omit unknown values rather than inventing a month/day or copying the generic value into every date field. The version-2 format has no nested `dates` object and no separate publication `year`; section 2.1 defines year derivation for filing and filters.
+
+Publications have no lifecycle `status` field or status filter. Catalog archiving is represented solely by optional `archived_at`; restore removes it. Active in the catalog does not mean formally published. Metadata uses one `updated_at` per record, without per-field timestamps; source evidence remains in reviews, and citation observations keep their own dates.
 
 Start with three relation types:
 
@@ -199,6 +216,8 @@ For example, the conference publication record contains:
 This is an illustrative excerpt; the complete record also contains its bibliographic fields. Store each relation once. Derive incoming links so publication details expose “Preprint” and “Published version” labels without maintaining duplicate relation entries. Expose `related_to` in both directions. The CLI prints these relations; the later Electron UI renders them as links. Relations are optional, may connect multiple records, and do not merge metadata or automatically imply further relations.
 
 An arXiv base ID identifies a preprint record; retain version suffixes as revision metadata without requiring a separate publication for every arXiv revision. Every publication has a local UUID so records without external identifiers remain manageable. Distinguish a publication's own identifiers from identifiers mentioned by an external source as related publications: a conference DOI supplied in arXiv metadata is evidence for a relation, not a reason to merge the records.
+
+Several publication UUIDs may retain the same normalized arXiv ID. Admit them to the catalog and report the duplicate as an auditing error with all affected UUIDs; do not reject the import, discard an identifier, or merge records automatically. Auditing resolves whether the source has duplicate records, a mistaken ID, or an ID that belongs to a related preprint. arXiv lookup must return all matches and require disambiguation before attaching new evidence or making a new link. DOI uniqueness remains a blocking constraint. Section 9 and SCHEMAS.md section 16 distinguish audit findings from admission checks.
 
 Library listings show one row per publication, and exports contain the selected publication records. Counts reflect the selected records, with filters such as “exclude preprints” or “journals and conferences.” Relations do not change those counts. Title similarity only suggests duplicates or related publications for review; it never collapses them automatically.
 
@@ -241,7 +260,7 @@ Illustrative author record (timestamps and other lifecycle fields omitted):
 }
 ```
 
-`identifiers` may be empty or omitted. Initially support optional `google_scholar` and `orcid` values. Scholar values are the opaque, case-preserved `user` parameter of a profile URL, not the entire URL or a Scholar article ID. Accept a profile URL as input and extract that parameter, discarding language and tracking parameters. Google documents this profile URL structure. [Google Scholar profile links](https://scholar.google.com/intl/en/scholar/citations.html)
+`identifiers` is required and may be empty (`{}`). Initially support optional `google_scholar` and `orcid` values. Scholar values are the opaque, case-preserved `user` parameter of a profile URL, not the entire URL or a Scholar article ID. Accept a profile URL as input and extract that parameter, discarding language and tracking parameters. Google documents this profile URL structure. [Google Scholar profile links](https://scholar.google.com/intl/en/scholar/citations.html)
 
 A confirmed `(provider, identifier)` belongs to at most one retained author identity in a library. If it is claimed by another record, require identity review rather than merging silently. Normalize ORCID URL and bare-ID inputs to the same value; validate format without claiming that syntax proves ownership. Keep previous or additional confirmed profile IDs in optional `identifier_aliases` entries with `provider`, `value`, and an optional note; apply the same uniqueness rule to those entries. This supports corrected or multiple profiles without changing the local UUID. An identifier mistakenly assigned to a person must be removed or reassigned through review, not retained as their alias. Evidence and past assignments remain in review records and Git history.
 
@@ -256,7 +275,6 @@ Complete illustrative publication JSON under the proposed schema (fictional meta
   "citation_key": "Doe2026Example",
   "gscholar_entry_id": "593de6b0-af11-42e2-9062-c742bf154ad5",
   "type": "journal",
-  "status": "published",
   "title": "An Example Paper",
   "authors": [
     {
@@ -291,9 +309,7 @@ Complete illustrative publication JSON under the proposed schema (fictional meta
     "name": "Journal of Example Research",
     "venue_id": "cbf1272a-2268-452a-961c-78c6a783820f"
   },
-  "dates": {
-    "issued": "2026-08-15"
-  },
+  "publication_date": "2026-08-15",
   "identifiers": {},
   "urls": [],
   "tags": [
@@ -381,7 +397,7 @@ Illustrative venue record (fictional metadata; timestamps and lifecycle fields o
 }
 ```
 
-Required identity fields are `id`, `venue_key`, `kind`, and `preferred_name`, alongside schema version and creation/update timestamps. Initially use kinds `journal`, `conference`, `workshop`, `repository`, and `other`. Abbreviation, aliases, URLs, and disambiguation notes are optional; names and abbreviations need not be unique. Renaming a preferred name or explicitly changing a key leaves UUID references intact. External venue identifiers can be added later without changing the local identity model.
+Required identity fields are `id`, `venue_key`, `kind`, and `preferred_name`, alongside schema version and creation/update timestamps. Initially use kinds `journal`, `conference`, `workshop`, `repository`, and `other`. Aliases and URLs are required arrays and may be empty. Abbreviation and disambiguation notes are optional; names and abbreviations need not be unique. Renaming a preferred name or explicitly changing a key leaves UUID references intact. External venue identifiers can be added later without changing the local identity model.
 
 The same venue may appear on another publication as:
 
@@ -424,7 +440,7 @@ Supply a DOI, arXiv URL, or BibTeX file to the CLI. The core retrieves available
 
 ### Find and reuse
 
-Search titles, authors, venues, identifiers, and tags. Filter by year, venue, publication type, status, or tag. The CLI prints publication details and related publications, or returns JSON for scripts. Resolve attachment paths and optionally open files or URLs through an operating-system adapter. Export a citation, filtered bibliography, or publication list.
+Search titles, authors, venues, identifiers, and tags. Filter by year, venue, publication type, tag, or catalog archive state. The CLI prints publication details and related publications, or returns JSON for scripts. Resolve attachment paths and optionally open files or URLs through an operating-system adapter. Export a citation, filtered bibliography, or publication list.
 
 ### Manage authors — proposed
 
@@ -461,9 +477,9 @@ Use this publication-matching order (author identity resolution follows section 
 3. Candidate matching from title, author overlap, year, and venue.
 4. Manual resolution of ambiguous candidates.
 
-Exact identifiers can attach incoming evidence automatically when unambiguous. Fuzzy matches only propose a link. A one-year date difference or an abbreviated author list should be explained, not silently “corrected.” Imported truncated author lists must not replace complete ordered lists.
+Apply the Scholar matching policies in section 6 before generating candidates. Exact identifiers can attach incoming evidence automatically only when unambiguous; a duplicated arXiv ID must return all candidates for review. New Scholar associations require accepted proposals even when an identifier is unambiguous. Fuzzy matches only propose a link. A one-year date difference or an abbreviated author list should be explained, not silently “corrected.” Imported truncated author lists must not replace complete ordered lists.
 
-During initial import, populate empty fields in the preview. After acceptance, curated values change only through an accepted proposal or your own edit. Preserve field provenance and protect manually corrected values from later imports. Missing from a source means “not observed,” not “delete from catalog.”
+During initial import, populate empty fields in the preview. After acceptance, curated values change only through an accepted proposal or your own edit. Preserve original input and change decisions in review evidence and protect manually corrected values from later imports. Do not add per-field timestamps. Missing metadata from a source means “not observed,” not “delete from catalog”; explicit citation checks use the nullable observation rules below.
 
 ## 6. Google Scholar profile mirror — proposed revision, not implemented
 
@@ -476,6 +492,10 @@ Use `catalog/gscholar/` as a local mirror of **your selected Google Scholar prof
 `gscholar/profile.json` records the selected `profile_id`, dated capture coverage, and optional dated profile-level totals. The selected ID must belong to the author identified by `config/author.json`'s `self_author_id` and one of that author's confirmed Scholar identifiers. This is a mirror configuration, not a second editable author profile. Switching profiles requires an explicit migration/reconciliation rather than silently mixing two profiles.
 
 Each `gscholar/entries/<year>/<snake_case_title>_<uuid8>.json` represents one entry in that profile. Keep an immutable local UUID for stable references and a separate opaque external `scholar_id`, scoped by `profile_id`. An external ID identifies a profile entry, not the author's profile or a DOI. Enforce uniqueness of the external ID within the selected profile. Readable title-plus-UUID-prefix filenames follow the other entity collections; source title, authors, venue, and year remain readable inside each entry. Source names are literal metadata, without requiring links to curated author or venue identities.
+
+Keep the ordered source `authors` array, optional literal `authors_text`, and required `authors_completeness` (`complete`, `partial`, `unknown`). Completeness describes the retained array. An abbreviated overview may coexist with a complete detail byline; an empty parser result is unknown, not proof of no authors. Ellipses remain text/evidence, never author names. These fields do not claim identity links or overwrite curated publication credits.
+
+Optional source fields are `publication_date`, `volume`, `issue`, `pages`, `publisher`, `patent_office`, `application_number`, `description`, `scholar_url`, and `cited_by_url`. Keep them directly on the entry for readable JSON. The source date is literal text and may be incomplete or malformed; it does not automatically replace the entry's `year` or a curated publication date. Missing metadata in later captures does not erase retained values. Details are source metadata, so patents and other unmatched items can remain in the mirror without a new curated entity type.
 
 A publication stores **zero or one** association as an optional scalar, never an array:
 
@@ -496,8 +516,13 @@ The corresponding entry could look like this (fictional IDs and metadata; abbrev
   "scholar_id": "exampleEntryId",
   "title": "An Example Paper",
   "authors": ["Jane Q. Doe", "Alex Chen", "Wei Wang", "Wei Wang"],
+  "authors_text": "JQ Doe, A Chen, W Wang, W Wang",
+  "authors_completeness": "complete",
   "venue": "Journal of Example Research",
   "year": 2026,
+  "publication_date": "2026/8/15",
+  "publisher": "Example Press",
+  "matching": {"policy": "eligible"},
   "last_seen_at": "2026-09-06T08:00:00Z",
   "presence": "present",
   "source_review_id": "74c6a5ce-d1b6-4367-a577-997c66d9d86b",
@@ -505,7 +530,6 @@ The corresponding entry could look like this (fictional IDs and metadata; abbrev
     {
       "observed_at": "2026-09-06T08:00:00Z",
       "count": 12,
-      "estimated": false,
       "source_review_id": "74c6a5ce-d1b6-4367-a577-997c66d9d86b"
     }
   ]
@@ -516,15 +540,29 @@ An unlinked Scholar entry is valid and remains in the mirror even if there is no
 
 The reverse direction may still be many-to-one: a preprint and its published version can both point to the same Scholar entry, consistent with the existing design. Derive an entry's linked publications from publication records rather than storing a second list. Shared counts must be labeled and counted once per distinct entry; even the sum across distinct entries is not asserted to equal Scholar's profile total. Google describes how entries and overlapping citations can be merged. [Google Scholar duplicate and citation guidance](https://scholar.google.com/intl/en/scholar/citations.html)
 
+### Matching, exclusion, and rejection
+
+Each entry has `matching: {"policy": "eligible"}` initially. Explicit exclusion sets `policy: "excluded"` with a readable `reason` and `decision_review_id` referring to an accepted policy decision. Keep original decision times and supplied actor references in the review. Exclusion applies to the entire entry, persists through metadata refreshes and synchronization, and prevents candidate suggestions against all publications. The entry remains visible in the mirror and its citation observations can still update; exclusion is independent of presence in Scholar.
+
+Excluded entries cannot have confirmed publication links. Excluding an already linked entry must preview every affected publication and accept the unlinks and policy change together. Restoring eligibility is an explicit reviewed change and does not restore old links. Unlinking alone removes an association without excluding the entry.
+
+Candidate matches live in link/replace proposals targeting a publication's scalar `gscholar_entry_id`. Accepting a match preserves the one-entry-per-publication rule and checks the expected old value and current revision; competing proposals must be reconciled. Never select an arbitrary publication when an identifier has multiple matches.
+
+Rejecting a candidate suppresses that specific publication–entry pair through its retained rejected proposal, while leaving the entry eligible for other publications. It does not reject every UUID in a candidate list. Automatic refresh cannot bypass that rejection by creating another proposal for the same pair. Explicit reopening returns the proposal to pending, removes its terminal decision time, and refreshes its comparison values before a new acceptance. The previous decision survives in Git and original evidence. SCHEMAS.md section 7.3 defines the stored forms and constraints.
+
 ### Capture and reconciliation
 
 Use supplied exports and profile-table snapshots. Google documents bibliographic export formats; do not assume those exports contain stable entry IDs or citation counts. Inspect and report available fields. Rows lacking an external ID remain in import reviews until matched to an existing entry or supplemented with an entry ID/URL; do not manufacture a Scholar identity from a title. [Google Scholar profile help](https://scholar.google.com/intl/en/scholar/citations.html)
 
-An accepted capture updates the source mirror and proposes discrepancies against curated publications. Accepting a mirror refresh does not by itself accept publication metadata changes or identity associations. Preserve absent source fields as unobserved, and label their retained values with the dates of their last supporting captures; never give stale values a fresh observation date. Original input and provenance remain immutable in the import review. Entries may reference that evidence rather than duplicate raw exports. Reimporting the same capture is idempotent; a later capture can add a dated citation count even when the count is unchanged.
+An accepted capture updates the source mirror and proposes discrepancies against curated publications. Accepting a mirror refresh does not by itself accept publication metadata changes, identity associations, or matching-policy changes. Preserve absent metadata fields as unobserved and retain existing values. Maintain record-level `updated_at`, with no per-field observation times. That time may reflect a citation or policy edit and must not be labeled as proof that every metadata value was refreshed. Original input and provenance remain immutable in the import review. Entries may reference that evidence rather than duplicate raw exports. Reimporting the same capture is idempotent; a later citation check adds a dated sample even when the count is unchanged.
 
 Record each capture's time, `complete`/`partial`/`unknown` coverage, source review ID, and observed entry IDs in `profile.json`. Only a successful complete capture can mark a previously seen entry `missing`; partial, unknown, failed, or older captures cannot establish removal. Missing entries retain their JSON, history, and publication links and are labeled absent from the latest complete capture. A later observation can mark them present again. Entry metadata is the last known source state, with Git retaining prior versions; `citation_history` explicitly preserves dated counts. Unknown counts use `null`, not zero; unavailable estimates remain unspecified. Keep decreases and label differences as changes in observed totals, not necessarily newly made citations.
 
-The reconciliation report shows local publications without confirmed links, Scholar entries without local links, missing entries, metadata discrepancies, ambiguous candidates, and shared-entry associations, with capture dates and coverage. An unlinked publication is not automatically proof that it is absent from Scholar. Display stale or partially observed data clearly. Unattended scraping remains outside the MVP; supplied evidence is sufficient for the mirror. [Google Scholar access guidance](https://scholar.google.com/intl/en/scholar/help.html)
+Each citation observation contains its own `observed_at`, a non-negative `count` or `null`, and a source-review reference supporting its Google Scholar origin. An optional `estimated` flag records source-supported approximation/exactness; omission means that distinction was not recorded. The current count is derived from the latest observation, even if it is null; an older positive count must not silently replace a newer null. Append null when a successful citation check cannot find the count, including a complete capture newly confirming an entry's absence. Metadata-only imports and failed requests add no count sample. A publication without a confirmed Scholar link has a derived null count; do not fabricate an entry for it. Reviewed corrections preserve prior evidence and history.
+
+Keep `annual_citations` as separately dated observations of Scholar's yearly bars. Do not sum them as a substitute for the current total or convert them into invented cumulative history. Entry presence times and profile/review event times remain available for coverage and decisions; other bibliographic fields have no separate timestamps.
+
+The reconciliation report distinguishes matched entries, eligible unmatched entries, excluded entries, rejected publication–entry pairs, and pending candidates. It also shows local publications without links, presence, metadata discrepancies, and shared-entry associations, with record update/capture times and citation observation times. An unlinked publication is not automatically proof that it is absent from Scholar. Display partial bylines and incomplete capture coverage clearly without claiming per-field freshness. Unattended scraping remains outside the MVP; supplied evidence is sufficient for the mirror. [Google Scholar access guidance](https://scholar.google.com/intl/en/scholar/help.html)
 
 When Scholar merges, splits, or replaces entries, retain the old entry and its history. Review the successor association and relink each affected publication to at most one retained/current entry. Do not automatically concatenate or sum citation histories from different external entries, or copy associations based on title similarity. Corrections and previous links remain in reviews and Git history. Validate links, selected-profile membership, and external-ID uniqueness across synchronization; conflicting relinks require review. Concurrent citation captures retain both dated samples, while conflicting claims for the same capture require resolution.
 
@@ -584,7 +622,7 @@ On Sync, save and commit valid local edits, fetch the remote history, and reconc
 
 Commit publication JSON and its changed LFS pointers together. Validate that manifest hashes and sizes agree with those pointers. Upload newly referenced binary objects before pushing the Git commit that exposes them; the LFS pre-push mechanism provides this ordering. If upload fails, retain the local commit and files as pending and do not publish a broken reference. Retry safely if binary upload succeeds but the Git push fails. A metadata-only edit need not download existing binaries. [Git LFS command documentation](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs.adoc)
 
-Validate the entire proposed catalog for duplicate primary identifiers, broken publication relations, author, venue, and Scholar entry links, identity constraints from sections 3.1, 3.2, and 6, and schema errors before making it active and pushing. Relation targets must exist; reject self-links, duplicate links, and cycles in `published_version_of` or `extends` chains. Soft-deleted targets remain resolvable and are labeled archived. If duplicate publication records are explicitly merged, redirect incoming relations to the retained UUID and remove resulting self-links or duplicates. If the remote advanced meanwhile, fetch and reconcile again. Do not force-push. Use soft deletion and stable IDs to prevent an older offline computer from resurrecting removed records. Keep an application lock and atomic writes to avoid local concurrent writers and partially saved files.
+Validate the entire proposed catalog for blocking duplicate identifiers (including DOI and author identifiers), broken publication relations, author, venue, and Scholar entry links, identity constraints from sections 3.1, 3.2, and 6, and schema errors before making it active and pushing. Duplicate arXiv IDs remain stored and synchronized with audit errors; they do not fail admission. Treat each Scholar matching-policy object as atomic, and reject combined states that link an excluded entry. Treat its author array and completeness as an atomic pair. Relation targets must exist; reject self-links, duplicate links, and cycles in `published_version_of` or `extends` chains. Soft-deleted targets remain resolvable and are labeled archived. If duplicate publication records are explicitly merged, redirect incoming relations to the retained UUID and remove resulting self-links or duplicates. If the remote advanced meanwhile, fetch and reconcile again. Do not force-push. Use soft deletion and stable IDs to prevent an older offline computer from resurrecting removed records. Keep an application lock and atomic writes to avoid local concurrent writers and partially saved files.
 
 The live SQLite index stays on each computer and is rebuilt after synchronization. Do not synchronize a live database or put the Git working directory inside a second folder-sync system.
 
@@ -626,8 +664,12 @@ mypub venue list / show / add / update / archive
 mypub venue merge / unresolved
 mypub venue link / unlink
 mypub gscholar import / list / show / reconcile
-mypub gscholar link / unlink
+mypub gscholar link / unlink / exclude / include
+mypub review reopen
+mypub audit
 ```
+
+`mypub validate` enforces blocking format/reference constraints. The proposed `mypub audit` separately reports data-quality errors such as duplicate arXiv IDs, returning nonzero while audit errors remain. Those findings must not prevent import, storage, export, migration, or synchronization of otherwise valid records. Audit output identifies all affected publication UUIDs and supports reviewed corrections; no unique arXiv index is permitted. `gscholar exclude/include` and `review reopen` expose the decisions described in section 6. These commands are planned, not additions to the current CLI in this documentation revision.
 
 Author commands accept UUIDs or unique author keys; venue commands accept UUIDs or unique venue keys. Venue link/unlink operations identify the publication and verify its expected revision before applying changes. Authorship commands address a publication plus a one-based credit position for CLI convenience; the core verifies the expected publication revision and current credit before applying an edit so a concurrent reorder cannot change the wrong author. Merge and bulk reassignment previews use the same revision checks. The API exposes equivalent operations without interactive prompts.
 
@@ -660,11 +702,11 @@ Before implementation, the choices that would materially refine this draft are y
 
 Target catalog schema version 2 for the combined author, venue, and Scholar revision; version 2 has not been implemented or released, so this extension does not require a separate version 3. No code, catalog data, or migration is changed as part of the design review. Existing schema-version-1 catalogs remain in their current form until the user later requests implementation and runs an explicit migration.
 
-The future migration must preview changes, preserve a backup, and update the catalog under one lock with recoverable staging. Preserve every existing credit's name and order; do not fabricate roles or collapse identical names into one person. Name-only credits become unresolved credits. Existing embedded ORCIDs are preserved as evidence in a migration review with proposed identity links, without silently elevating their previous assignment to a confirmed shared identity. Preserve the old owner configuration in that review as well; propose a self author from it and set `self_author_id` only after confirmation. Reuse accepted decisions on reruns so an interrupted migration cannot duplicate authors or proposals.
+The future migration must preview changes, preserve a backup, and update the catalog under one lock with recoverable staging. Remove version-1 publication `status` from active records, retaining the original in migration evidence; preserve supported archive state through `archived_at`. Map the old nested `dates` values to the corresponding top-level lifecycle dates, preserving meanings and precision. A generic date can populate `publication_date` directly without lifecycle classification. Do not infer lifecycle dates from the old status. Admit duplicate arXiv IDs into version 2 with audit errors. A missing/contradictory archive timestamp is an explicit migration exception. Preserve every existing credit's name and order; do not fabricate roles or collapse identical names into one person. Name-only credits become unresolved credits. Existing embedded ORCIDs are preserved as evidence in a migration review with proposed identity links, without silently elevating their previous assignment to a confirmed shared identity. Preserve the old owner configuration in that review as well; propose a self author from it and set `self_author_id` only after confirmation. Reuse accepted decisions on reruns so an interrupted migration cannot duplicate authors or proposals.
 
 For venues, migrate each existing publication string to `venue: { "name": "<original string>" }`, preserving its wording exactly. Preserve the original `config/venues.json` as migration evidence and use it to propose shared venue records and links for review. Do not silently turn every equal string or acronym into a confirmed shared identity. An accepted migration batch may create venues and link publications together; unresolved names stay usable. Retire the old configuration from active use only when its contents are preserved and the staged catalog validates. Retrying must reuse accepted venue decisions without creating duplicate records.
 
-Newly written curated records use version 2. Preserve existing observation payloads verbatim inside migration/import review evidence, retaining original IDs and a resolvable mapping for old review references. Convert verified entries from the selected Scholar profile to `gscholar/entries/` and confirmed publication mappings to the optional scalar link. Preserve citation dates, counts, uncertainty, and capture coverage; ambiguous IDs, wrong-profile evidence, or multiple candidate links remain in reviews. Retire `observations/` from active storage only after all evidence and references are accounted for. Keep completed review history readable through version-aware readers; do not rewrite original evidence payloads. Pending version-1 proposals must be explicitly converted or regenerated from preserved source evidence before acceptance. Switch the library version only after validating the complete staged catalog and leave the old catalog usable on failure. Older clients must reject an unsupported library version before writing; all computers must upgrade before syncing migrated data. User-facing documentation and help must label author, venue, and revised Scholar operations unavailable until implemented.
+Newly written curated records use version 2. Preserve existing observation payloads verbatim inside migration/import review evidence, retaining original IDs and a resolvable mapping for old review references. Convert verified entries from the selected Scholar profile to `gscholar/entries/` and confirmed publication mappings to the optional scalar link. Preserve citation dates, counts, uncertainty, and capture coverage; ambiguous IDs, wrong-profile evidence, or multiple candidate links remain in reviews. Retire `observations/` from active storage only after all evidence and references are accounted for. Keep completed review history readable through version-aware readers; do not rewrite original evidence payloads. Pending version-1 proposals must be explicitly converted or regenerated from preserved source evidence before acceptance. Switch the library version only after the complete staged catalog passes blocking validation, retaining permitted arXiv duplicates with audit errors, and leave the old catalog usable on failure. Older clients must reject an unsupported library version before writing; all computers must upgrade before syncing migrated data. User-facing documentation and help must label author, venue, and revised Scholar operations unavailable until implemented.
 
 Acceptance scenarios for the future implementation:
 
@@ -692,6 +734,16 @@ Acceptance scenarios for the future implementation:
 | A publication has no Scholar match, one match, or two competing candidates | Zero or one scalar link is accepted; competing candidates stay in review and cannot become an array |
 | Two local publications map to one Scholar entry | Both links remain valid; shared counts are labeled and not counted twice |
 | A profile entry has no local publication | The entry remains in the profile mirror and appears in reconciliation |
+| An entry is excluded, refreshed, synchronized, and later made eligible | Reason/decision evidence persists; no automatic candidates or links while excluded; citation refresh continues; restoring eligibility does not restore old links |
+| An entry shared by several publications is excluded | Preview and accept all unlinks plus the policy change in one transaction, or leave all records unchanged |
+| One candidate pair is rejected and later explicitly reopened | The rejection suppresses only that pair across refreshes; reopening preserves history and checks the current publication before accepting |
+| A Scholar overview is truncated or a patent parser supplies no names | Literal author text survives; the array's completeness is explicit; no ellipsis credit or false complete empty list is created |
+| A Scholar entry includes source dates, publisher, patent fields, description, and URLs | Optional literal details survive native export/import and never silently replace curated publication values |
+| A later Scholar citation check returns a number, zero, or unavailable count | Append the observation with its own time; current count follows the latest number or null, without falling back to an older positive value |
+| A metadata-only import, failed request, or out-of-order citation capture arrives | No invented null observation; current count is ordered by observation time, not import/update time |
+| A policy/citation edit changes an entry while its metadata is retained | Only record update time changes; no per-field timestamps or claim that all metadata was freshly observed |
+| A publication is saved, archived, and restored | No publication status field exists; only archive/restore changes optional archived_at |
+| Several publication UUIDs claim the same arXiv ID | Import, sync, index, and native round trip preserve all records; audit reports an error; identifier matching returns all candidates |
 | An entry is omitted from partial, complete, and older captures | Only an applicable complete capture establishes absence; history and local links survive |
 | Scholar changes or merges entry identities | Reviewed relinking preserves the one-entry-per-publication rule and keeps separate historical count series |
 | An old observations catalog is migrated | Raw evidence, references, coverage, and counts survive in reviews and the selected profile mirror; no unresolved row becomes a fabricated entry |
@@ -700,7 +752,8 @@ Acceptance scenarios for the future implementation:
 | Two offline computers rename the same record differently | Reconciliation matches the full UUID and preserves content alternatives without duplicating or deleting the entity |
 | A user edits a name or renames a JSON file manually | ID-based discovery still works; validation offers filename repair and detects duplicate IDs |
 | A name contains non-Latin text, only punctuation, or an excessively long title | Deterministic safe filenames retain the UUID suffix and leave original JSON text intact |
-| A publication has issue, online, and event dates in different years | Its directory uses issued year first, then online year; event/import dates never silently determine filing |
+| A publication has only a year or generic publication date | `publication_date` preserves the supplied precision and selects its year directory, without invented lifecycle dates |
+| A publication has publication, issue, online, and event dates in different years | Its directory uses publication_date first, then issued_date, then online_date; event/import dates never silently determine filing |
 | A publication and its Scholar entry report different years | Each is filed under its own bibliographic/source year; the UUID association remains intact |
 | An author has reviewed family/given names | Its filename starts with the family name and lives under the surname initial; display and publication-credit names retain their order |
 | An author has a compound, accented, non-Latin, or unresolved surname | Documented initial rules or fallback directories apply without guessing or losing name text |

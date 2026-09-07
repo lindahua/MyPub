@@ -4,6 +4,10 @@ This document is the official specification of JSON files written or consumed by
 
 Schema version 2 is the target format and is not yet implemented. The current core and CLI write schema version 1; section 15 records that compatibility boundary. A catalog must be migrated as a unit before version-2 records are written into it.
 
+Revised 7 September 2026: entry matching policies and exclusions, optional Scholar details, literal author text and completeness, Scholar-only nullable citation observations, record-level update times without per-field timestamps, removal of publication status, and admission of duplicate arXiv identifiers with audit errors. These are version-2 design decisions; they do not change the implemented version-1 format.
+
+The same day's date clarification makes `publication_date` the main optional bibliographic date, with optional `submission_date`, `acceptance_date`, `online_date`, and `issued_date`. These are top-level publication fields and preserve the supplied precision; the version-1 nested `dates` object is compatibility input only.
+
 ## 1. Scope and notation
 
 The specification covers:
@@ -46,6 +50,8 @@ Optional values are omitted. Empty required collections are written as `[]` or `
 Every shared catalog record except `catalog/config/author.json` and `catalog/gscholar/profile.json` has an immutable `id`. Every catalog and local-state JSON file defined here has `schema_version: 2`. The backup manifest and native interchange envelope have independent versions as noted in sections 13 and 14.
 
 Entity `created_at` is when the record first entered this MyPub library, not when the publication, person, venue, or source object came into existence. `updated_at` is the last accepted change to that record. An evidence capture does not update a curated entity unless it produces an accepted change. Writers must not change `created_at`; accepted changes set `updated_at` to a timestamp no earlier than its previous value.
+
+Metadata uses record-level update times only. There are no per-field observation/update timestamps. Citation samples and annual citation snapshots retain their specific observation times; profile captures, evidence, decisions, and record presence/lifecycle events retain their own event times. `updated_at` does not assert that every retained metadata value was freshly observed at that instant.
 
 References always use complete UUIDs. Filenames, UUID prefixes, citation keys, author keys, and venue keys are never foreign keys. A referenced record may be archived or a merge tombstone but must exist and resolve without a redirect cycle.
 
@@ -96,7 +102,6 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
   "citation_key": "Doe2026Example",
   "gscholar_entry_id": "593de6b0-af11-42e2-9062-c742bf154ad5",
   "type": "journal",
-  "status": "published",
   "title": "An Example Paper",
   "authors": [
     {
@@ -110,7 +115,7 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
     "name": "Journal of Example Research",
     "venue_id": "cbf1272a-2268-452a-961c-78c6a783820f"
   },
-  "dates": {"issued": "2026-08-15"},
+  "publication_date": "2026-08-15",
   "identifiers": {"doi": "10.1000/example"},
   "volume": "42",
   "issue": "3",
@@ -131,12 +136,12 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `citation_key` | required key string | Stable citation/export handle. It does not change automatically with metadata. |
 | `gscholar_entry_id` | optional UUID | Confirmed association with exactly one Scholar entry. Several publications may point to the same entry. Candidates never appear here. |
 | `type` | required enum | One of `arxiv`, `conference`, `workshop`, `journal`, `book-chapter`, `thesis`, `other`. It describes this record, not a related version. |
-| `status` | required enum | One of `draft`, `submitted`, `accepted`, `published`, `archived`. `archived` is the publication soft-delete state. |
 | `title` | required non-empty string | Curated bibliographic title with meaningful Unicode/capitalization preserved. |
 | `authors` | required array of author credits | Ordered printed byline. It may be empty only for a genuinely anonymous/unknown work and produces a warning. |
 | `authorship_note` | optional non-empty string | Readable publication-level statement about credited contribution/correspondence. It does not create roles by itself. |
 | `venue` | optional publication venue | Exact publication-specific venue wording and optional identity link. Absence means no venue is recorded. |
-| `dates` | required date object | Known lifecycle/bibliographic dates. `{}` is valid. |
+| `publication_date` | optional local date | Main bibliographic date, with the supplied year/month/day precision. It need not be classified as online, issue, or submission date. |
+| `submission_date`, `acceptance_date`, `online_date`, `issued_date` | optional local dates | Independently supported lifecycle dates; see section 4.4. They are not required to record a publication date. |
 | `identifiers` | required identifier object | Identifiers belonging to this publication. `{}` is valid. Related-version identifiers do not belong here. |
 | `arxiv_versions` | optional non-empty array of arXiv revisions | Observed revisions for an arXiv record; see section 4.5. Omit for no revision evidence. |
 | `volume` | optional non-empty string | Bibliographic volume, preserved as text (for example `42` or `S1`). |
@@ -149,10 +154,12 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `relations` | required array of relations | Outgoing publication relations stored only on this source publication. |
 | `attachments` | required array of attachments | Managed file manifests. Attachment IDs are unique across the library. |
 | `primary_attachment_id` | optional UUID | ID of one attachment in this record, normally the default paper to open. It must not name another publication's attachment. |
-| `archived_at` | conditionally required timestamp | Required exactly when `status` is `archived`; time the record was most recently archived. Removed on restoration. |
+| `archived_at` | optional timestamp | Presence means the publication is archived (soft-deleted). Removed on restoration; absence means active in the catalog, without implying a publication lifecycle status. |
 | `created_at`, `updated_at` | required timestamps | Local record lifecycle; see section 2.2. |
 
-`pages` and `article_number` may coexist only when the source genuinely supplies both distinct values. DOI and arXiv primary identifiers must be unique among retained publication records after normalization. ISBN need not be unique because several chapters may share a book ISBN.
+There is no publication `status` field in version 2. Do not substitute a required status-like field or infer publication stage from absence of `archived_at`.
+
+`pages` and `article_number` may coexist only when the source genuinely supplies both distinct values. Primary DOI identifiers must be unique among retained publication records after normalization. Duplicate normalized arXiv IDs are admitted and retained on distinct publication UUIDs; section 16 reports them as audit errors without blocking storage or synchronization. ISBN need not be unique because several chapters may share a book ISBN.
 
 ### 4.2 Author credit
 
@@ -189,7 +196,21 @@ A publication venue object has:
 | `venue_id` | optional UUID | Confirmed link to a venue record. Absence means unresolved venue identity. |
 | `event_year` | optional integer, `1000`–`9999` | Year of a conference/workshop edition. It is independent of publication dates and does not select the publication directory. |
 
-The date object permits only `submitted`, `accepted`, `online`, and `issued`, each a local date. `submitted` is the original submission date; later arXiv submissions belong in `arxiv_versions`. `issued` is the issue/formal publication date. Dates may legitimately be out of chronological order only when explained by source reality; suspicious ordering produces a warning.
+Publication dates are optional top-level fields:
+
+| Field | Meaning |
+| --- | --- |
+| `publication_date` | Main bibliographic publication date; `"2024"` is sufficient when only the year is known. A generic source publication date does not need a more specific lifecycle classification. |
+| `submission_date` | Original submission date; subsequent arXiv revision submissions belong in `arxiv_versions`. |
+| `acceptance_date` | Acceptance date when known. |
+| `online_date` | First online publication date when separately known. |
+| `issued_date` | Formal issue/publication date when separately known. |
+
+Every present value is a local date (`YYYY`, `YYYY-MM`, or `YYYY-MM-DD`), not a timestamp. Most records need only `publication_date`. Omit unknown dates; do not invent a month/day, copy the generic date into lifecycle fields, or infer dates from type or archive state. There is no version-2 nested `dates` object or separate duplicate `year` field on publications.
+
+Filing and default year filters use `publication_date` first, then `issued_date`, then `online_date`; an arXiv record without those dates may use its original `submission_date`. Otherwise use `unknown_year/`. Acceptance, import, event, and later revision years do not select the directory. Keep independently known dates even when their years differ; show which field supplies the filing year. Suspicious lifecycle ordering produces a warning, not an automatic rewrite of the bibliographic date.
+
+This curated `publication_date` must be a valid precision-preserving local date. Scholar's same-named source field is deliberately literal text (section 7.2); malformed source text remains in the mirror/evidence until reviewed rather than being copied into the curated field.
 
 The identifier object permits:
 
@@ -206,10 +227,10 @@ Every present identifier is a non-empty string. `{}` is valid.
 | Field | Presence and form | Semantics |
 | --- | --- | --- |
 | `version` | required positive integer | Numeric suffix (`v1` becomes `1`). Unique and ascending in the array. |
-| `submitted` | required local date | Submission date of this revision. |
+| `submission_date` | required local date | Submission date of this revision. |
 | `source_review_id` | optional UUID | Review evidence supporting this observation. |
 
-When revisions exist, `dates.submitted` equals the earliest known/original submission rather than the latest revision date.
+When revisions exist, the publication's `submission_date` equals the earliest known/original submission rather than the latest revision date. Later revisions do not change its main `publication_date` automatically.
 
 ### 4.6 Relation
 
@@ -320,7 +341,7 @@ A venue identifies a journal or recurring conference/workshop series, not an ann
 
 ## 7. Google Scholar mirror
 
-The mirror contains exactly one selected profile. Scholar strings are literal observed metadata, not curated author/venue links.
+The mirror contains exactly one selected profile. Scholar strings are literal observed metadata, not curated author/venue links. Google Scholar is the only citation source; imported captures of Scholar data retain that origin even when supplied through a file or migrated database.
 
 ### 7.1 Profile record
 
@@ -367,14 +388,17 @@ Path: `catalog/gscholar/entries/<year-or-unknown_year>/<title-slug>_<uuid-prefix
   "scholar_id": "exampleEntryId",
   "title": "An Example Paper",
   "authors": ["Jane Q. Doe", "Alex Chen"],
+  "authors_text": "JQ Doe, A Chen",
+  "authors_completeness": "complete",
   "venue": "Journal of Example Research",
   "year": 2026,
-  "field_observed_at": {
-    "title": "2026-09-06T08:00:00Z",
-    "authors": "2026-09-06T08:00:00Z",
-    "venue": "2026-09-06T08:00:00Z",
-    "year": "2026-09-06T08:00:00Z"
-  },
+  "publication_date": "2026/8/15",
+  "volume": "42",
+  "issue": "3",
+  "pages": "101-118",
+  "publisher": "Example Press",
+  "scholar_url": "https://scholar.google.com/citations?view_op=view_citation&user=exampleProfileId&citation_for_view=exampleProfileId:exampleEntryId",
+  "matching": {"policy": "eligible"},
   "first_seen_at": "2026-09-06T08:00:00Z",
   "last_seen_at": "2026-09-06T08:00:00Z",
   "presence": "present",
@@ -383,7 +407,6 @@ Path: `catalog/gscholar/entries/<year-or-unknown_year>/<title-slug>_<uuid-prefix
     {
       "observed_at": "2026-09-06T08:00:00Z",
       "count": 12,
-      "estimated": false,
       "source_review_id": "74c6a5ce-d1b6-4367-a577-997c66d9d86b"
     }
   ],
@@ -399,26 +422,71 @@ Path: `catalog/gscholar/entries/<year-or-unknown_year>/<title-slug>_<uuid-prefix
 | `profile_id` | required string | Must equal the selected profile ID. |
 | `scholar_id` | required non-empty string | Opaque external entry ID, unique within `profile_id`; it is not a profile ID or DOI. |
 | `title` | required non-empty string | Last observed source title. |
-| `authors` | required array of non-empty strings | Last observed ordered source byline. Duplicate strings are allowed because distinct people may share names. |
+| `authors` | required array of non-empty strings | Retained ordered source names, interpreted with `authors_completeness`. `[]` is valid when unavailable. Duplicate strings are allowed because distinct people may share names. |
+| `authors_text` | optional non-empty string | Literal source byline/overview text, preserving abbreviations and ellipses. It can coexist with a fuller detail-page array and is not generated by joining `authors`. |
+| `authors_completeness` | required enum | `complete`, `partial`, or `unknown`, describing the retained `authors` array, not profile coverage or whether every author identity is resolved. |
 | `venue` | optional non-empty string | Last observed source venue text. |
 | `year` | optional integer `1000`–`9999` | Last observed source publication year. It determines the entry directory. |
-| `field_observed_at` | required field-time map | Last capture that actually supplied the current value for each present bibliographic field. |
+| `publication_date` | optional non-empty string | Literal source publication date, including partial or malformed source text. It is not constrained to a curated local date and does not override `year` automatically. |
+| `volume`, `issue`, `pages` | optional non-empty strings | Literal source bibliographic values, independently of curated publication fields. |
+| `publisher` | optional non-empty string | Literal publisher text supplied by Scholar. |
+| `patent_office`, `application_number` | optional non-empty strings | Source patent details; these do not create a patent publication or require a linked local publication. |
+| `description` | optional non-empty string | Source description/abstract as supplied. |
+| `scholar_url` | optional absolute URI | Source entry detail link. Its entry/profile parameters, when present, must agree with this entry's IDs. |
+| `cited_by_url` | optional absolute URI | Source cited-by link; its absence does not by itself prove zero citations. |
+| `matching` | required matching-policy object | Persistent eligibility/exclusion policy; see section 7.3. Matched/unmatched state is derived from publication links. |
 | `first_seen_at` | required timestamp | Earliest accepted capture in which this external entry was observed. |
 | `last_seen_at` | required timestamp | Most recent accepted capture in which it was observed. It does not advance when absent. |
-| `presence` | required enum | `present` or `missing` relative to applicable complete-capture evidence. |
+| `presence` | required enum | `present` means last observed at `last_seen_at` without subsequent confirmed absence; `missing` requires applicable complete-capture evidence. Neither is a claim about the live website now. |
 | `missing_since` | conditionally required timestamp | Required only for `missing`; the complete capture time that first established absence. |
 | `source_review_id` | required UUID | Review supporting the latest accepted bibliographic change or initial creation. |
 | `citation_history` | required citation-sample array | Dated observed total citations. Samples are never collapsed merely because counts are equal. |
 | `annual_citations` | optional annual-snapshot array | Dated observations of Scholar's per-year citation bars. |
 | `created_at`, `updated_at` | required timestamps | Local mirror-record lifecycle. |
 
-`field_observed_at` permits exactly `title`, `authors`, `venue`, and `year`. It must contain a timestamp for every present bibliographic field and no timestamp for an absent one. Retaining an old field after a sparse capture retains its old timestamp.
+No `field_observed_at` or other per-field time map is stored. `updated_at` records the latest accepted record change, including policy or citation changes. Retained metadata can come from different captures; original payloads remain in reviews without requiring separate timestamps on those fields. `first_seen_at`, `last_seen_at`, and `missing_since` describe record presence, not individual field freshness.
 
-A citation sample has required `observed_at`, required `count` (non-negative integer or `null`), required boolean `estimated`, and required `source_review_id`. `estimated: true` means the value is approximate; `false` means the capture represented it as exact, not that MyPub independently verified it. At most one non-conflicting sample exists per `(observed_at, source_review_id)`.
+`authors_completeness: "complete"` requires evidence that the retained ordered list is complete. `partial` means known truncation/omissions; `unknown` means completeness was not established. An empty parser result is normally `[]` with `unknown`, not a claim of an authorless work. Ellipses are preserved in `authors_text`/evidence, never inserted as author names. Update `authors` and its completeness together. A sparse capture may update `authors_text` while retaining a fuller accepted array and its completeness; raw overview text need not be identical to that array. Missing detail fields do not erase retained values or fill them from the curated publication.
+
+A citation sample has required `observed_at`, required `count` (non-negative integer or `null`), and required `source_review_id`. Optional boolean `estimated` means known approximation when true, source-represented exactness when false, and unknown estimate status when omitted. The reference must support a Google Scholar observation; no other provider can supply a count. At most one non-conflicting sample exists per `(observed_at, source_review_id)`. Samples are ordered by observation time; different source reviews at the same time must agree on count, and any supplied estimate flags must not conflict.
+
+Each later accepted citation check appends a sample, including an unchanged count, a decrease, or `null` when a successful check could not find the count. Zero is a known zero. A metadata-only import that does not check citations, or a failed request, adds no citation sample. A complete profile capture newly establishing absence of an entry also records a null sample at that capture time; partial coverage cannot establish absence. Correcting an erroneous sample requires an explicit reviewed correction, preserving its prior evidence and Git history; it is not an ordinary refresh.
+
+The current citation count is derived from the latest sample's `count`, including `null`; never fall back to an older non-null count or use `updated_at` to order samples. No samples means no citation observation yet and a derived count of `null`. A publication without a confirmed Scholar association also has a derived count of `null`, without inventing an entry or sample. Bibliographic JSON does not duplicate a current citation scalar on publications or entries. Displays/exports may show the latest known historical number separately with its observation date, but must not present it as the current count when the latest result is null.
 
 An annual snapshot has required `observed_at`, `counts`, and `source_review_id`. `counts` is an object whose keys are four-digit years and whose values are non-negative integers or `null`. It records bars independently; values are not summed into a total or backdated into citation history.
 
 An entry is retained when missing, merged, split, replaced, or unlinked. Publication associations exist only on publications.
+
+### 7.3 Matching policy and decisions
+
+A matching object has:
+
+| Field | Presence and form | Semantics |
+| --- | --- | --- |
+| `policy` | required enum | `eligible` or `excluded`. Eligibility permits candidates; it never creates a confirmed association. |
+| `reason` | conditionally required non-empty string | Required for `excluded`; optional rationale for an explicitly restored eligible policy. |
+| `decision_review_id` | conditionally required UUID | Required for `excluded` and for explicit policy reversals; identifies an accepted policy proposal or accepted evidence-only migration decision. Optional for initial eligibility. |
+
+For example:
+
+```json
+{
+  "matching": {
+    "policy": "excluded",
+    "reason": "This profile entry is outside the publications I want to catalog.",
+    "decision_review_id": "74c6a5ce-d1b6-4367-a577-997c66d9d86b"
+  }
+}
+```
+
+Exclusion is entry-wide and persists across imports, changes to source metadata, and synchronization. It suppresses automatic candidate generation against every publication without removing the entry, altering presence, or stopping citation refreshes. Excluded entries must have no confirmed incoming publication links. Excluding a linked entry requires a reviewed transaction that unlinks all affected publications as well as setting its policy; an exclusion-only write with remaining links is invalid. Restoring eligibility does not restore former links. Original reasons, actors where supplied, and decision times remain in review history rather than adding author/account fields to the entry.
+
+Confirmed matches live only in `publication.gscholar_entry_id`. A candidate is a review proposal targeting that publication, using `operation: "link"`, `path: "/gscholar_entry_id"`, and `proposed` equal to the candidate entry UUID. Replacing an existing link uses an explicit `replace` proposal with the previous UUID in `current`. Several candidates do not create several accepted links; accepting one must reconcile competing proposals, and optimistic validation prevents stale proposals from overwriting it.
+
+Rejecting a link/replace proposal rejects that publication–entry pair, not the entire entry. A retained rejected proposal suppresses automatic suggestions for the same pair until explicitly reopened; `candidate_ids` alone does not reject every listed candidate. Reopening changes its state to pending, removes its terminal `decided_at`, recalculates review state, and requires fresh current-value/revision checks. Git and immutable evidence preserve the earlier decision. Creating another proposal must not bypass an unreopened rejection. Unlinking clears a confirmed association and leaves the entry eligible unless a separate exclusion or pair rejection is explicitly accepted.
+
+Matching evaluates entry eligibility and retained pair rejections before proposing links. A duplicated arXiv identifier never selects one publication arbitrarily: matching returns the competing candidates for review. Confirmed links survive duplicate-identifier audit findings unless explicitly corrected. Reconciliation distinguishes matched entries, eligible unmatched entries, excluded entries, rejected pairs, and pending candidates; presence is a separate dimension. Policy edits conflict as one object during synchronization, and the combined catalog must satisfy the exclusion/link constraint.
 
 ## 8. Owner configuration
 
@@ -713,11 +781,11 @@ A v1 publication is stored at `catalog/publications/<publication-uuid>.json` and
 | `id` | required UUID | Immutable publication identity. |
 | `citation_key` | required non-empty string | Unique stable citation handle. V1 does not impose the v2 key grammar. |
 | `type` | required v2 publication-type enum | Same meaning as v2. |
-| `status` | required v2 publication-status enum | Same meaning as v2. |
+| `status` | required enum | Version-1-only publication stage: `draft`, `submitted`, `accepted`, `published`, or `archived`. Version 2 removes this field. |
 | `title` | required non-empty string | Curated bibliographic title. |
 | `authors` | required ordered embedded-author array | Each author has required non-empty `name` and optional non-empty `orcid`; there are no identity links, name parts, or roles. |
 | `venue` | optional non-empty string | Publication-specific venue text; there is no venue identity link. |
-| `dates` | required object | Optional `submitted`, `accepted`, `online`, and `issued` local-date strings. |
+| `dates` | required object | Version-1 nested object with optional `submitted`, `accepted`, `online`, and `issued` local-date strings. Version 2 replaces it with top-level date fields. |
 | `identifiers` | required object | Optional normalized string `doi`, `arxiv`, and `isbn`. |
 | `volume`, `issue`, `pages`, `article_number` | optional non-empty strings | Same bibliographic meanings as v2. |
 | `urls`, `tags` | required string arrays | Curated URLs and tags. Canonical writers avoid duplicates. |
@@ -728,7 +796,9 @@ A v1 publication is stored at `catalog/publications/<publication-uuid>.json` and
 | `archived_at` | optional timestamp | Written when archived; early validators did not require exact correspondence with status. |
 | `created_at`, `updated_at` | required timestamps | Local record lifecycle. |
 
-V1 has no `gscholar_entry_id`, `authorship_note`, `arxiv_versions`, shared author records, shared venue records, or Scholar mirror. Its normalized DOI/arXiv and citation-key uniqueness rules remain catalog-wide.
+V1 has no `gscholar_entry_id`, `authorship_note`, `arxiv_versions`, shared author records, shared venue records, or Scholar mirror. Its normalized DOI/arXiv and citation-key uniqueness rules remain catalog-wide for version 1; version 2 admits duplicate arXiv IDs and audits them separately. On migration, retain the original status in review evidence and omit it from version-2 publications. Preserve a supported archive timestamp for archived records; a missing or contradictory version-1 archive timestamp needs an explicit migration decision. Do not infer lifecycle dates from a status label.
+
+Map v1 `dates.submitted`, `dates.accepted`, `dates.online`, and `dates.issued` to v2 `submission_date`, `acceptance_date`, `online_date`, and `issued_date` respectively, retaining their values and meanings and removing the nested object. No new `publication_date` is required when only those specific dates are available; the documented fallback preserves filing behavior. A generic publication date supplied by another source can populate `publication_date` independently.
 
 ### 15.2 Version-1 observation
 
@@ -782,21 +852,26 @@ The v1 backup manifest has `schema_version: 1`, required `created_at`, required 
 
 The v1 JSON export is a bare, pretty-printed array of complete v1 publications. It is lossy with respect to observations/reviews/configuration and is not a native interchange envelope.
 
-Migration is explicit, atomic, and library-wide. It preserves IDs, credited names/order, evidence payloads, attachments, timestamps with their original meanings, and unresolved ambiguity. It changes `library.json` to version 2 only after the complete staged v2 catalog validates. Older clients must reject the migrated catalog before writing. Detailed migration behavior is in DESIGN.md and `migrate_pubman/README.md`.
+Migration is explicit, atomic, and library-wide. It preserves IDs, credited names/order, evidence payloads, attachments, timestamps with their original meanings, and unresolved ambiguity. It changes `library.json` to version 2 only after the complete staged v2 catalog passes blocking validation, retaining permitted arXiv duplicates with audit errors. Older clients must reject the migrated catalog before writing. DESIGN.md describes the product's version-1 migration; `migrate_pubman/README.md` separately describes the one-time external PubMan2 migration.
 
 ## 16. Whole-catalog validation
 
-Validation has two levels. Structural validation checks each file against its record schema. Semantic validation scans the complete proposed catalog and enforces at least:
+Structural validation checks each file against its record schema. Blocking semantic validation scans the complete proposed catalog and enforces at least:
 
 - one `library.json`, optional one owner configuration, and optional one Scholar profile;
 - exactly one active file per full record UUID and conforming derived paths;
-- unique publication citation keys, author keys, venue keys, normalized primary DOI/arXiv IDs, author identifiers, attachment IDs, and `(profile_id, scholar_id)` pairs;
+- unique publication citation keys, author keys, venue keys, normalized primary DOI IDs, author identifiers, attachment IDs, and `(profile_id, scholar_id)` pairs;
 - all publication, author, venue, Scholar, review, primary-attachment, redirect, and source-evidence references resolve;
 - no self relation, duplicate relation, forbidden symmetric duplicate, directed relation cycle, or redirect cycle;
 - no repeated resolved author in a publication and no duplicate controlled role on a credit;
-- venue/event-year, archive timestamp, merge tombstone, Scholar presence, capture, and field-observation conditional rules hold;
+- venue/event-year, archive timestamp, merge tombstone, Scholar presence/capture, authors-completeness, matching-policy, and citation-observation conditional rules hold;
+- excluded Scholar entries have no confirmed incoming publication links, policy decision references resolve, and pending/rejected matches do not masquerade as confirmed associations;
 - attachment paths remain in their containing publication/attachment directories and size/hash match materialized bytes when verification is requested;
 - review state agrees with proposal decisions and evidence remains immutable; and
 - no secret, credential, machine-absolute path, NaN/infinity, or unsupported unknown property occurs in shared catalog data.
 
 Warnings identify usable but review-worthy states: unresolved author or venue links, an empty byline, singleton co-first/co-last roles, a singleton equal-contribution group, suspicious date ordering, archived link targets, case-confusable keys, stale Scholar observations, unavailable local attachment bytes, and filenames needing repair. Warnings do not redefine stored semantics.
+
+Auditing is distinct from these admission checks. Each normalized arXiv ID assigned to several retained publications produces a `duplicate_arxiv_id` finding with severity `error`, `blocks_write: false`, the normalized identifier, and all affected publication UUIDs. Include archived publications. These records remain valid to save, import, export, migrate, and synchronize. An audit error must be visible and require reviewed resolution, but must not be promoted into a uniqueness rejection by an importer, index, sync routine, or database constraint. Index arXiv IDs as a non-unique lookup returning all candidates. UUID collisions, dangling links, malformed identifiers, and duplicate DOI IDs remain blocking errors.
+
+The proposed `mypub audit` command reports these findings and returns a nonzero result while audit errors remain; `mypub validate` checks the blocking format/reference constraints. Import/sync/migration admission must not be gated on a clean audit exit code. Audit reports are derived from current JSON and can be rebuilt; accepted corrections and their evidence live in reviews and Git. Resolve a duplicate by supported identifier correction/removal, reviewed relation/ownership correction, or an explicit duplicate-record resolution, never by automatically merging equal IDs or suppressing one record.
