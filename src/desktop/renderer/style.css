@@ -841,3 +841,34 @@ summary {
     grid-template-columns: 100px minmax(0, 1fr);
   }
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  font-size: 13px;
+}
+.pagination-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pagination-controls label {
+  white-space: nowrap;
+}
+.pagination-controls select {
+  width: auto;
+  margin: 0 4px;
+}
+.bibliography-year-heading {
+  margin: 20px 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.bibliography-row .byline {
+  margin: 5px 0;
+}

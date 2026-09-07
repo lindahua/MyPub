@@ -55,3 +55,20 @@ test("CLI uses the configured catalog from another directory and keeps help avai
     assert.deepEqual(JSON.parse((await invoke(["--root", root, "--json", "list"])).stdout), []);
   } finally { await rm(home, { recursive: true, force: true }); }
 });
+
+test("desktop page sizes are optional positive safe integers", async () => {
+  const home = await mkdtemp(join(tmpdir(), "mypub-page-config-"));
+  const path = configPath(home);
+  try {
+    await mkdir(dirname(path), { recursive: true });
+    const preferences = { max_pagesize_main: 7, max_pagesize_dropdown: 3 };
+    await writeFile(path, JSON.stringify(preferences));
+    assert.deepEqual(await readUserConfig(home), preferences);
+    for (const key of Object.keys(preferences)) {
+      for (const value of [0, -1, 1.5, "15", null, Number.MAX_SAFE_INTEGER + 1]) {
+        await writeFile(path, JSON.stringify({ [key]: value }));
+        await assert.rejects(readUserConfig(home), /positive safe integer/);
+      }
+    }
+  } finally { await rm(home, { recursive: true, force: true }); }
+});

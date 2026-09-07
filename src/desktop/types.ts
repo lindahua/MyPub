@@ -1,3 +1,4 @@
+import type { PageSizes } from "./pagination.js";
 import type { CatalogState } from "../core/types.js";
 
 export type Page =
@@ -13,6 +14,7 @@ export interface Snapshot {
   loadedAt: string;
 }
 export interface DesktopState {
+  pageSizes?: PageSizes;
   status: "empty" | "loading" | "current" | "updating" | "waiting" | "stale";
   root: string | null;
   snapshot: Snapshot | null;

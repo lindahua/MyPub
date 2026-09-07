@@ -650,7 +650,7 @@ Path: `~/.config/mypub/config.json`, outside all catalogs. This is a manually ed
 
 Repository selection is explicit CLI `--root PATH`, then `repo_path`, then the current working directory. Relative `--root` paths resolve from the working directory; `~/` is expanded there too. An explicit `--root` bypasses configuration loading, allowing use while a malformed config is repaired. Help also works without loading config. `mypub config show` validates and prints the config file path, stored options, and effective repository path without opening the catalog. Reads do not create the config file or directory, initialize a catalog, or fall back from a configured but nonexistent repository. `init` and `restore` use the same selection rules; use `--root` to select a different destination explicitly.
 
-Only `repo_path` is currently supported. Additional application-wide preferences can be defined here when implemented. Git identity remains managed by Git; catalog-specific attachment preferences and pins remain in `local/settings.json`.
+`max_pagesize_main` and `max_pagesize_dropdown` are optional positive safe integers. They limit desktop paper lists to 30 and linked dropdown bibliographies to 15 by default, respectively. The desktop reads them at startup, including with an explicit `--root`; if configuration is invalid with an explicit root, it uses the default sizes. The CLI accepts these preferences but does not use them to limit command output. Additional application-wide preferences can be defined here when implemented. Git identity remains managed by Git; catalog-specific attachment preferences and pins remain in `local/settings.json`.
 
 ## 11. Synchronization state and conflicts
 

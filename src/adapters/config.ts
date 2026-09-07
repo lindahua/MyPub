@@ -4,7 +4,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import { MyPubError } from "../core/errors.js";
 
 /** Per-user application preferences, independent of catalog schema versions. */
-export interface UserConfig { repo_path?: string }
+export interface UserConfig { repo_path?: string; max_pagesize_main?: number; max_pagesize_dropdown?: number }
 export const configPath = (home = homedir()): string => join(home, ".config", "mypub", "config.json");
 
 export async function readUserConfig(home = homedir()): Promise<UserConfig> {
@@ -20,11 +20,14 @@ export async function readUserConfig(home = homedir()): Promise<UserConfig> {
   try { value = JSON.parse(text); } catch { return invalid("expected valid JSON"); }
   if (!value || typeof value !== "object" || Array.isArray(value)) return invalid("expected an object");
   const object = value as Record<string, unknown>;
-  for (const key of Object.keys(object)) if (key !== "repo_path") invalid(`unknown option ${key}`);
+  for (const key of Object.keys(object)) if (!["repo_path", "max_pagesize_main", "max_pagesize_dropdown"].includes(key)) invalid(`unknown option ${key}`);
   if ("repo_path" in object) {
     const path = object.repo_path;
     if (typeof path !== "string" || !path.trim() || path.includes("\0")) return invalid("repo_path must be a non-empty path string");
     if (!isAbsolute(path) && path !== "~" && !path.startsWith("~/")) return invalid("repo_path must be absolute or start with ~/");
+  }
+  for (const key of ["max_pagesize_main", "max_pagesize_dropdown"]) {
+    if (key in object && (typeof object[key] !== "number" || !Number.isSafeInteger(object[key]) || (object[key] as number) < 1)) invalid(`${key} must be a positive safe integer`);
   }
   return object as UserConfig;
 }

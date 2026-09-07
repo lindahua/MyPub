@@ -21,6 +21,8 @@ import {
 } from "../model.js";
 import type { Expression, Group, Row, Rule } from "../model.js";
 import type { Publication, ScholarEntry } from "../../core/types.js";
+import { DEFAULT_PAGE_SIZES, paginate } from "../pagination.js";
+import type { PageSizes } from "../pagination.js";
 import "./style.css";
 
 declare global {
@@ -78,6 +80,7 @@ interface View {
   showFilters: boolean;
   notes: boolean;
   limit: number;
+  resultPage: number;
   focusId: string;
   global: string;
   minYear: string;
@@ -101,6 +104,7 @@ function freshView(page: Page): View {
     showFilters: false,
     notes: false,
     limit: 100,
+    resultPage: 1,
     focusId: "",
     global: "",
     minYear: "",
@@ -108,6 +112,7 @@ function freshView(page: Page): View {
   };
 }
 interface Context {
+  pageSizes: PageSizes;
   model: ViewModel;
   visit: (page: Page, patch?: Partial<View>) => void;
   perform: (action: () => Promise<unknown>, message?: string) => void;
@@ -852,6 +857,55 @@ function UnresolvedAuthor({
     </section>
   ) : null;
 }
+function Pagination({
+  page,
+  pages,
+  total,
+  start,
+  end,
+  label,
+  onChange,
+}: {
+  page: number;
+  pages: number;
+  total: number;
+  start: number;
+  end: number;
+  label: string;
+  onChange: (page: number) => void;
+}) {
+  if (!total) return null;
+  return (
+    <nav className="pagination" aria-label={label}>
+      <span className="muted" role="status">
+        {start + 1}–{end} of {total} papers
+      </span>
+      <div className="pagination-controls">
+        <button disabled={page === 1} onClick={() => onChange(page - 1)}>
+          Previous
+        </button>
+        <label>
+          Page{" "}
+          <select
+            aria-label="Page number"
+            value={page}
+            onChange={(e) => onChange(Number(e.target.value))}
+          >
+            {Array.from({ length: pages }, (_, i) => (
+              <option key={i + 1} value={i + 1}>
+                {i + 1}
+              </option>
+            ))}
+          </select>{" "}
+          of {pages}
+        </label>
+        <button disabled={page === pages} onClick={() => onChange(page + 1)}>
+          Next
+        </button>
+      </div>
+    </nav>
+  );
+}
 function Bibliography({
   ids,
   authorId,
@@ -859,34 +913,70 @@ function Bibliography({
   ids: string[];
   authorId?: string | undefined;
 }) {
-  const { model } = useUI();
-  if (!ids.length) return <p className="muted">No linked publications.</p>;
+  const { model, pageSizes } = useUI();
+  const [requestedPage, setPage] = useState(1);
+  const selectedIds = new Set(ids);
+  const ordered = sortRows(
+    model.rows.publications.filter((p) => selectedIds.has(p.id)),
+    "date:desc",
+  );
+  const page = paginate(
+    ordered,
+    requestedPage,
+    pageSizes.max_pagesize_dropdown,
+  );
+  useEffect(() => {
+    if (page.page !== requestedPage) setPage(page.page);
+  }, [page.page, requestedPage]);
+  const groups = new Map<string, Row[]>();
+  for (const row of page.items) {
+    const year = String(row.fields.year ?? "Unknown year");
+    groups.set(year, [...(groups.get(year) ?? []), row]);
+  }
+  if (!ordered.length) return <p className="muted">No linked publications.</p>;
   return (
-    <div>
-      {sortRows(
-        model.rows.publications.filter((p) => ids.includes(p.id)),
-        "date:desc",
-      ).map((r) => {
-        const p = model.publications.get(r.id)!;
-        const credit = authorId
-          ? p.authors.find(
-              (a) => resolved(model.authors, a.author_id)?.id === authorId,
-            )
-          : undefined;
-        return (
-          <div className="bibliography-row" key={p.id}>
-            <EntityLink page="publications" id={p.id}>
-              {p.title}
-            </EntityLink>
-            <small>
-              {yearOf(p) ?? "Unknown year"} · {model.venueLabel(p)}
-              {credit
-                ? ` · Credited as ${credit.name}${credit.roles?.length ? " · " + credit.roles.join(", ") : ""}`
-                : ""}
-            </small>
-          </div>
-        );
-      })}
+    <div className="bibliography">
+      <Pagination
+        {...page}
+        label="Bibliography pagination"
+        onChange={setPage}
+      />
+      {[...groups].map(([year, rows]) => (
+        <section key={year} className="bibliography-year">
+          <h4 className="bibliography-year-heading">{year}</h4>
+          {rows.map((r) => {
+            const p = model.publications.get(r.id)!;
+            const credit = authorId
+              ? p.authors.find(
+                  (a) => resolved(model.authors, a.author_id)?.id === authorId,
+                )
+              : undefined;
+            return (
+              <div className="bibliography-row" key={p.id}>
+                <EntityLink page="publications" id={p.id}>
+                  {p.title}
+                </EntityLink>
+                <p className="byline">
+                  {p.authors.length
+                    ? p.authors.map((a) => a.name).join(", ")
+                    : "Authors not recorded"}
+                </p>
+                <small>
+                  {model.venueLabel(p)} · {yearOf(p) ?? "Unknown year"}
+                </small>
+                {credit && (
+                  <small>
+                    Credited as {credit.name}
+                    {credit.roles?.length
+                      ? " · " + credit.roles.join(", ")
+                      : ""}
+                  </small>
+                )}
+              </div>
+            );
+          })}
+        </section>
+      ))}
     </div>
   );
 }
@@ -1414,7 +1504,7 @@ function CollectionView({
   view: View;
   update: (patch: Partial<View>) => void;
 }) {
-  const { model, expanded } = useUI(),
+  const { model, expanded, pageSizes } = useUI(),
     collection = view.page as Collection;
   const error = filterError(view.expression);
   const rows = useMemo(
@@ -1465,10 +1555,31 @@ function CollectionView({
     )
       update({ selectedGroup: "" });
   }, [model, rows, view.selectedGroup]);
-  const shown = selected ? groups.get(selected)! : rows;
-  const focusedIndex = shown.findIndex((r) => r.id === view.focusId),
-    limit = Math.max(view.limit, focusedIndex + 1);
-  const display = new Set(shown.slice(0, limit).map((r) => r.id));
+  // Paginate the actual display order, after ordering the groups, not each group separately.
+  const shown = selected
+    ? groups.get(selected)!
+    : groups.size
+      ? keys.flatMap((key) => groups.get(key)!)
+      : rows;
+  const paginated = collection === "publications" || collection === "scholar";
+  const focusedIndex = shown.findIndex((r) => r.id === view.focusId);
+  const requestedPage =
+    focusedIndex >= 0
+      ? Math.floor(focusedIndex / pageSizes.max_pagesize_main) + 1
+      : view.resultPage;
+  const resultPage = paginate(
+    shown,
+    requestedPage,
+    pageSizes.max_pagesize_main,
+  );
+  const limit = Math.max(view.limit, focusedIndex + 1);
+  const display = new Set(
+    (paginated ? resultPage.items : shown.slice(0, limit)).map((r) => r.id),
+  );
+  useLayoutEffect(() => {
+    if (paginated && !error && resultPage.page !== view.resultPage)
+      update({ resultPage: resultPage.page });
+  }, [paginated, error, resultPage.page, view.resultPage]);
   const absent = expanded.filter((id) => !rows.some((r) => r.id === id));
   const renderRows = (list: Row[]) =>
     list
@@ -1670,6 +1781,13 @@ function CollectionView({
         {names[collection].toLowerCase()}
         {selected ? " · " + model.groupLabel(selected, view.group) : ""}
       </p>
+      {paginated && (
+        <Pagination
+          {...resultPage}
+          label="Main pagination"
+          onChange={(resultPage) => update({ resultPage, focusId: "" })}
+        />
+      )}
       {absent.length > 0 && (
         <div className="notice">
           {absent.length} expanded{" "}
@@ -1731,7 +1849,7 @@ function CollectionView({
                   </section>
                 ))
             : renderRows(rows)}
-          {shown.length > limit && (
+          {!paginated && shown.length > limit && (
             <button
               className="load-more"
               onClick={() => update({ limit: limit + 100 })}
@@ -1787,7 +1905,21 @@ function App() {
     [desktop.snapshot],
   );
   function update(patch: Partial<View>) {
-    setView((v) => ({ ...v, ...patch }));
+    setView((v) => ({
+      ...v,
+      ...([
+        "query",
+        "expression",
+        "archive",
+        "group",
+        "selectedGroup",
+        "sort",
+        "notes",
+      ].some((key) => Object.hasOwn(patch, key))
+        ? { resultPage: 1 }
+        : {}),
+      ...patch,
+    }));
   }
   function visit(page: Page, patch: Partial<View> = {}) {
     history.current.push({ view, scroll: main.current?.scrollTop ?? 0 });
@@ -1847,6 +1979,7 @@ function App() {
   const context: Context | null = model
     ? {
         model,
+        pageSizes: desktop.pageSizes ?? DEFAULT_PAGE_SIZES,
         visit,
         perform,
         expanded: view.expanded,

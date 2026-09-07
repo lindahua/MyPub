@@ -1,9 +1,13 @@
 import { test, expect, _electron as electron } from "@playwright/test";
-import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { Catalog } from "../../dist/core/catalog.js";
-import { addAuthor, addVenue } from "../../dist/core/identities.js";
+import { Catalog, publicationFromInput } from "../../dist/core/catalog.js";
+import {
+  addAuthor,
+  addVenue,
+  configureOwner,
+} from "../../dist/core/identities.js";
 
 test("Electron loads SQLite, supports browsing/filters/inline expansion and refresh recovery", async () => {
   const root = await mkdtemp(join(tmpdir(), "mypub-electron-"));
@@ -158,3 +162,178 @@ test("Electron loads SQLite, supports browsing/filters/inline expansion and refr
     await rm(root, { recursive: true, force: true });
   }
 });
+
+for (const sizes of [
+  { main: 30, dropdown: 15, custom: false },
+  { main: 7, dropdown: 3, custom: true },
+]) {
+  test(`paper and bibliography pagination (${sizes.custom ? "custom" : "default"} sizes)`, async () => {
+    const home = await mkdtemp(join(tmpdir(), "mypub-pagination-"));
+    const root = join(home, "catalog");
+    const catalog = new Catalog({ root });
+    await catalog.initialize("Pagination library");
+    const author = await addAuthor(catalog, {
+      author_key: "alice",
+      preferred_name: "Alice Example",
+    });
+    const venue = await addVenue(catalog, {
+      venue_key: "vision",
+      preferred_name: "Vision Conference",
+      kind: "conference",
+    });
+    await catalog.change((state) => {
+      for (let i = 0; i < 61; i++)
+        state.publications.push(
+          publicationFromInput({
+            citation_key: `page${i}`,
+            title: `Pagination paper ${String(i).padStart(2, "0")}`,
+            type: "conference",
+            publication_date:
+              i < 40
+                ? `2026-${String(12 - Math.floor(i / 4)).padStart(2, "0")}`
+                : "2025",
+            authors: [
+              { name: "A. Example", author_id: author.id },
+              { name: "Bob Coauthor" },
+            ],
+            venue: { name: "Vision Conference", venue_id: venue.id },
+          }),
+        );
+    });
+    await configureOwner(catalog, author.id, "profile");
+    const { importScholarSnapshot } =
+      await import("../../dist/core/scholar.js");
+    const capture = join(home, "capture.json");
+    await writeFile(
+      capture,
+      JSON.stringify({
+        profile_id: "profile",
+        captured_at: "2026-09-01T00:00:00Z",
+        coverage: "complete",
+        entries: Array.from({ length: 61 }, (_, i) => ({
+          scholar_id: `scholar${i}`,
+          title: `Source paper ${i}`,
+          year: 2026,
+          citation_count: i,
+        })),
+      }),
+    );
+    await importScholarSnapshot(catalog, capture);
+    if (sizes.custom) {
+      await mkdir(join(home, ".config/mypub"), { recursive: true });
+      await writeFile(
+        join(home, ".config/mypub/config.json"),
+        JSON.stringify({
+          max_pagesize_main: sizes.main,
+          max_pagesize_dropdown: sizes.dropdown,
+        }),
+      );
+    }
+    const app = await electron.launch({
+      args: [resolve("dist/desktop/main.js"), "--root", root],
+      env: { ...process.env, HOME: home },
+    });
+    try {
+      const page = await app.firstWindow();
+      const navigate = async (name: string) =>
+        page
+          .getByRole("navigation", { name: "Main navigation" })
+          .getByRole("button", { name, exact: true })
+          .click();
+      const pager = page.getByRole("navigation", { name: "Main pagination" });
+      await expect(
+        page.getByRole("heading", { name: "Your research, at a glance" }),
+      ).toBeVisible();
+      await navigate("Publications");
+      await expect(page.locator("article.entry")).toHaveCount(sizes.main);
+      const firstTitles = await page
+        .locator("article.entry .entry-title")
+        .allTextContents();
+      await pager.getByRole("button", { name: "Next", exact: true }).click();
+      await expect(pager.getByRole("combobox")).toHaveValue("2");
+      await expect(page.locator("article.entry")).toHaveCount(sizes.main);
+      const secondTitles = await page
+        .locator("article.entry .entry-title")
+        .allTextContents();
+      expect(firstTitles.filter((t) => secondTitles.includes(t))).toEqual([]);
+      await pager
+        .getByRole("combobox")
+        .selectOption(String(Math.ceil(61 / sizes.main)));
+      await expect(page.locator("article.entry")).toHaveCount(
+        61 % sizes.main || sizes.main,
+      );
+      await expect(
+        pager.getByRole("button", { name: "Next", exact: true }),
+      ).toBeDisabled();
+      await page
+        .getByRole("textbox", { name: "Search Publications", exact: true })
+        .fill("paper 00");
+      await expect(page.locator("article.entry")).toHaveCount(1);
+      await expect(pager.getByRole("combobox")).toHaveValue("1");
+      await page
+        .getByRole("textbox", { name: "Search Publications", exact: true })
+        .fill("");
+      await navigate("Google Scholar");
+      await expect(page.locator("article.entry")).toHaveCount(sizes.main);
+      await pager.getByRole("button", { name: "Next", exact: true }).click();
+      await expect(pager.getByRole("combobox")).toHaveValue("2");
+      await expect(page.locator("article.entry")).toHaveCount(sizes.main);
+      for (const [collection, entry] of [
+        ["Authors", "Alice Example"],
+        ["Venues", "Vision Conference"],
+      ]) {
+        await navigate(collection!);
+        await page
+          .locator("article.entry")
+          .getByRole("button", { name: entry, exact: false })
+          .first()
+          .click();
+        const bibliography = page.locator(".bibliography").first();
+        await expect(bibliography.locator(".bibliography-row")).toHaveCount(
+          sizes.dropdown,
+        );
+        await expect(
+          bibliography.locator(".bibliography-row").first(),
+        ).toContainText("Pagination paper 00");
+        await expect(
+          bibliography.locator(".bibliography-row").first(),
+        ).toContainText("A. Example, Bob Coauthor");
+        await expect(
+          bibliography.locator(".bibliography-row").first(),
+        ).toContainText("Vision Conference · 2026");
+        await bibliography
+          .getByRole("combobox")
+          .selectOption(String(Math.floor(40 / sizes.dropdown) + 1));
+        await expect(
+          bibliography.locator(".bibliography-year-heading"),
+        ).toHaveText(["2026", "2025"]);
+        await expect(bibliography.locator(".bibliography-row")).toHaveCount(
+          sizes.dropdown,
+        );
+        await bibliography
+          .getByRole("combobox")
+          .selectOption(String(Math.ceil(61 / sizes.dropdown)));
+        await expect(bibliography.locator(".bibliography-row")).toHaveCount(
+          61 % sizes.dropdown || sizes.dropdown,
+        );
+        await bibliography
+          .getByRole("button", { name: "Pagination paper 60", exact: true })
+          .click();
+        await expect(
+          page
+            .getByRole("button", { name: "Pagination paper 60", exact: false })
+            .first(),
+        ).toHaveAttribute("aria-expanded", "true");
+        await expect(pager.getByRole("combobox")).toHaveValue(
+          String(Math.ceil(61 / sizes.main)),
+        );
+        expect(await page.locator("article.entry").count()).toBeLessThanOrEqual(
+          sizes.main,
+        );
+      }
+    } finally {
+      await app.close();
+      await rm(home, { recursive: true, force: true });
+    }
+  });
+}

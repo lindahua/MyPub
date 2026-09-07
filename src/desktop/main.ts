@@ -14,7 +14,13 @@ import {
 import { Worker } from "node:worker_threads";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { readUserConfig, expandHome } from "../adapters/config.js";
+import {
+  readUserConfig,
+  expandHome,
+  type UserConfig,
+} from "../adapters/config.js";
+import { DEFAULT_PAGE_SIZES } from "./pagination.js";
+import type { PageSizes } from "./pagination.js";
 import type { DesktopState, WorkerResponse } from "./types.js";
 
 const directory = dirname(fileURLToPath(import.meta.url));
@@ -33,6 +39,7 @@ let current: DesktopState = {
   snapshot: null,
   error: null,
 };
+let pageSizes: PageSizes = { ...DEFAULT_PAGE_SIZES };
 let sequence = 0;
 const pending = new Map<
   number,
@@ -43,9 +50,9 @@ const pending = new Map<
   }
 >();
 function publish(state: DesktopState): void {
-  current = state;
+  current = { ...state, pageSizes };
   if (window && !window.isDestroyed())
-    window.webContents.send("mypub:state", state);
+    window.webContents.send("mypub:state", current);
 }
 function stopWorker(): void {
   const old = worker;
@@ -266,10 +273,21 @@ void app
     await createWindow();
     const rootIndex = process.argv.indexOf("--root");
     try {
+      // Explicit --root remains usable if user configuration is malformed.
+      const config: UserConfig = await readUserConfig().catch((error) => {
+        if (rootIndex >= 0) return {};
+        throw error;
+      });
+      pageSizes = {
+        max_pagesize_main:
+          config.max_pagesize_main ?? DEFAULT_PAGE_SIZES.max_pagesize_main,
+        max_pagesize_dropdown:
+          config.max_pagesize_dropdown ??
+          DEFAULT_PAGE_SIZES.max_pagesize_dropdown,
+      };
+      publish(current);
       const configured =
-        rootIndex >= 0
-          ? process.argv[rootIndex + 1]
-          : (await readUserConfig()).repo_path;
+        rootIndex >= 0 ? process.argv[rootIndex + 1] : config.repo_path;
       if (rootIndex >= 0 && (!configured || configured.startsWith("--")))
         throw new Error("--root requires a catalog folder");
       if (configured) openLibrary(resolve(expandHome(configured)));

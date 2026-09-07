@@ -144,3 +144,13 @@ npm run test:desktop
 ```
 
 Desktop tests launch Electron and need a graphical desktop session. See [the desktop design](docs/ELECTRON_DESIGN_DRAFT.md) and [the implemented scope](DESIGN.md#10-implemented-electron-viewer).
+
+Desktop paper lists use pages of 30; author and venue dropdown bibliographies use pages of 15, grouped by year from newest to oldest. Each bibliography paper includes its title, credited author list, venue and year. To change the limits, add optional positive integer preferences to `~/.config/mypub/config.json` and restart the viewer:
+
+```json
+{
+  "repo_path": "~/Data/MyPubRepo",
+  "max_pagesize_main": 30,
+  "max_pagesize_dropdown": 15
+}
+```
