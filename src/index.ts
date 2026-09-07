@@ -9,3 +9,8 @@ export * from "./core/backup.js";
 export * from "./core/scholar.js";
 export * from "./adapters/metadata.js";
 export * from "./adapters/search.js";
+export * from "./core/identities.js";
+export * from "./core/native.js";
+export * from "./core/history.js";
+export * from "./core/paths.js";
+export * from "./core/validation.js";

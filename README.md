@@ -16,15 +16,18 @@ npm run build
 npm link
 ```
 
-Initialize a catalog in the current directory:
+Keep the data catalog separate from this code repository:
 
 ```sh
-mypub init --name "My Publications"
+mkdir -p ~/Documents/publications
+mypub --root ~/Documents/publications init --name "My Publications"
 ```
 
 The CLI never starts a server and core operations never prompt. Queries and mutations support structured JSON output through the global `--json` flag. Run `mypub help` for the complete command list.
 
 ## Typical workflow
+
+Run these commands from the data catalog directory, or supply `--root PATH`.
 
 ```sh
 mypub import publications.bib
@@ -37,11 +40,35 @@ mypub validate
 mypub sync
 ```
 
-DOI and arXiv lookups are available with `mypub add --doi ...` and `mypub add --arxiv ...`. CSV, BibTeX, and JSON imports first create durable review records; accepted catalog values remain authoritative. Reimporting identical source bytes returns the existing reviews instead of producing duplicates.
+Version 2 is the only supported catalog schema; there is no v1 migration layer. DOI and arXiv lookups stage review proposals and are available with `mypub add --doi ...` and `mypub add --arxiv ...`. CSV, BibTeX, and JSON imports first create durable review records; accepted catalog values remain authoritative. Reimporting identical source bytes returns the existing reviews instead of producing duplicates.
 
 `mypub status` distinguishes local dirtiness, commits pending upload, last successful sync, and stored conflicts. Sync validates before publishing, relies on the Git LFS pre-push hook to upload binary objects first, and persists Git conflicts under ignored local state for later resolution.
 
 `mypub backup DESTINATION` captures current attachments, catalog JSON, Git history as a bundle, and fetched historical LFS objects when available. Keep backups outside the synchronized repository.
+
+## Authors, venues, and Google Scholar
+
+Publication bylines retain their printed names and roles beside optional shared author UUIDs. Venue links likewise preserve publication-specific wording. Identical names do not establish identity. Records use readable title/surname filenames with UUID suffixes, grouped by publication year or surname initial; missing values use `unknown_year` and `unknown_surname`.
+
+```sh
+mypub author add --json-file author.json
+mypub venue add --json-file venue.json
+mypub owner set AUTHOR_KEY --profile-id SCHOLAR_PROFILE_ID
+mypub gscholar import snapshot.json
+mypub gscholar reconcile
+mypub gscholar link PUBLICATION_KEY ENTRY_UUID
+mypub gscholar exclude ENTRY_UUID --reason "Not my publication" --unlink-publications
+mypub audit
+mypub history RECORD_UUID
+```
+
+Scholar JSON captures have `profile_id`, `captured_at`, `coverage` (`complete`, `partial`, or `unknown`), and an `entries` array. Entries require `scholar_id` and a title on first capture. Optional `citation_count` records a number or null; omitting it records no citation check. CSV supports the same row fields, with `--observed-at` and `--coverage` supplying capture context. Coverage defaults to unknown. Reimporting the same payload at the same capture time is idempotent. Only newer complete captures establish missing entries. Imports generate match proposals; links are explicit decisions.
+
+Publication dates are top-level optional fields: usually `publication_date`, with `submission_date`, `acceptance_date`, `online_date`, and `issued_date` when known. There is no publication status. `archive`/`unarchive` controls catalog visibility. Duplicate arXiv IDs are admitted and reported by `audit`; duplicate DOI IDs and dangling UUID links block writes.
+
+`show --json` returns `record_revision` for author-credit edits. Credit positions are one-based. Reviews support individual `--proposal` acceptance/rejection and explicit reopening. Record revisions prevent stale proposals from overwriting newer edits. Git committers supply attribution; bibliographic authors are separate entities and no application accounts are stored.
+
+Native `export --format json` includes referenced identities, Scholar entries, and review evidence. Import stages the envelope for acceptance and rejects destination collisions. Attachment bytes and Git history are not embedded. Backups restore Git history from the bundle; `--files-only` is an explicit option when history is not required. A backup reports whether historical LFS objects are complete and refuses missing/corrupt current attachment bytes.
 
 ## Development
 

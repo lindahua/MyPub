@@ -4,12 +4,12 @@ import { dirname, resolve, sep } from "node:path";
 import { mkdir } from "node:fs/promises";
 import { MyPubError } from "./errors.js";
 
-export const now = (): string => new Date().toISOString();
+export const now = (): string => new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 export const uuid = (): string => randomUUID();
 export const normalizeDoi = (value: string): string => value.trim().toLowerCase().replace(/^https?:\/\/(?:dx\.)?doi\.org\//, "").replace(/^doi:\s*/, "");
 export const normalizeArxiv = (value: string): string => value.trim().toLowerCase().replace(/^https?:\/\/arxiv\.org\/(?:abs|pdf)\//, "").replace(/\.pdf$/, "").replace(/^arxiv:\s*/, "").replace(/v\d+$/, "");
 export const normalizeText = (value: string): string => value.normalize("NFKD").replace(/\p{M}+/gu, "").toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim();
-export const fingerprint = (value: unknown): string => createHash("sha256").update(JSON.stringify(value)).digest("hex");
+export const fingerprint = (value: unknown): string => createHash("sha256").update(canonicalJson(value)).digest("hex");
 export const sha256 = async (path: string): Promise<string> => createHash("sha256").update(await readFile(path)).digest("hex");
 
 export async function readJson<T>(path: string): Promise<T> {
@@ -20,7 +20,7 @@ export async function readJson<T>(path: string): Promise<T> {
 export async function atomicWriteJson(path: string, value: unknown): Promise<void> {
   await mkdir(dirname(path), { recursive: true });
   const temporary = `${path}.${process.pid}.${randomUUID()}.tmp`;
-  await writeFile(temporary, `${JSON.stringify(value, null, 2)}\n`, { encoding: "utf8", mode: 0o600 });
+  await durableWrite(temporary, Buffer.from(`${JSON.stringify(value, null, 2)}\n`));
   await rename(temporary, path);
 }
 
@@ -35,7 +35,13 @@ export async function withLock<T>(lockPath: string, action: () => Promise<T>): P
   await mkdir(dirname(lockPath), { recursive: true });
   let handle;
   try { handle = await open(lockPath, "wx"); }
-  catch { throw new MyPubError("Another MyPub writer is active", "CATALOG_LOCKED"); }
+  catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+    let stale = false;
+    try { const pid = Number((await readFile(lockPath, "utf8")).split(" ")[0]); if (Number.isInteger(pid) && pid > 0) { try { process.kill(pid, 0); } catch (e) { stale = (e as NodeJS.ErrnoException).code === "ESRCH"; } } } catch { /* A live writer may still be filling its lock file. */ }
+    if (!stale) throw new MyPubError("Another MyPub writer is active", "CATALOG_LOCKED");
+    await rm(lockPath); try { handle = await open(lockPath, "wx"); } catch { throw new MyPubError("Another writer acquired the catalog lock", "CATALOG_LOCKED"); }
+  }
   try {
     await handle.writeFile(`${process.pid} ${now()}\n`);
     return await action();
@@ -48,3 +54,7 @@ export async function withLock<T>(lockPath: string, action: () => Promise<T>): P
 export async function fileExists(path: string): Promise<boolean> {
   try { const handle = await open(path, "r"); await handle.close(); return true; } catch { return false; }
 }
+
+export function canonicalJson(value: unknown): string { if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`; if (typeof value === "object" && value !== null) return `{${Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${JSON.stringify(k)}:${canonicalJson(v)}`).join(",")}}`; return JSON.stringify(value) ?? "null"; }
+
+export async function durableWrite(path: string, bytes: Buffer): Promise<void> { const file = await open(path, "w", 0o600); try { await file.writeFile(bytes); await file.sync(); } finally { await file.close(); } }

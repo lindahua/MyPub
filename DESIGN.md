@@ -1,8 +1,8 @@
 # MyPub — design
 
-Originally drafted 6 September 2026. The existing TypeScript core and `mypub` CLI implement the original publication catalog; external account and private-remote setup remain user-managed. The author, venue, and Google Scholar revision below is proposed for review on 6 September 2026 and is **not implemented**. It requires a schema migration and additional core/CLI operations. Electron remains a later phase. [SCHEMAS.md](SCHEMAS.md) is the authoritative specification of JSON file formats and field semantics; this document controls architecture and behavior.
+Originally drafted 6 September 2026; implementation updated 7 September 2026. The TypeScript core and `mypub` CLI now use catalog schema version 2. External account and private-remote setup remain user-managed; Electron remains a later phase. [SCHEMAS.md](SCHEMAS.md) is the authoritative specification of JSON formats and field semantics. This document controls architecture and behavior, with the current implementation boundary below. The codebase has never been used in production and no version-1 catalogs exist, so no v1 migration or compatibility layer is required.
 
-Revised 7 September 2026 with the following user decisions. They are part of the version-2 design and remain unimplemented:
+Revised 7 September 2026 with the following user decisions. They are implemented in the version-2 core and CLI:
 
 | Decision | Resulting design |
 | --- | --- |
@@ -14,6 +14,7 @@ Revised 7 September 2026 with the following user decisions. They are part of the
 | No publication status | Omit lifecycle status; optional `archived_at` retains catalog archive/restore behavior |
 | Admit duplicate arXiv IDs | Save all publication UUIDs and report duplicate IDs as audit errors, without rejecting writes or synchronization |
 | Main publication date with optional lifecycle dates | Top-level `publication_date` is normally sufficient; `submission_date`, `acceptance_date`, `online_date`, and `issued_date` are optional, preserving supplied precision |
+| Git-based user identity and audit attribution | Use the catalog repository's actual Git committer identity; no separate application users or duplicated actor fields |
 
 Build a reusable TypeScript core and a command-line interface over a portable, versioned publication catalog. Add an Electron UI in the next phase. Store curated metadata as one readable JSON file per publication and synchronize through a private Git repository. Store publication PDFs and other attachments under the same repository layout using Git LFS, with selective downloads on each computer. Use external sources to propose metadata changes and refresh a local mirror of your Google Scholar profile and its dated citation counts. Your accepted records remain authoritative. Publications are the only publication-level bibliographic entity; optional relations connect related publications without a parent “Work” layer. Shared author records identify people, while each publication stores their ordered credits, publication-specific names, and authorship roles. Shared venue records identify journals, conference/workshop series, and repositories; publications link to them while preserving their own bibliographic venue wording.
 
@@ -56,7 +57,7 @@ Separate four kinds of information:
 - **Managed attachments:** original PDFs, videos, slides, and supplementary files. The publication JSON describes them; LFS stores their bytes.
 - **Derived files:** search indexes, generated BibTeX, CSV, and HTML. These can be rebuilt and are never edited as a second master copy.
 
-### 2.1. Private catalog repository — proposed folder plan
+### 2.1. Private catalog repository folder plan
 
 The MyPub application codebase and each private catalog repository are separate, as confirmed. This folder plan covers the private data repository only. The application is installed once and opens a chosen catalog root; updating application code does not alter a library's Git history. Each library has its own `catalog/library.json` identity and Git remote. This retains one repository for all metadata and attachments of a library, without requiring separate repositories for authors, venues, or binaries. The layout below is proposed; this design review does not create directories or move existing files.
 
@@ -136,11 +137,11 @@ Eight characters are a readability aid, not a uniqueness guarantee. Detect desti
 
 When an accepted edit changes a title, venue name, author name parts, review summary, or applicable year enough to change its destination path, move/rename its JSON file in the same recoverable transaction as the content edit. An author preferred-name edit must also reconcile its structured parts or explicitly leave them unresolved, so filenames do not silently use stale surname/given-name data. Scholar title/year refreshes follow the same rule. A move removes the old path only when the new record is safely staged; it never leaves two active copies of one ID. Changing a citation/author/venue key alone does not rename the file because those keys are not the source of the stem. Archive or merge status alone does not rename records; tombstones stay in their collection with their last readable name. Binary paths and UUID links remain unchanged. This keeps the directory overview aligned with current names while Git records filename changes.
 
-Resolve references by recursively scanning each collection's record JSON `id` values across all year/initial directories (and legacy flat files during migration) and rebuilding an ID-to-path index locally; never reconstruct a path from a UUID alone or persist a second authoritative path manifest. Hand-edited names and manually renamed files remain discoverable by full ID. Validation reports a filename or year/initial directory that no longer follows the rule and offers an explicit repair, rather than treating the filename as a new entity. A duplicate record ID in two files is an error that must be resolved before the catalog becomes active.
+Resolve references by recursively scanning each collection's record JSON `id` values across all year/initial directories  and rebuilding an ID-to-path index locally; never reconstruct a path from a UUID alone or persist a second authoritative path manifest. Hand-edited names and manually renamed files remain discoverable by full ID. Validation reports a filename or year/initial directory that no longer follows the rule and offers an explicit repair, rather than treating the filename as a new entity. A duplicate record ID in two files is an error that must be resolved before the catalog becomes active.
 
 Synchronization must align base/local/remote records by full UUID before comparing paths or fields. Two offline edits can move or rename the same entity differently, and two distinct additions can collide on a short filename. Preserve these records and their alternatives in the temporary reconciliation workspace, resolve content conflicts, then calculate collision-free destination directories and filenames for the combined catalog. A path-only rename is not an entity deletion followed by creation. Do not depend solely on Git's filename-based merge to preserve identity.
 
-Fixed files (`library.json`, `gscholar/profile.json`, and configuration files) retain their descriptive names. Machine-local conflicts and transactions retain UUID-based paths because they are operational state. The proposed version-2 migration groups and renames entity/review JSON files under the same rules after resolving their full IDs and available year/name data; it does not change IDs, relationships, source evidence, or attachment paths. Unknown dates or unresolved surnames use their fallback directories without blocking migration. Record identity must remain stable through interrupted migration and retry.
+Fixed files (`library.json`, `gscholar/profile.json`, and configuration files) retain their descriptive names. Machine-local conflicts and transactions retain UUID-based paths because they are operational state. New catalogs use version 2 directly; unsupported versions are rejected before mutation. Unknown dates or unresolved surnames use their fallback directories without blocking admission.
 
 
 Keep relationship ownership explicit:
@@ -161,11 +162,25 @@ There is no separate authorship table, relationship directory, or editable aggre
 
 `gscholar/` mirrors entries from your one selected Google Scholar profile; section 6 defines the association and refresh rules. It replaces the proposed generic `observations/` directory. Reviews remain library-wide because one import or identity correction can affect several entities. A review has a readable `summary` for display and filename generation and identifies its target entity kind and UUID where applicable. Review state changes do not automatically change that summary. An import review retains immutable source evidence (provider, capture time, source reference, original payload, completeness, parser version, and input fingerprint) alongside proposed changes and their decisions. Batch reviews may contain several targets or no changes, allowing original imports to be retained even when no update is needed. Repeated identical imports reuse that evidence. Other reviews may reference an existing import review; do not rely solely on a temporary input path. DOI/arXiv enrichment uses this evidence and accepted publication identifiers without adding another top-level source catalog.
 
-`catalog/config/` contains shared library choices only. The old `config/venues.json` is retired by the proposed migration in favor of `catalog/venues/`; the owner config points to `catalog/authors/`. Runtime schemas and migration code belong to the application repository, selected by the catalog's schema version, rather than being independently editable copies inside each library.
+`catalog/config/` contains shared library choices only. Venue identities live in `catalog/venues/`; the owner config points to `catalog/authors/`. Runtime schemas belong to the application repository rather than independently editable copies inside each library.
 
 All of `catalog/`, including review evidence and the Scholar mirror, travels in ordinary Git; attachment content travels through LFS. Generated exports and indexes stay local. `local/` being ignored does **not** make all its contents disposable: unresolved conflicts, pending transactions, and device settings must survive restarts. Cleanup may remove rebuildable indexes or replaceable exports, but must preserve unfinished work. Completed transaction staging can be removed after recovery is no longer needed. Independent backups belong outside this repository; do not place them under `local/` or recursively include them in the catalog backup.
 
-JSON is the proposed canonical format because it has straightforward validation and predictable serialization. [SCHEMAS.md](SCHEMAS.md) defines every canonical and operational JSON record, nested field, representation rule, and catalog-wide constraint. The CLI and typed API handle normal editing initially; Electron will provide forms later. Hand-edited JSON is validated before imports, exports, or synchronization use it. BibTeX is an import/export format: it is less suitable for relationships, provenance, and citation history. Schema versions and explicit migrations keep future changes recoverable.
+JSON is the canonical format because it has straightforward validation and predictable serialization. [SCHEMAS.md](SCHEMAS.md) defines every canonical and operational JSON record, nested field, representation rule, and catalog-wide constraint. The CLI and typed API handle normal editing initially; Electron will provide forms later. Hand-edited JSON is validated before imports, exports, or synchronization use it. BibTeX is an import/export format: it is less suitable for relationships, provenance, and citation history. Schema versions and explicit migrations keep future changes recoverable.
+
+### 2.2. User identity and audit attribution
+
+Use the underlying Git repository's identity and history for user attribution. There is no MyPub user catalog, login, password, application role table, or separate user-to-committer mapping. Repository access follows the existing filesystem and Git host permissions. Publication author identities, including `config/author.json`'s `self_author_id`, describe bibliographic people and the selected Scholar profile; they are not application accounts and must not determine the Git identity.
+
+When MyPub commits in a catalog repository, let Git resolve its effective committer through the normal repository/global configuration and process environment. Do not replace it with a hard-coded MyPub identity, infer it from the library owner, or modify Git identity configuration automatically. If Git cannot resolve an identity or refuses the commit, report that failure and preserve the local work. The current commit adapter already invokes ordinary Git without overriding identity; the history presentation described here remains planned.
+
+An audit event identifies the commit by its full object ID and reads the **committer name, email, and commit time from that commit object**. Git author metadata may differ and can be shown separately, but the audit actor is the committer. Read historical identity from history, not today's Git configuration. A merge commit is attributed to its committer; existing parent commits retain their own attribution. Do not rewrite historical identities when configuration changes.
+
+Reviews retain what was proposed, accepted, rejected, or excluded, the reason, evidence, and decision time. Git supplies who committed that change. Do not add independent `created_by`, `updated_by`, `decided_by`, or application user-ID fields to canonical records. Audit/history queries follow full record UUIDs across readable filename changes and inspect the commit introducing the relevant record or decision transition; a later unrelated edit to the review does not become the original decision's attribution. A commit can record a batch, and its committer is the recorded committer for that batch, without asserting who physically made every prior working-tree edit.
+
+Locally saved changes without a commit remain visibly uncommitted, with no fabricated historical committer. Record `updated_at`, review `decided_at`, and citation `observed_at` keep their existing meanings and need not equal Git commit time. Once committed, they are attributable through that commit even before it is pushed. This preserves the distinction between saved, committed, and synchronized work.
+
+Git history is the authoritative attribution store, not another JSON audit-log collection. Any history index is rebuildable from retained commits. A full clone or backup including Git history carries this attribution; native JSON interchange carries records and review evidence, not the source repository's commit history. Importing such JSON creates new commits under the importing committer and must not pretend to reconstruct unavailable original Git actors. Legacy source actor labels/IDs may remain inside clearly identified imported evidence, without becoming Git identities or new MyPub accounts. Data-quality auditing (for example duplicate arXiv IDs) remains distinct from this change history.
 
 ## 3. Publications and optional relations
 
@@ -174,13 +189,13 @@ Each record represents one publication: an arXiv preprint, conference paper, wor
 | Object | Essential fields |
 | --- | --- |
 | Publication | Stable UUID, stable citation key, type, title, ordered authors, venue, dates, DOI/arXiv ID, volume/issue/pages or article number, URLs, tags, notes, optional relations, attachments, optional primary attachment ID, optional archive timestamp |
-| Author (proposed) | Stable UUID, readable author key, preferred name, optional structured name parts, aliases, identifiers, disambiguation note, archive/merge state |
-| Author credit (proposed) | Name as credited, optional linked author UUID, optional structured name and roles; embedded in the ordered publication authors array |
-| Venue (proposed) | Stable UUID, readable venue key, kind, preferred name, optional abbreviation, aliases, URLs, notes, archive/merge state |
-| Publication venue (proposed) | Bibliographic venue name, optional linked venue UUID, optional event year; embedded in the publication |
+| Author | Stable UUID, readable author key, preferred name, optional structured name parts, aliases, identifiers, disambiguation note, archive/merge state |
+| Author credit | Name as credited, optional linked author UUID, optional structured name and roles; embedded in the ordered publication authors array |
+| Venue | Stable UUID, readable venue key, kind, preferred name, optional abbreviation, aliases, URLs, notes, archive/merge state |
+| Publication venue | Bibliographic venue name, optional linked venue UUID, optional event year; embedded in the publication |
 | Relation | Type, target publication UUID, optional note; stored on the source publication |
-| Google Scholar entry (proposed) | Local stable UUID, profile ID, external entry ID, source names/text/completeness, optional bibliographic details, matching policy, citation history, presence state, record update time |
-| Scholar profile mirror (proposed) | Selected profile ID, dated capture coverage, optional profile-level totals |
+| Google Scholar entry | Local stable UUID, profile ID, external entry ID, source names/text/completeness, optional bibliographic details, matching policy, citation history, presence state, record update time |
+| Scholar profile mirror | Selected profile ID, dated capture coverage, optional profile-level totals |
 | Review/import evidence | Typed entity targets, immutable source payload and capture metadata, proposed changes, review state and decisions |
 | Attachment | Stable ID, role, label, original filename, MIME type, byte size, storage backend, repository-relative path, SHA-256, optional source URL; embedded in its publication JSON |
 
@@ -221,7 +236,7 @@ Several publication UUIDs may retain the same normalized arXiv ID. Admit them to
 
 Library listings show one row per publication, and exports contain the selected publication records. Counts reflect the selected records, with filters such as “exclude preprints” or “journals and conferences.” Relations do not change those counts. Title similarity only suggests duplicates or related publications for review; it never collapses them automatically.
 
-### 3.1. Author management — proposed revision, not implemented
+### 3.1. Author management
 
 **The current design is insufficient for author identity and roles.** Its implemented `Author` value contains only `name` and optional `orcid`, embedded separately in every publication. The existing `config/author.json` describes only the library owner's name variants and profiles. Neither establishes shared author identities, publication–author associations, or publication-specific roles. Matching by name would conflate different people and miss variants of the same person.
 
@@ -266,7 +281,7 @@ A confirmed `(provider, identifier)` belongs to at most one retained author iden
 
 The example profile ID is fictional. No profile lookup or network connection is required to create or use an author record.
 
-Complete illustrative publication JSON under the proposed schema (fictional metadata; the referenced author, venue, and Scholar entry records would also exist in the catalog):
+Complete illustrative publication JSON under the version-2 schema (fictional metadata; the referenced author, venue, and Scholar entry records would also exist in the catalog):
 
 ```json
 {
@@ -379,7 +394,7 @@ Provide explicit merge and reassignment operations with previews listing affecte
 
 Archive rather than delete referenced authors. Existing credits still resolve, labeled archived; new links to archived identities require explicit restoration. Unresolved credits are validation warnings and appear in a review listing, not catalog errors. Dangling IDs, duplicate author keys, conflicting external identifiers, redirect cycles, and repeated resolved authors within a publication are errors. Duplicate names and overlapping aliases are valid.
 
-### 3.2. Venue catalog — proposed revision, not implemented
+### 3.2. Venue catalog
 
 Promote venues from the current publication string and `config/venues.json` alias configuration to shared records in `catalog/venues/<snake_case_name>_<uuid8>.json`. Each venue has an immutable UUID and a required, unique, readable `venue_key`. A publication's optional `venue` object stores its bibliographic `name` and, once resolved, `venue_id`. Derive a venue's publications from those references rather than duplicating publication IDs in the venue record.
 
@@ -442,7 +457,7 @@ Supply a DOI, arXiv URL, or BibTeX file to the CLI. The core retrieves available
 
 Search titles, authors, venues, identifiers, and tags. Filter by year, venue, publication type, tag, or catalog archive state. The CLI prints publication details and related publications, or returns JSON for scripts. Resolve attachment paths and optionally open files or URLs through an operating-system adapter. Export a citation, filtered bibliography, or publication list.
 
-### Manage authors — proposed
+### Manage authors
 
 Create or find an identity by name, author key, or profile ID. Inspect all linked publications with their credited names, order, and roles. From a publication, link or unlink a credit, correct its displayed spelling, or edit its roles without changing the shared identity. From an author, edit the preferred name, add a known alias or profile ID, and preview merges or selected-credit reassignments. `config/author.json` holds `self_author_id`; your aliases and profiles live in that shared identity. Changing this setting does not automatically claim matching credits.
 
@@ -450,9 +465,9 @@ Free-text author searches include preferred names, curated aliases, and linked p
 
 BibTeX and ordinary CSV exports keep the credited names and publication order. When structured name parts are available, use them for format-appropriate name encoding; otherwise retain literal-name handling. Common bibliography formats do not reliably round-trip identity links or special roles. Provide native JSON export with the referenced author, venue, and Scholar entry records, the Scholar profile context, and referenced review evidence (including any redirect targets) for lossless interchange, and an optional author-credit CSV (one row per publication credit, with position, credited name, author ID/key, and roles). Do not encode roles by appending asterisks or commentary to names. Importing native JSON must preview UUID, key, and identifier collisions before accepting records into another library.
 
-### Manage venues — proposed
+### Manage venues
 
-Find or create a venue identity, then link it to a publication while keeping the supplied venue wording. Venue details list all linked publications across name variants and event years. Edit catalog names and abbreviations centrally, review unresolved venue candidates, and preview merges. Section 3.2 defines the identity and export rules. The old `config/venues.json` is replaced by this catalog after migration.
+Find or create a venue identity, then link it to a publication while keeping the supplied venue wording. Venue details list all linked publications across name variants and event years. Edit catalog names and abbreviations centrally, review unresolved venue candidates, and preview merges. Section 3.2 defines the identity and export rules. Venue configuration is represented by this catalog.
 
 ### Attach files
 
@@ -481,7 +496,7 @@ Apply the Scholar matching policies in section 6 before generating candidates. E
 
 During initial import, populate empty fields in the preview. After acceptance, curated values change only through an accepted proposal or your own edit. Preserve original input and change decisions in review evidence and protect manually corrected values from later imports. Do not add per-field timestamps. Missing metadata from a source means “not observed,” not “delete from catalog”; explicit citation checks use the nullable observation rules below.
 
-## 6. Google Scholar profile mirror — proposed revision, not implemented
+## 6. Google Scholar profile mirror
 
 Google Scholar is the **only citation source**. Do not add other citation providers or substitute their counts; DOI/arXiv integration is for bibliographic metadata only. Missing Scholar counts remain unknown rather than triggering another provider lookup.
 
@@ -542,7 +557,7 @@ The reverse direction may still be many-to-one: a preprint and its published ver
 
 ### Matching, exclusion, and rejection
 
-Each entry has `matching: {"policy": "eligible"}` initially. Explicit exclusion sets `policy: "excluded"` with a readable `reason` and `decision_review_id` referring to an accepted policy decision. Keep original decision times and supplied actor references in the review. Exclusion applies to the entire entry, persists through metadata refreshes and synchronization, and prevents candidate suggestions against all publications. The entry remains visible in the mirror and its citation observations can still update; exclusion is independent of presence in Scholar.
+Each entry has `matching: {"policy": "eligible"}` initially. Explicit exclusion sets `policy: "excluded"` with a readable `reason` and `decision_review_id` referring to an accepted policy decision. Keep decision times and reasons in the review; attribution comes from the Git commit recording the decision. Historical source actors may remain in imported evidence only. Exclusion applies to the entire entry, persists through metadata refreshes and synchronization, and prevents candidate suggestions against all publications. The entry remains visible in the mirror and its citation observations can still update; exclusion is independent of presence in Scholar.
 
 Excluded entries cannot have confirmed publication links. Excluding an already linked entry must preview every affected publication and accept the unlinks and policy change together. Restoring eligibility is an explicit reviewed change and does not restore old links. Unlinking alone removes an association without excluding the entry.
 
@@ -642,7 +657,7 @@ Use one package initially, organized into `src/core` (schemas and catalog operat
 
 The CLI executable must be named `mypub` (lowercase). Use this name consistently in package executable configuration, help output, documentation, and examples.
 
-Original CLI command families (already implemented; the author, venue, and Scholar commands below are proposed extensions):
+CLI command families (implemented operations and later extensions are distinguished in the version-2 implementation boundary below):
 
 ```text
 mypub list / show / search
@@ -667,9 +682,12 @@ mypub gscholar import / list / show / reconcile
 mypub gscholar link / unlink / exclude / include
 mypub review reopen
 mypub audit
+mypub history
 ```
 
-`mypub validate` enforces blocking format/reference constraints. The proposed `mypub audit` separately reports data-quality errors such as duplicate arXiv IDs, returning nonzero while audit errors remain. Those findings must not prevent import, storage, export, migration, or synchronization of otherwise valid records. Audit output identifies all affected publication UUIDs and supports reviewed corrections; no unique arXiv index is permitted. `gscholar exclude/include` and `review reopen` expose the decisions described in section 6. These commands are planned, not additions to the current CLI in this documentation revision.
+`mypub validate` enforces blocking format/reference constraints. `mypub audit` separately reports data-quality errors such as duplicate arXiv IDs, returning nonzero while audit errors remain. Those findings must not prevent import, storage, export, migration, or synchronization of otherwise valid records. Audit output identifies all affected publication UUIDs and supports reviewed corrections; no unique arXiv index is permitted. `gscholar exclude/include` and `review reopen` expose the decisions described in section 6. These commands are implemented in the current CLI.
+
+`mypub history` exposes commit-based change history and record/decision attribution from section 2.2, including full commit ID, recorded committer name/email/time, and the relevant change. `mypub status` reports uncommitted changes separately. The core exposes the same derived history for later UI use without creating an application user database.
 
 Author commands accept UUIDs or unique author keys; venue commands accept UUIDs or unique venue keys. Venue link/unlink operations identify the publication and verify its expected revision before applying changes. Authorship commands address a publication plus a one-based credit position for CLI convenience; the core verifies the expected publication revision and current credit before applying an edit so a concurrent reorder cannot change the wrong author. Merge and bulk reassignment previews use the same revision checks. The API exposes equivalent operations without interactive prompts.
 
@@ -690,7 +708,7 @@ The later Electron UI can provide Library, Publication details, Review queue, an
 | Next phase: Electron UI | Reuse the core through IPC; add forms, review/conflict screens, drag-and-drop, PDF/video previews, and desktop packaging |
 | Later, if useful | Citation history charts, generated homepage/CV lists, attachment text search, thumbnails, and assisted capture |
 
-The first implementation phase covers steps 1–4 as a library and CLI. Electron is explicitly the next phase. The existing deliverable is the TypeScript library and CLI; the author, venue, and Google Scholar additions in this revision remain proposed and unimplemented. Treat scraping, multiuser collaboration, a PDF annotation editor, mobile editing, and a hosted write service as separate scope decisions.
+The first implementation phase covers steps 1–4 as a library and CLI. Electron is explicitly the next phase. The deliverable is the TypeScript library and CLI, including the author, venue, and Google Scholar additions described here. Treat scraping, multiuser collaboration, a PDF annotation editor, mobile editing, and a hosted write service as separate scope decisions.
 
 Acceptance checks should demonstrate that the same import creates no duplicates; a preprint and later conference publication remain separate records connected by an optional relation; incoming relation labels appear on the target publication without duplicate storage; an extended journal paper remains separately addressable; related identifiers do not cause unintended merges; shared Scholar counts are labeled and not double-counted; curated author lists survive refreshes; two offline computers converge without losing conflicting edits; interrupted writes and rejected pushes preserve local edits; stale or partial Scholar data is labeled correctly; and a new installation can restore the catalog, rebuild its index, and reproduce exports.
 
@@ -698,17 +716,19 @@ Attachment checks should cover multiple file types on one publication; metadata-
 
 Before implementation, the choices that would materially refine this draft are your usual operating systems, whether you have a preferred host instead of GitHub, and approximate total attachment storage. Typical video sizes of 10–20 MB and an Electron UI in the next phase are already established. Your Scholar profile URL and a representative existing bibliography would validate the ingestion design. None of these are required to review the architecture above.
 
-### Author, venue, and Scholar revision: migration and acceptance — proposed only
+### Version-2 implementation and acceptance
 
-Target catalog schema version 2 for the combined author, venue, and Scholar revision; version 2 has not been implemented or released, so this extension does not require a separate version 3. No code, catalog data, or migration is changed as part of the design review. Existing schema-version-1 catalogs remain in their current form until the user later requests implementation and runs an explicit migration.
+The user confirmed that no version-1 catalogs exist and the codebase has never been used in production. Version 2 is the only supported catalog format; there is no v1 converter or mixed-version reader. The one-time PubMan2 migration remains independently planned under `migrate_pubman/` and has not been run.
 
-The future migration must preview changes, preserve a backup, and update the catalog under one lock with recoverable staging. Remove version-1 publication `status` from active records, retaining the original in migration evidence; preserve supported archive state through `archived_at`. Map the old nested `dates` values to the corresponding top-level lifecycle dates, preserving meanings and precision. A generic date can populate `publication_date` directly without lifecycle classification. Do not infer lifecycle dates from the old status. Admit duplicate arXiv IDs into version 2 with audit errors. A missing/contradictory archive timestamp is an explicit migration exception. Preserve every existing credit's name and order; do not fabricate roles or collapse identical names into one person. Name-only credits become unresolved credits. Existing embedded ORCIDs are preserved as evidence in a migration review with proposed identity links, without silently elevating their previous assignment to a confirmed shared identity. Preserve the old owner configuration in that review as well; propose a self author from it and set `self_author_id` only after confirmation. Reuse accepted decisions on reruns so an interrupted migration cannot duplicate authors or proposals.
+Implemented operations include shared author/venue CRUD, archive and merge, credit editing with revision checks, literal publication credits, Scholar capture import/reconciliation and matching policy decisions, immutable review evidence with individual proposal decisions, UUID-based readable paths, recoverable catalog transactions, a rebuilt SQLite/FTS index, native JSON interchange, Git committer history, and validated synchronization. Native import previews collisions and applies the complete dependency batch only after acceptance. Citation samples preserve numeric zero versus null and are ordered by observation time. Duplicate arXiv identifiers are audited without blocking writes.
 
-For venues, migrate each existing publication string to `venue: { "name": "<original string>" }`, preserving its wording exactly. Preserve the original `config/venues.json` as migration evidence and use it to propose shared venue records and links for review. Do not silently turn every equal string or acronym into a confirmed shared identity. An accepted migration batch may create venues and link publications together; unresolved names stay usable. Retire the old configuration from active use only when its contents are preserved and the staged catalog validates. Retrying must reuse accepted venue decisions without creating duplicate records.
+Synchronization aligns full UUIDs across path changes, combines independent record-field edits, and treats author arrays, venue associations, and matching policies as atomic values. A disposable Git worktree holds the merged tree for validation; active records remain unchanged when it fails. Record conflict choices remain under `local/conflicts/` until a subsequent successful sync validates and commits the result. Cross-record identity/key/reference conflicts require explicit catalog corrections; attachment and other non-catalog Git conflicts require Git resolution. Concurrent edits to ordered histories are conservatively flagged rather than automatically interleaved.
 
-Newly written curated records use version 2. Preserve existing observation payloads verbatim inside migration/import review evidence, retaining original IDs and a resolvable mapping for old review references. Convert verified entries from the selected Scholar profile to `gscholar/entries/` and confirmed publication mappings to the optional scalar link. Preserve citation dates, counts, uncertainty, and capture coverage; ambiguous IDs, wrong-profile evidence, or multiple candidate links remain in reviews. Retire `observations/` from active storage only after all evidence and references are accounted for. Keep completed review history readable through version-aware readers; do not rewrite original evidence payloads. Pending version-1 proposals must be explicitly converted or regenerated from preserved source evidence before acceptance. Switch the library version only after the complete staged catalog passes blocking validation, retaining permitted arXiv duplicates with audit errors, and leave the old catalog usable on failure. Older clients must reject an unsupported library version before writing; all computers must upgrade before syncing migrated data. User-facing documentation and help must label author, venue, and revised Scholar operations unavailable until implemented.
+Current limits: Scholar ingestion uses explicitly supplied CSV/JSON captures, without browser scraping or background refresh. Candidate generation uses normalized title and nearby year; richer author/venue candidate scoring and bulk reassignment previews remain planned. A shorter/ambiguous source byline cannot replace confirmed credits during refresh. The SQLite cache supports publication text search and reverse authorship; Git history is read directly, without a persistent history cache. Automated attachment pinning/cache policies, richer metadata parsing, scheduled operations, and the Electron UI remain future work. Native import rejects collisions for correction instead of providing a collision-resolution wizard. Native JSON preserves record/evidence content; only Git clones and backup bundles preserve commit attribution.
 
-Acceptance scenarios for the future implementation:
+The CLI uses one-based credit positions. `show --json` includes `record_revision`, a SHA-256 of the canonical record, for optimistic credit edits. Proposal `expected_revision` records the same revision; acceptance verifies it and the recorded current value under the catalog lock. Reopening a rejected/deferred proposal explicitly refreshes its base revision. New records need no expected revision. Rejected Scholar pairs remain suppressed until reopening.
+
+Acceptance scenarios (the table also retains targets for the later refinements identified above):
 
 | Scenario | Required result |
 | --- | --- |
@@ -723,13 +743,11 @@ Acceptance scenarios for the future implementation:
 | A mistaken identity link, duplicate identity, or conflated identity is corrected | Reviewed relink/merge/reassignment preserves bibliographic credits and history; redirect and duplicate-slot conflicts are caught |
 | Offline computers independently claim the same Scholar profile | Sync preserves both alternatives and requires identity resolution before activating the combined catalog |
 | A user reads a publication JSON on its own | Names, order, and recorded roles are comprehensible without resolving IDs |
-| A version-1 catalog is migrated, interrupted, and retried | No names, ORCIDs, owner config, or source evidence are lost; no guessed identity links or duplicate proposals are introduced |
 | Native JSON export is imported into a fresh library | Author and venue identities, Scholar entries/profile context/evidence, publication credits, roles, event years, and references round-trip; ordinary BibTeX/CSV limitations remain explicit |
 | A venue appears by full title and abbreviation | Both publications link to one venue ID while retaining their respective wording |
 | Two venues share an acronym, or a workshop is colocated with a conference | Separate venue IDs remain distinct; no name-based or host-based automatic merging |
 | Two annual editions of a conference contain publications | Both link to the series venue ID; event year can distinguish editions independently of publication date |
 | A venue is renamed, archived, merged, or reassigned | Links remain resolvable; bibliographic wording and event years survive; merge redirects and key collisions are validated |
-| Existing venue strings and alias configuration are migrated and retried | Original values remain preserved, uncertain links stay unresolved, and accepted venue records are not duplicated |
 | Two offline edits change a publication venue differently | The full venue alternatives are preserved for review, without mixing a name from one edit with an ID from the other |
 | A publication has no Scholar match, one match, or two competing candidates | Zero or one scalar link is accepted; competing candidates stay in review and cannot become an array |
 | Two local publications map to one Scholar entry | Both links remain valid; shared counts are labeled and not counted twice |
@@ -744,9 +762,12 @@ Acceptance scenarios for the future implementation:
 | A policy/citation edit changes an entry while its metadata is retained | Only record update time changes; no per-field timestamps or claim that all metadata was freshly observed |
 | A publication is saved, archived, and restored | No publication status field exists; only archive/restore changes optional archived_at |
 | Several publication UUIDs claim the same arXiv ID | Import, sync, index, and native round trip preserve all records; audit reports an error; identifier matching returns all candidates |
+| Git author differs from committer, or Git configuration changes later | Audit uses each commit's recorded committer; authors and current configuration do not replace historical attribution |
+| A review decision is committed, renamed, and edited again | UUID-based history identifies the decision's commit and committer separately from later edits |
+| Changes are saved before a commit or a commit fails | Local work survives and remains uncommitted; no synthetic committer or fallback application identity is recorded |
+| Native JSON is imported into another catalog | Record/evidence content survives; new commit attribution uses the importing Git committer, without inventing missing source Git history |
 | An entry is omitted from partial, complete, and older captures | Only an applicable complete capture establishes absence; history and local links survive |
 | Scholar changes or merges entry identities | Reviewed relinking preserves the one-entry-per-publication rule and keeps separate historical count series |
-| An old observations catalog is migrated | Raw evidence, references, coverage, and counts survive in reviews and the selected profile mirror; no unresolved row becomes a fabricated entry |
 | An entity title/name changes, including a Scholar refresh | Its readable JSON path updates with the metadata; full IDs, incoming links, and attachment paths remain unchanged |
 | Two records have identical slugs and the same first eight UUID characters | Both survive with deterministically extended UUID suffixes; no overwrite or guessed identity |
 | Two offline computers rename the same record differently | Reconciliation matches the full UUID and preserves content alternatives without duplicating or deleting the entity |

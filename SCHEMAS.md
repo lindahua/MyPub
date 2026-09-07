@@ -2,11 +2,13 @@
 
 This document is the official specification of JSON files written or consumed by MyPub. It defines catalog schema version 2, including field forms, meanings, invariants, and cross-record constraints. [DESIGN.md](DESIGN.md) defines product behavior and workflows; where it shows abbreviated examples, this document controls the file format. Runtime validators and TypeScript types must implement this document without weakening it.
 
-Schema version 2 is the target format and is not yet implemented. The current core and CLI write schema version 1; section 15 records that compatibility boundary. A catalog must be migrated as a unit before version-2 records are written into it.
+The core and CLI implement schema version 2 directly. No production version-1 catalogs exist, so v1 compatibility and migration are out of scope (section 15). Unsupported catalog versions are rejected before mutation. DESIGN.md identifies remaining workflow refinements.
 
-Revised 7 September 2026: entry matching policies and exclusions, optional Scholar details, literal author text and completeness, Scholar-only nullable citation observations, record-level update times without per-field timestamps, removal of publication status, and admission of duplicate arXiv identifiers with audit errors. These are version-2 design decisions; they do not change the implemented version-1 format.
+Revised 7 September 2026: entry matching policies and exclusions, optional Scholar details, literal author text and completeness, Scholar-only nullable citation observations, record-level update times without per-field timestamps, removal of publication status, and admission of duplicate arXiv identifiers with audit errors. These decisions are reflected in the version-2 types, validators, core operations, and CLI.
 
-The same day's date clarification makes `publication_date` the main optional bibliographic date, with optional `submission_date`, `acceptance_date`, `online_date`, and `issued_date`. These are top-level publication fields and preserve the supplied precision; the version-1 nested `dates` object is compatibility input only.
+The same day's date clarification makes `publication_date` the main optional bibliographic date, with optional `submission_date`, `acceptance_date`, `online_date`, and `issued_date`. These are top-level publication fields and preserve the supplied precision; the former nested `dates` object is unsupported.
+
+User and change-audit attribution uses the catalog repository's Git committer identity. There are no application-user records or independently stored actor fields; section 2.5 defines this boundary.
 
 ## 1. Scope and notation
 
@@ -66,6 +68,16 @@ Arrays described as sets must contain no duplicate values. Unless a normalizatio
 Entity and review filenames use `<slug>_<uuid-prefix>.json` and the directories in [DESIGN.md section 2.1](DESIGN.md#21-private-catalog-repository--proposed-folder-plan). Slugs are derived presentation paths, not schema fields. Implementations discover records by recursively reading JSON and indexing full `id` values. Fixed files retain their fixed names.
 
 The complete path rules, including Unicode normalization, year/surname buckets, collision suffix extension, and transactional renames, are normative in DESIGN.md. A path mismatch is a validation issue, not a change of identity.
+
+### 2.5 Git identity and audit attribution
+
+Git commit objects are authoritative for who committed catalog changes. Audit/history output derives the full commit object ID, committer name, committer email, and commit time from each relevant commit. Use its recorded **committer**, not its author or the current Git configuration. Git author metadata may be displayed separately. MyPub-generated commits use Git's effective identity in the catalog repository without an application override or synthetic fallback identity.
+
+No JSON schema here defines a user account, user-ID mapping, or a canonical `created_by`, `updated_by`, `decided_by`, `committer`, or commit-attribution field. Do not copy Git attribution into entity, proposal, review, or owner-configuration records. A containing commit ID is not embedded in the record it commits. A rebuildable history index or query response may expose Git metadata without becoming another authoritative store.
+
+`self_author_id` remains a bibliographic identity/Scholar-owner setting, independent of the Git committer. Review decisions retain their reasons and `decided_at`; record update and citation observation times remain independent of commit time. Identify a decision's committer from the commit introducing that decision transition, using full record UUIDs across renames, rather than the latest commit touching any part of the record. Uncommitted changes have no committed attribution yet. Imported source actor IDs/names may be retained inside opaque evidence with their source context; they are not MyPub user accounts or substitutes for Git committer metadata.
+
+Git clones/backups with retained history preserve attribution. Native JSON preserves catalog records and evidence but carries no Git-history guarantee; source committers cannot be recovered from absent history. New importing or reconciliation commits use their actual Git committer and do not relabel retained historical commits. DESIGN.md section 2.2 defines the corresponding workflows.
 
 ## 3. Library record
 
@@ -480,7 +492,7 @@ For example:
 }
 ```
 
-Exclusion is entry-wide and persists across imports, changes to source metadata, and synchronization. It suppresses automatic candidate generation against every publication without removing the entry, altering presence, or stopping citation refreshes. Excluded entries must have no confirmed incoming publication links. Excluding a linked entry requires a reviewed transaction that unlinks all affected publications as well as setting its policy; an exclusion-only write with remaining links is invalid. Restoring eligibility does not restore former links. Original reasons, actors where supplied, and decision times remain in review history rather than adding author/account fields to the entry.
+Exclusion is entry-wide and persists across imports, changes to source metadata, and synchronization. It suppresses automatic candidate generation against every publication without removing the entry, altering presence, or stopping citation refreshes. Excluded entries must have no confirmed incoming publication links. Excluding a linked entry requires a reviewed transaction that unlinks all affected publications as well as setting its policy; an exclusion-only write with remaining links is invalid. Restoring eligibility does not restore former links. Reasons and decision times remain in review history, with committer attribution supplied by Git. Any historical source actors stay inside imported evidence rather than adding account/actor fields to the entry or review.
 
 Confirmed matches live only in `publication.gscholar_entry_id`. A candidate is a review proposal targeting that publication, using `operation: "link"`, `path: "/gscholar_entry_id"`, and `proposed` equal to the candidate entry UUID. Replacing an existing link uses an explicit `replace` proposal with the previous UUID in `current`. Several candidates do not create several accepted links; accepting one must reconcile competing proposals, and optimistic validation prevents stale proposals from overwriting it.
 
@@ -510,7 +522,7 @@ The ID must resolve to a non-merged author. If a Scholar profile exists, the aut
 
 Path: `catalog/reviews/<summary-slug>_<uuid-prefix>.json`.
 
-Reviews are the durable audit/evidence unit. One record can describe an import batch, proposed edits, an identity decision, a merge, migration, or synchronization reconciliation. Evidence is immutable after creation; decisions and proposal states may change.
+Reviews are the durable decision/evidence unit, with committer attribution supplied by Git history as defined in section 2.5. One record can describe an import batch, proposed edits, an identity decision, a merge, migration, or synchronization reconciliation. Evidence is immutable after creation; decisions and proposal states may change. There is no separate decision-maker user field.
 
 ```json
 {
@@ -588,7 +600,8 @@ The entire `evidence` value is immutable. If a correction is needed, create anot
 | `target` | required target | Entity to create/change/link/archive/merge. |
 | `operation` | required enum | `create`, `replace`, `remove`, `link`, `unlink`, `archive`, `restore`, or `merge`. |
 | `path` | conditionally required JSON Pointer | Required for `replace`, `remove`, `link`, and `unlink`; omitted for whole-record operations. |
-| `current` | optional any JSON value | Value at proposal creation. Required for replacing/removing existing data; explicit `null` is allowed when the current value itself is JSON null. |
+| `expected_revision` | conditionally required lowercase 64-hex SHA-256 | Required for operations on an existing record; omitted for `create`. Hash the full record using recursively sorted object keys (UTF-16 code-unit order), original array order, JSON string/number encoding, and no whitespace. |
+| `current` | optional any JSON value | Value at proposal creation. Required when replacing/removing a present value; omitted when setting an absent field. Explicit `null` is allowed when the current value itself is JSON null. |
 | `proposed` | optional any JSON value | Required for `create`, `replace`, `link`, and `merge`. For `create`, it is the complete proposed record. |
 | `candidate_ids` | optional unique UUID array | Ordered plausible identities/matches; suggestions only. |
 | `state` | required enum | `pending`, `accepted`, `rejected`, or `deferred`. |
@@ -661,14 +674,14 @@ Path: `local/conflicts/<conflict-uuid>.json`.
 | `schema_version` | required integer `2` | Conflict schema version. |
 | `id` | required UUID | Conflict identity. |
 | `kind` | required enum | `record`, `path`, `identifier`, `key`, `reference`, or `attachment`. |
-| `record_type` | optional target entity type | Required when one logical catalog record is known. |
+| `record_type` | optional record kind | `publication`, `author`, `venue`, `gscholar_entry`, `gscholar_profile`, `library`, `owner`, or `review`; required when one logical record is known. |
 | `record_id` | optional UUID | Full identity used to align renamed records. |
 | `path` | optional repository path | Original/relevant path; not identity. |
-| `base`, `ours`, `theirs` | required JSON value or `null` | Three-way alternatives. `null` means that side deleted/did not contain the record. Strings from legacy Git-level conflicts are read only during v1 migration. |
+| `base`, `ours`, `theirs` | required JSON value or `null` | Three-way alternatives. `null` means that side deleted/did not contain the record. Catalog alternatives are parsed records; non-catalog Git conflicts may retain text/blob references in `details`. |
 | `details` | optional JSON object | Structured kind-specific facts; never a replacement for preserving alternatives. |
 | `created_at` | required timestamp | Detection time. |
 
-Resolved conflicts are removed only after their chosen/custom result is durably written and validated. Conflict files contain no credentials.
+A selected record alternative is held in `details.resolution` with base/local/upstream commit IDs and applied by the next sync only while those revisions still match. Resolved conflicts are removed only after their chosen/custom result is durably written and validated. Conflict files contain no credentials.
 
 ## 12. Recoverable transaction manifest
 
@@ -682,7 +695,7 @@ Path: `local/transactions/<transaction-uuid>/manifest.json`. Staged records/file
 | `created_at`, `updated_at` | required timestamps | Transaction lifecycle. |
 | `operations` | required ordered operation array | Exact intended filesystem changes. |
 
-An operation has required `type` (`write`, `move`, or `delete`) and required repository-relative `path`. `move` additionally requires `from_path`; `write` requires `staged_path` (a safe path relative to the transaction directory) and `sha256` (lowercase 64-hex digest). `delete` stages no content. Paths may address catalog JSON or managed attachments but never `.git`, `local`, or outside the repository. Recovery is idempotent: `committed` means every operation reached its intended final state; `rolled_back` means none remains applied.
+An operation has required `type` (`write` or `delete`) and required repository-relative `path`. Logical moves are represented by a staged write at the new path plus deletion of the old path, never by moving the only recoverable copy; `write` requires `staged_path` (a safe path relative to the transaction directory) and `sha256` (lowercase 64-hex digest). `delete` stages no content. Paths may address catalog JSON or managed attachments but never `.git`, `local`, or outside the repository. Recovery is idempotent: `committed` means every operation reached its intended final state; `rolled_back` means none remains applied.
 
 ## 13. Backup manifest
 
@@ -714,7 +727,7 @@ A successful “complete backup” requires both booleans true and a non-null bu
 
 ## 14. Native JSON interchange
 
-Native export is a single lossless dependency-closed envelope. It is generated under `local/exports/` or another requested destination and is never an authoritative second catalog.
+Native export is a single lossless dependency-closed envelope for catalog records and evidence. It does not include Git commit history or guarantee preservation of source Git attribution; use a Git clone or backup bundle for that. It is generated under `local/exports/` or another requested destination and is never an authoritative second catalog.
 
 ```json
 {
@@ -753,106 +766,11 @@ Managed attachment bytes are not embedded. Their manifests remain in publication
 
 A bare publication object or array may be accepted as a lossy convenience import, but it is not a native export and cannot claim to preserve referenced identities or evidence.
 
-## 15. Version-1 compatibility and migration
+## 15. Supported-version boundary
 
-The implemented core currently writes version 1. Version 1 has:
+The user confirmed on 7 September 2026 that the codebase has never been used in production and no version-1 catalogs exist. The application reads and writes version 2 only; it does not migrate v1 catalogs, accept old publication status/nested dates, or keep old observation formats active. Unsupported versions fail before a write. Future schema evolution will define its own explicit compatibility policy when needed.
 
-- flat `catalog/publications/<uuid>.json` files;
-- embedded author values `{ "name": string, "orcid"?: string }`;
-- publication `venue` as an optional string;
-- generic `catalog/observations/<uuid>.json` records;
-- simpler per-proposal `catalog/reviews/<uuid>.json` records;
-- `catalog/config/author.json` with `names` and `profile_ids` and `catalog/config/venues.json`; and
-- local sync/conflict and backup manifests without all v2 discriminator/version fields.
-
-They are compatibility input only and are not alternate forms of version-2 fields. In particular, a v2 reader must not accept a string venue, embedded ORCID credit, v1 observation, or v1 review merely by ignoring the mismatch.
-
-### 15.1 Version-1 common and publication fields
-
-Version-1 UUIDs, timestamps, local dates, URIs, repository paths, serialization, and omission rules have the same meanings as version 2. Its record `schema_version` is exactly `1`. Version-1 readers historically tolerate some unknown properties, but canonical v1 writers do not produce them and migration preserves them only as evidence.
-
-The v1 `catalog/library.json` has required `schema_version`, UUID `id`, non-empty `name`, `created_at`, and `updated_at`, with the same library semantics as v2.
-
-A v1 publication is stored at `catalog/publications/<publication-uuid>.json` and has these fields:
-
-| Field | Presence and form | Version-1 semantics |
-| --- | --- | --- |
-| `schema_version` | required integer `1` | Version discriminator. |
-| `id` | required UUID | Immutable publication identity. |
-| `citation_key` | required non-empty string | Unique stable citation handle. V1 does not impose the v2 key grammar. |
-| `type` | required v2 publication-type enum | Same meaning as v2. |
-| `status` | required enum | Version-1-only publication stage: `draft`, `submitted`, `accepted`, `published`, or `archived`. Version 2 removes this field. |
-| `title` | required non-empty string | Curated bibliographic title. |
-| `authors` | required ordered embedded-author array | Each author has required non-empty `name` and optional non-empty `orcid`; there are no identity links, name parts, or roles. |
-| `venue` | optional non-empty string | Publication-specific venue text; there is no venue identity link. |
-| `dates` | required object | Version-1 nested object with optional `submitted`, `accepted`, `online`, and `issued` local-date strings. Version 2 replaces it with top-level date fields. |
-| `identifiers` | required object | Optional normalized string `doi`, `arxiv`, and `isbn`. |
-| `volume`, `issue`, `pages`, `article_number` | optional non-empty strings | Same bibliographic meanings as v2. |
-| `urls`, `tags` | required string arrays | Curated URLs and tags. Canonical writers avoid duplicates. |
-| `notes` | optional non-empty string | Private catalog notes. |
-| `relations` | required relation array | Same three relation forms and meanings as v2. |
-| `attachments` | required attachment array | Same v2 attachment fields and meanings. |
-| `primary_attachment_id` | optional UUID | Must identify an attachment in this record. |
-| `archived_at` | optional timestamp | Written when archived; early validators did not require exact correspondence with status. |
-| `created_at`, `updated_at` | required timestamps | Local record lifecycle. |
-
-V1 has no `gscholar_entry_id`, `authorship_note`, `arxiv_versions`, shared author records, shared venue records, or Scholar mirror. Its normalized DOI/arXiv and citation-key uniqueness rules remain catalog-wide for version 1; version 2 admits duplicate arXiv IDs and audits them separately. On migration, retain the original status in review evidence and omit it from version-2 publications. Preserve a supported archive timestamp for archived records; a missing or contradictory version-1 archive timestamp needs an explicit migration decision. Do not infer lifecycle dates from a status label.
-
-Map v1 `dates.submitted`, `dates.accepted`, `dates.online`, and `dates.issued` to v2 `submission_date`, `acceptance_date`, `online_date`, and `issued_date` respectively, retaining their values and meanings and removing the nested object. No new `publication_date` is required when only those specific dates are available; the documented fallback preserves filing behavior. A generic publication date supplied by another source can populate `publication_date` independently.
-
-### 15.2 Version-1 observation
-
-Path: `catalog/observations/<uuid>.json`.
-
-| Field | Presence and form | Semantics |
-| --- | --- | --- |
-| `schema_version` | required integer `1` | Version discriminator. |
-| `id` | required UUID | Observation identity. |
-| `kind` | required enum | `metadata`, `citation`, or `scholar-profile`. |
-| `provider` | required non-empty string | Source/adapter name. |
-| `provider_record_id` | optional non-empty string | Source-scoped record ID. |
-| `publication_ids` | required UUID array | Publications matched when the observation was created; not necessarily confirmed identity decisions. |
-| `observed_at` | required timestamp | Capture/import time. |
-| `source` | optional string | Original source reference; legacy values may be machine-local paths and must be converted to portable evidence descriptions where possible. |
-| `payload` | required any JSON value | Retained parsed source data. |
-| `completeness` | required enum | `complete`, `partial`, or `unknown`. |
-| `parser_version` | required non-empty string | Producing parser version. |
-
-During v2 migration, payload and source semantics move into immutable review evidence. An observation does not itself authorize curated changes.
-
-### 15.3 Version-1 review
-
-Path: `catalog/reviews/<uuid>.json`.
-
-| Field | Presence and form | Semantics |
-| --- | --- | --- |
-| `schema_version` | required integer `1` | Version discriminator. |
-| `id` | required UUID | Review identity. |
-| `kind` | required enum | `create`, `update`, `relation`, or `mapping`. |
-| `state` | required enum | `pending`, `accepted`, `rejected`, or `deferred`. |
-| `publication_id` | optional UUID | Existing target publication. |
-| `observation_id` | optional UUID | Source observation. |
-| `proposed_publication` | optional complete v1 publication | Required for a create review. |
-| `changes` | required field-proposal array | Each item has required string `field` and required arbitrary JSON values `current` and `proposed`. |
-| `candidate_ids` | required UUID array | Candidate publication identities, ordered by the importer. |
-| `source_fingerprint` | required lowercase 64-hex string | Idempotency fingerprint of provider and input content. |
-| `created_at` | required timestamp | Review creation time. |
-| `decided_at` | optional timestamp | Decision time for accepted/rejected reviews. |
-| `decision_note` | optional non-empty string | Human rationale. |
-
-The legal combinations are: `create` has `proposed_publication`; `update` has `publication_id`; source-derived reviews have `observation_id`. Early runtime validation enforced only part of these combinations, so migration validates and retains anomalies as evidence rather than inventing missing state.
-
-### 15.4 Version-1 configuration and local files
-
-`catalog/config/author.json` contains `{"schema_version":1,"names":[],"profile_ids":{}}`. `names` is an array of unique non-empty owner-name strings used for matching. `profile_ids` is an object with non-empty provider-name keys and non-empty string values. Neither field creates a shared identity. `catalog/config/venues.json` contains `{"schema_version":1,"venues":[]}`. The v1 core neither defines nor consumes a venue-entry form, so the only canonical supported value of `venues` is the empty array; any encountered entries are treated as opaque legacy input and retained in migration evidence. Migration does not silently turn configuration matches into identities.
-
-`local/sync.json` contains only optional timestamp `last_successful_sync`; it is the last completed v1 sync operation. A v1 conflict at `local/conflicts/<uuid>.json` has required UUID `id`, required repository path `path`, optional string `base`, `ours`, and `theirs` containing raw Git-stage file text, and required `created_at`. A missing side means deletion/nonexistence. These strings are parsed and upgraded into structured v2 alternatives during migration.
-
-The v1 backup manifest has `schema_version: 1`, required `created_at`, required UUID `library_id`, required `git_bundle` (repository path or `null`), and required booleans `includes_current_attachments` and `includes_historical_lfs_objects`. It lacks `catalog_schema_version`; version 1 is inferred after inspecting the included `catalog/library.json`. Section 13 defines backup-manifest version 2.
-
-The v1 JSON export is a bare, pretty-printed array of complete v1 publications. It is lossy with respect to observations/reviews/configuration and is not a native interchange envelope.
-
-Migration is explicit, atomic, and library-wide. It preserves IDs, credited names/order, evidence payloads, attachments, timestamps with their original meanings, and unresolved ambiguity. It changes `library.json` to version 2 only after the complete staged v2 catalog passes blocking validation, retaining permitted arXiv duplicates with audit errors. Older clients must reject the migrated catalog before writing. DESIGN.md describes the product's version-1 migration; `migrate_pubman/README.md` separately describes the one-time external PubMan2 migration.
+This boundary is unrelated to the external PubMan2 database. Its one-time migration plans and scripts remain solely under `migrate_pubman/`; that conversion has not been performed.
 
 ## 16. Whole-catalog validation
 
@@ -874,4 +792,4 @@ Warnings identify usable but review-worthy states: unresolved author or venue li
 
 Auditing is distinct from these admission checks. Each normalized arXiv ID assigned to several retained publications produces a `duplicate_arxiv_id` finding with severity `error`, `blocks_write: false`, the normalized identifier, and all affected publication UUIDs. Include archived publications. These records remain valid to save, import, export, migrate, and synchronize. An audit error must be visible and require reviewed resolution, but must not be promoted into a uniqueness rejection by an importer, index, sync routine, or database constraint. Index arXiv IDs as a non-unique lookup returning all candidates. UUID collisions, dangling links, malformed identifiers, and duplicate DOI IDs remain blocking errors.
 
-The proposed `mypub audit` command reports these findings and returns a nonzero result while audit errors remain; `mypub validate` checks the blocking format/reference constraints. Import/sync/migration admission must not be gated on a clean audit exit code. Audit reports are derived from current JSON and can be rebuilt; accepted corrections and their evidence live in reviews and Git. Resolve a duplicate by supported identifier correction/removal, reviewed relation/ownership correction, or an explicit duplicate-record resolution, never by automatically merging equal IDs or suppressing one record.
+The `mypub audit` command reports these findings and returns a nonzero result while audit errors remain; `mypub validate` checks the blocking format/reference constraints. Import/sync/migration admission must not be gated on a clean audit exit code. Audit reports are derived from current JSON and can be rebuilt; accepted corrections and their evidence live in reviews and Git. Resolve a duplicate by supported identifier correction/removal, reviewed relation/ownership correction, or an explicit duplicate-record resolution, never by automatically merging equal IDs or suppressing one record.

@@ -1,6 +1,6 @@
 # Legacy database compatibility review
 
-Rechecked 7 September 2026 against the revised DESIGN.md and authoritative SCHEMAS.md version-2 design, incorporating the user's seven decisions and subsequent publication-date clarification. This updates the 6 September assessment. Version 2 is still unimplemented; no source data or destination catalog was changed.
+Rechecked 7 September 2026 against the revised DESIGN.md and authoritative SCHEMAS.md version-2 design, incorporating the user's seven decisions, publication-date clarification, and Git-committer attribution policy. This updates the 6 September assessment. The version-2 core and CLI have since been implemented. This compatibility assessment did not convert source data or create a destination catalog.
 
 **Verdict: no further schema gap has been identified for the current snapshot. The seven decisions and publication-date clarification provide destinations for the legacy bibliographic data and effective matching state without invented lifecycle facts.** Owner identity and catalog/attachment locations are execution inputs. Duplicate identifiers and uncertain name/identifier attribution are audit work, not reasons to reject otherwise valid imported records.
 
@@ -49,7 +49,7 @@ It inventories populated columns and specific compatibility concerns; it is not 
 
 ### 1. Matching exclusions and candidate decisions — resolved
 
-All **35 excluded Scholar entries** can be retained with `matching: {policy: "excluded", reason, decision_review_id}`. The referenced accepted migration review retains the original confirmation time and actor ID. They have no publication links in the snapshot, so they satisfy the exclusion/link constraint without removing anything. The other entries begin eligible.
+All **35 excluded Scholar entries** can be retained with `matching: {policy: "excluded", reason, decision_review_id}`. The referenced accepted migration review retains the original confirmation time and source actor ID inside imported evidence. The actual Git committer of the migration commit supplies MyPub attribution; source actors do not become application users or rewritten Git identities. They have no publication links in the snapshot, so they satisfy the exclusion/link constraint without removing anything. The other entries begin eligible.
 
 Exclusion persists through source refresh, suppresses matching against all publications, and leaves presence/citation collection independent. Pair-specific rejected link proposals, explicit reopening, unlinking, and restoring eligibility now have defined behavior. Do not reinterpret historical unmatch actions as pair rejections: the source did not record that broader decision.
 
@@ -122,7 +122,7 @@ The source junction table stores no independent credited spelling. Reconstructio
 
 ### Owner configuration
 
-One Scholar profile is present, but the author table has no dedicated Scholar identifier column and no populated websites. Schema section 8 requires a confirmed owner identity carrying the selected profile ID. An explicit owner-to-author mapping is still a conversion input; profile presence or same-name matching alone must not create it. This is an identity decision, not a missing entity feature.
+One Scholar profile is present, but the author table has no dedicated Scholar identifier column and no populated websites. Schema section 8 requires a confirmed owner identity carrying the selected profile ID. An explicit owner-to-author mapping is still a conversion input; profile presence or same-name matching alone must not create it. This is a bibliographic identity decision, not a missing entity feature or an application-user setup step. The Git committer remains independent of `self_author_id`.
 
 ## Complete source-field accounting
 
@@ -150,14 +150,20 @@ One Scholar profile is present, but the author table has no dedicated Scholar id
 | Scholar active flag | Last-known present state, unknown profile coverage; do not invent a complete capture |
 | Scholar exclusion fields | Entry matching policy with reason and referenced accepted decision evidence |
 | Scholar `source_payload` | Immutable migration review evidence, preserving parsed original JSON |
-| Editing history | Action, original time, portable actor ID, source entity reference, relevant details in migration evidence; deleted entity references remain historical evidence, not dangling live catalog links |
+| Editing history | Source action, original time, source actor ID, source entity reference, relevant details in migration evidence (not Git attribution); deleted entity references remain historical evidence, not dangling live catalog links |
 | App accounts, password hashes, IP addresses, browser fingerprints, platform schemas | Protected source archive; no live MyPub authentication/account or operational-table migration |
 
 The eight publication-deletion history records do not contain complete deleted records. Preserve that history without pretending to restore eight additional publications. The raw snapshot remains the complete database archive; a portable publication catalog intentionally is not a clone of Supabase's operational schema.
 
+## Git committer attribution — settled
+
+MyPub uses the catalog repository's actual Git committer name/email for each commit and derives attribution from retained Git history. Publication authors and `self_author_id` remain bibliographic identities. There is no application-user catalog, parallel actor field, or migration of PubMan2 accounts.
+
+Legacy action times and source actor IDs may be preserved as imported evidence. They must not become backdated Git commits or substitute committers; the migration commit records the person who actually commits the import. Locally saved changes remain uncommitted until Git records them. A native JSON export preserves records/evidence, while a Git clone or backup with history is required to preserve original Git attribution. This resolves the audit identity policy without another schema entity or source-data decision.
+
 ## What remains to resolve
 
-1. **Owner mapping:** identify the existing author UUID representing the owner and confirm the selected Scholar profile assignment. This supplies `self_author_id` and its confirmed identifier without guessing from a name.
+1. **Bibliographic owner mapping:** identify the existing author UUID representing the owner and confirm the selected Scholar profile assignment. This supplies `self_author_id` and its confirmed identifier without guessing from a name. No separate application user or user-to-Git mapping is needed.
 2. **Data auditing:** retain and report the three duplicate-arXiv groups; review the 17 eprints on non-preprint records and the five cleaned same-name author groups. Preserve distinct UUIDs and supported co-first roles throughout. These are not duplicate-arXiv admission blockers, and a same-name group is not itself an identity error.
 3. **Execution setup:** establish the separate destination catalog path and any attachment locations. No publication PDF URL, author website, or venue website is populated in the snapshot, and the captured Supabase Storage tables are empty; this does not establish whether separate local PDFs exist. A Git remote is needed when synchronization is configured, not to inspect local staging.
 

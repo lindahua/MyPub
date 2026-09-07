@@ -9,6 +9,7 @@ Requirements will evolve. Follow the user's latest explicit instructions when th
 ## Development
 
 - Implement the current phase described in DESIGN.md: the TypeScript core and CLI. Electron UI development belongs to a later phase.
+- The codebase has never been used in production and no v1 catalogs exist. Implement schema version 2 directly; do not add a v1 migration or compatibility layer. This does not change the separate PubMan2 migration scope.
 - Name the CLI executable `mypub`, as specified in DESIGN.md.
 - Keep changes focused on the requested task and consistent with the design. Resolve routine implementation details using reasonable judgment.
 - Keep one-time PubMan2 migration plans, scripts, tests, and migration-only dependencies under `migrate_pubman/`. Do not introduce PubMan2-specific code into the regular application or CLI; general product functionality remains in the normal codebase.
