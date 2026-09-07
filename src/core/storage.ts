@@ -6,6 +6,8 @@ import { assertLibrary, assertRecord, validRepositoryPath, validUuid } from "./s
 import { atomicWriteJson, fileExists, fingerprint, now, readJson, safePath, sha256, uuid, durableWrite } from "./utils.js";
 import { catalogFiles, jsonFiles } from "./paths.js";
 import { MyPubError } from "./errors.js";
+import { refreshDatabase, currentDatabaseCount, databasePath, ensureLocalIgnored } from "../adapters/database.js";
+import { validateState } from "./validation.js";
 
 export interface LoadedState { state: CatalogState; files: Map<string, unknown>; }
 export async function loadState(root: string): Promise<LoadedState> {
@@ -57,6 +59,7 @@ async function apply(root: string, directory: string, m: Manifest): Promise<void
 }
 export async function recoverTransactions(root: string): Promise<void> {
   const dir = join(root, "local/transactions"); let entries; try { entries = await readdir(dir, { withFileTypes: true }); } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return; throw e; }
+  let recovered = false;
   for (const e of entries) {
     if (!e.isDirectory() || !validUuid(e.name)) throw new MyPubError("Invalid transaction directory", "TRANSACTION_INVALID");
     const directory = join(dir, e.name); const path = join(directory, "manifest.json");
@@ -64,8 +67,43 @@ export async function recoverTransactions(root: string): Promise<void> {
     const m = await readJson<Manifest>(path); if (m.id !== e.name) throw new MyPubError("Transaction identity mismatch", "TRANSACTION_INVALID");
     if (m.state === "ready" || m.state === "applying") await apply(root, directory, m);
     else if (m.state !== "staging" && m.state !== "committed" && m.state !== "rolled_back") throw new MyPubError("Unknown transaction state", "TRANSACTION_INVALID");
+    if (m.state === "committed") recovered = true;
     await rm(directory, { recursive: true });
   }
+  if (recovered) await refreshStoredDatabase(root, true);
+}
+
+/** Content and paths, not timestamps or Git HEAD: detects uncommitted edits and renames. */
+async function catalogFingerprint(root: string): Promise<string> {
+  const hash = createHash("sha256");
+  for (const file of (await jsonFiles(join(root, "catalog"))).sort()) {
+    hash.update(JSON.stringify(relative(root, file)));
+    hash.update(createHash("sha256").update(await readFile(file)).digest());
+  }
+  return hash.digest("hex");
+}
+
+/** Must be called under the catalog lock. Unchanged reads hash files without parsing/validating them again. */
+export async function refreshStoredDatabase(root: string, saved = false, force = false): Promise<{ indexed: number; path: string }> {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const source = await catalogFingerprint(root);
+    const indexed = force ? undefined : currentDatabaseCount(databasePath(root), source);
+    if (indexed !== undefined) {
+      await ensureLocalIgnored(root);
+      return { indexed, path: databasePath(root) };
+    }
+    const loaded = await loadState(root);
+    const result = validateState(loaded.state);
+    if (!result.valid) throw new MyPubError("Catalog validation failed", "VALIDATION_FAILED", result);
+    // External editors do not honor our lock. Never label a changed snapshot as fresh.
+    if (source !== await catalogFingerprint(root)) continue;
+    try { return await refreshDatabase(root, loaded.state, loaded.files, source, force); }
+    catch (cause) {
+      if (saved) throw new MyPubError("Catalog JSON was saved, but the local database refresh failed. Retry to rebuild the cache; do not repeat the edit.", "CACHE_STALE", { saved: true, cause: String(cause) });
+      throw cause;
+    }
+  }
+  throw new MyPubError("Catalog changed repeatedly during database refresh; retry once external edits finish.", "CATALOG_CHANGED");
 }
 export async function pendingTransaction(root: string): Promise<boolean> { try { return (await readdir(join(root, "local/transactions"))).length > 0; } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return false; throw e; } }
 export async function writeState(root: string, before: Map<string, unknown>, after: CatalogState, binary = new Map<string, Buffer>()): Promise<void> {
@@ -83,4 +121,5 @@ export async function writeState(root: string, before: Map<string, unknown>, aft
     m.state = "ready"; await atomicWriteJson(join(directory, "manifest.json"), m); await apply(root, directory, m);
     await rm(directory, { recursive: true });
   } catch (e) { if (m.state === "staging") await rm(directory, { recursive: true }); throw e; }
+  await refreshStoredDatabase(root, true);
 }

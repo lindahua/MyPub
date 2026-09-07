@@ -1,6 +1,6 @@
 # MyPub
 
-MyPub is a local-first publication catalog with a reusable TypeScript API and the `mypub` command-line interface. Curated records live as readable, versioned JSON; attachments use repository-relative paths tracked by Git LFS; machine-local state and the rebuildable SQLite index live under `local/`.
+MyPub is a local-first publication catalog with a reusable TypeScript API and the `mypub` command-line interface. Curated records live as readable, versioned JSON; attachments use repository-relative paths tracked by Git LFS; machine-local state and the integrated SQLite read model live under Git-ignored `local/`.
 
 ## Requirements
 
@@ -105,3 +105,11 @@ npm install --global --prefix "$HOME/.local" .
 ```
 
 Ensure `~/.local/bin` is on your shell's `PATH`, then run `mypub --help`. This local-directory installation links to the codebase; run `npm run build` after source changes.
+
+## Local database
+
+`local/index.sqlite` is a disposable read model derived from the JSON catalog. It contains complete records plus relational tables for authors, venues, credits, identifiers, relations, attachments, Scholar citations, and review decisions. Publication list/search/lookup uses SQLite; SQL views include `author_bibliography`, `venue_year_summary`, and `review_queue`.
+
+The database refreshes automatically after catalog saves (including uncommitted edits), imports/review decisions, synchronization integration, restore, and transaction recovery. Before reads, MyPub hashes catalog contents and paths to detect external edits, renames, deletions, and Git checkout/reset changes. Unchanged sources reuse the database; missing, corrupt, or incompatible caches rebuild automatically. CLI search retains literal normalized substring matching.
+
+All edits must use the JSON-backed core operations. The database and its sidecar/temporary files are never tracked by Git or Git LFS; MyPub ensures `/local/` is ignored and refuses synchronization of tracked local files. A refresh failure leaves canonical JSON intact and reports `CACHE_STALE`; if its details say `saved: true`, retry a read instead of repeating the edit. `mypub index rebuild` remains available for explicit repair. Concurrent catalog operations report `CATALOG_LOCKED` for retry. Freshness checks still read catalog bytes on each operation; background watching and incremental refresh are deferred.

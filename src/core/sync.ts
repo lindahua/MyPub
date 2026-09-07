@@ -6,15 +6,23 @@ import { atomicWriteJson, fileExists, now, readJson, uuid, withLock, fingerprint
 import { run } from "../adapters/process.js";
 import { MyPubError } from "./errors.js";
 import { catalogFiles } from "./paths.js";
-import { loadState, recoverTransactions } from "./storage.js";
+import { loadState, recoverTransactions, refreshStoredDatabase } from "./storage.js";
 import { assertUnchangedEvidence, validateState } from "./validation.js";
+import { ensureLocalIgnored } from "../adapters/database.js";
 import { validUuid, validRepositoryPath } from "./schemas.js";
 
 const git = (catalog: Catalog, args: string[], allowFailure = false) => run("git", args, catalog.root, allowFailure);
 export async function initializeGit(catalog: Catalog): Promise<void> {
   if (!(await fileExists(join(catalog.root, ".git")))) await git(catalog, ["init", "--initial-branch=main"]);
+  await ensureLocalIgnored(catalog.root);
+  await assertLocalUntracked(catalog);
   await run("git", ["lfs", "install", "--local"], catalog.root);
   await git(catalog, ["add", ".gitattributes", ".gitignore", "catalog"]);
+}
+
+async function assertLocalUntracked(catalog: Catalog, revision?: string): Promise<void> {
+  const args = revision ? ["ls-tree", "-r", "--name-only", revision, "--", "local"] : ["ls-files", "--", "local"];
+  if ((await git(catalog, args)).stdout.trim()) throw new MyPubError("Git tracks machine-local files under local/. Remove them from Git tracking before synchronizing; keep their local contents.", "LOCAL_TRACKED");
 }
 
 export async function status(catalog: Catalog): Promise<StatusResult> {
@@ -76,6 +84,7 @@ function mergeValue(base: unknown, ours: unknown, theirs: unknown, field = ""): 
 export async function sync(c: Catalog, message = "mypub: synchronize catalog"): Promise<SyncResult> {
   return withLock(join(c.localDir, "write.lock"), async () => {
     await recoverTransactions(c.root); const loaded = await loadState(c.root); c.assertValid(loaded.state);
+    await refreshStoredDatabase(c.root);
     await initializeGit(c);
     const staged = (await git(c, ["diff", "--cached", "--name-only"])).stdout.trim().split("\n").filter(Boolean);
     if (staged.some(p => !p.startsWith("catalog/") && !p.startsWith("attachments/") && ![".gitattributes", ".gitignore"].includes(p))) throw new MyPubError("Unrelated staged files must be committed or unstaged before sync", "GIT_INDEX_DIRTY");
@@ -84,6 +93,7 @@ export async function sync(c: Catalog, message = "mypub: synchronize catalog"): 
     const ours = (await git(c, ["rev-parse", "HEAD"])).stdout.trim(); const upstream = await git(c, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], true);
     if (upstream.code !== 0) return { state: "up-to-date", commit: ours, conflicts: [] };
     await git(c, ["fetch", "--prune"]); const theirs = (await git(c, ["rev-parse", upstream.stdout.trim()])).stdout.trim();
+    await assertLocalUntracked(c, theirs);
     let merged = false;
     if (ours !== theirs && (await git(c, ["merge-base", "--is-ancestor", theirs, ours], true)).code !== 0) {
       const base = (await git(c, ["merge-base", ours, theirs])).stdout.trim();
@@ -119,6 +129,7 @@ export async function sync(c: Catalog, message = "mypub: synchronize catalog"): 
         const commit = (await run("git", ["rev-parse", "HEAD"], stage)).stdout.trim();
         // Only a completely validated tree reaches the active checkout.
         await git(c, ["merge", "--ff-only", commit]); merged = true;
+        await refreshStoredDatabase(c.root, true);
         await rm(join(c.localDir, "conflicts"), { recursive: true, force: true });
       } finally { await git(c, ["worktree", "remove", "--force", stage], true); }
     }

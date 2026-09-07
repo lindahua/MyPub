@@ -1,13 +1,15 @@
+import { DatabaseSync } from "node:sqlite";
 import { createHash } from "node:crypto";
 import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import type { AddPublicationInput, Attachment, AttachmentRole, AuthorCredit, AuthorIdentity, CatalogOptions, CatalogState, EntityRecord, Library, Publication, PublicationDetails, RelationType, Review, SearchFilters, ValidationResult, VenueIdentity } from "./types.js";
 import { assertRecord } from "./schemas.js";
-import { fileExists, fingerprint, normalizeArxiv, normalizeDoi, normalizeText, now, safePath, sha256, uuid, withLock } from "./utils.js";
-import { catalogFiles, publicationDate, publicationYear } from "./paths.js";
-import { loadState, pendingTransaction, recoverTransactions, writeState } from "./storage.js";
+import { fileExists, fingerprint, normalizeArxiv, normalizeDoi, now, safePath, sha256, uuid, withLock } from "./utils.js";
+import { catalogFiles } from "./paths.js";
+import { loadState, recoverTransactions, refreshStoredDatabase, writeState } from "./storage.js";
 import { assertUnchangedEvidence, auditState, resolveIdentity, validateState } from "./validation.js";
 import { MyPubError } from "./errors.js";
+import { databasePath, listDatabase, readDatabaseState } from "../adapters/database.js";
 
 export const clean = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T;
 export const touch = (record: { updated_at: string }): void => { record.updated_at = new Date(Math.ceil(Math.max(Date.parse(record.updated_at), Date.parse(now())) / 1000) * 1000).toISOString().replace(/\.\d{3}Z$/, "Z"); };
@@ -41,7 +43,7 @@ export class Catalog {
   async initialize(name = "My Publications"): Promise<Library> {
     return withLock(join(this.localDir, "write.lock"), async () => {
       await recoverTransactions(this.root);
-      if (await fileExists(join(this.catalogDir, "library.json"))) return (await loadState(this.root)).state.library;
+      if (await fileExists(join(this.catalogDir, "library.json"))) { await refreshStoredDatabase(this.root); return (await loadState(this.root)).state.library; }
       // An existing catalog tree without a library must not be overwritten.
       const { jsonFiles } = await import("./paths.js"); if ((await jsonFiles(this.catalogDir)).length) throw new MyPubError("Catalog directory contains records without a library", "CATALOG_EXISTS");
       const time = now(); const s: CatalogState = { library: { schema_version: 2, id: uuid(), name, created_at: time, updated_at: time }, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [] };
@@ -50,11 +52,27 @@ export class Catalog {
       await writeState(this.root, new Map(), s); return s.library;
     });
   }
-  async read(): Promise<CatalogState> {
-    return withLock(join(this.localDir, "write.lock"), async () => { await recoverTransactions(this.root); const s = (await loadState(this.root)).state; this.assertValid(s); return s; });
+  private async withDatabase<T>(action: (db: DatabaseSync) => T): Promise<T> {
+    return withLock(join(this.localDir, "write.lock"), async () => {
+      await recoverTransactions(this.root);
+      await refreshStoredDatabase(this.root);
+      const db = new DatabaseSync(databasePath(this.root), { readOnly: true });
+      try { return action(db); } finally { db.close(); }
+    });
   }
-
-  async recover(): Promise<void> { await withLock(join(this.localDir, "write.lock"), () => recoverTransactions(this.root)); }
+  async read(): Promise<CatalogState> { return this.withDatabase(readDatabaseState); }
+  async rebuildIndex(): Promise<{ indexed: number; path: string }> {
+    return withLock(join(this.localDir, "write.lock"), async () => {
+      await recoverTransactions(this.root);
+      return refreshStoredDatabase(this.root, false, true);
+    });
+  }
+  async recover(): Promise<void> {
+    await withLock(join(this.localDir, "write.lock"), async () => {
+      await recoverTransactions(this.root);
+      await refreshStoredDatabase(this.root);
+    });
+  }
   assertValid(s: CatalogState): void { const result = validateState(s); if (!result.valid) throw new MyPubError("Catalog validation failed", "VALIDATION_FAILED", result); }
   async change<T>(action: (state: CatalogState, binary: Map<string, Buffer>) => T | Promise<T>): Promise<T> {
     return withLock(join(this.localDir, "write.lock"), async () => {
@@ -79,24 +97,18 @@ export class Catalog {
   }
   async library(): Promise<Library> { return (await this.read()).library; }
   async list(filters: SearchFilters = {}): Promise<Publication[]> {
-    const s = await this.read(); let authorId: string | undefined; let venueId: string | undefined;
-    if (filters.author) { const author = s.authors.find((a) => a.id === filters.author || a.author_key === filters.author); if (!author) throw new MyPubError("Author not found", "NOT_FOUND"); authorId = resolveIdentity(s.authors, author.id)?.id; }
-    if (filters.venue) { const v = s.venues.find((v) => v.id === filters.venue || v.venue_key === filters.venue); venueId = v ? resolveIdentity(s.venues, v.id)?.id : undefined; }
-    const q = filters.query ? normalizeText(filters.query) : undefined;
-    return s.publications.filter((p) => {
-      if (!filters.includeArchived && p.archived_at || filters.type && p.type !== filters.type || filters.year !== undefined && publicationYear(p) !== filters.year) return false;
-      if (filters.venue && (venueId ? resolveIdentity(s.venues, p.venue?.venue_id ?? "")?.id !== venueId : normalizeText(p.venue?.name ?? "") !== normalizeText(filters.venue))) return false;
-      if (filters.tag && !p.tags.some((t) => normalizeText(t) === normalizeText(filters.tag!))) return false;
-      if (authorId || filters.role) { if (!p.authors.some((c, i) => {
-        const personMatches = !authorId || resolveIdentity(s.authors, c.author_id ?? "")?.id === authorId;
-        const role = filters.role; const roleMatches = !role || (role === "first_listed" ? i === 0 : role === "first" ? i === 0 || !!c.roles?.includes("co_first") : !!c.roles?.includes(role));
-        return personMatches && roleMatches;
-      })) return false; }
-      if (q) { const identities = p.authors.flatMap((c) => { const a = resolveIdentity(s.authors, c.author_id ?? ""); return a ? [a.preferred_name, a.author_key, ...a.aliases] : []; }); const venue = resolveIdentity(s.venues, p.venue?.venue_id ?? ""); const haystack = normalizeText([p.title, p.citation_key, p.venue?.name, venue?.preferred_name, venue?.abbreviation, ...(venue?.aliases ?? []), ...p.authors.map((a) => a.name), ...identities, ...p.tags, ...Object.values(p.identifiers)].filter(Boolean).join(" ")); if (!haystack.includes(q)) return false; }
-      return true;
-    }).sort((a, b) => (publicationDate(b) ?? "").localeCompare(publicationDate(a) ?? "") || a.title.localeCompare(b.title));
+    return this.withDatabase(db => listDatabase(db, filters));
   }
-  async get(ref: string): Promise<Publication> { return findPublication(await this.read(), ref); }
+  async get(ref: string): Promise<Publication> {
+    return this.withDatabase(db => {
+      const exact = db.prepare("SELECT json FROM publications WHERE id=? OR citation_key=?").get(ref, ref);
+      if (exact) return JSON.parse(exact.json as string) as Publication;
+      const matches = db.prepare("SELECT DISTINCT p.id,p.json FROM publications p JOIN identifiers i ON i.publication_id=p.id WHERE (i.provider='doi' AND i.value=?) OR (i.provider='arxiv' AND i.value=?)").all(normalizeDoi(ref), normalizeArxiv(ref));
+      if (!matches.length) throw new MyPubError(`Publication not found: ${ref}`, "NOT_FOUND");
+      if (matches.length > 1) throw new MyPubError(`Publication reference is ambiguous: ${ref}`, "AMBIGUOUS", matches.map(p => p.id));
+      return JSON.parse(matches[0]!.json as string) as Publication;
+    });
+  }
   async details(ref: string): Promise<PublicationDetails> { const s = await this.read(); const publication = findPublication(s, ref); return { publication, record_revision: fingerprint(publication), citation_count: currentCitations(s, publication), incoming_relations: s.publications.flatMap((p) => p.relations.filter((r) => r.target_id === publication.id).map((r) => ({ source_id: p.id, source_title: p.title, type: r.type, label: r.type === "published_version_of" ? "Published version" : r.type === "extends" ? "Extended by" : "Related publication", ...(r.note ? { note: r.note } : {}) }))) }; }
   async add(input: AddPublicationInput): Promise<Publication> { return this.change((s) => { const p = publicationFromInput(input); s.publications.push(p); return p; }); }
   async update(ref: string, patch: Partial<Omit<Publication, "schema_version" | "id" | "created_at">>, expected?: string): Promise<Publication> {

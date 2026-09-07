@@ -21,6 +21,8 @@ The specification covers:
 
 SQLite indexes, Git/LFS pointer files, locks, input BibTeX/CSV, and generated non-JSON exports are not JSON schemas. A transaction may contain staged copies of any catalog record; those copies retain their original schemas.
 
+The integrated SQLite read model at `local/index.sqlite` is derived, machine-local data and must never be tracked by Git or Git LFS, including its sidecar and rebuild files. Its internal database schema version is independent of the canonical JSON schema version; rebuilding it does not change catalog formats. DESIGN.md section 2.3 defines the implemented refresh and query behavior.
+
 The tables use these terms:
 
 | Term | Meaning |
