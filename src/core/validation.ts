@@ -74,6 +74,15 @@ export function validateState(s: CatalogState): ValidationResult {
     for (const a of p.attachments) { allAttachments.push([a.id, p.id]); if (a.path !== `attachments/${p.id}/${a.id}/${a.original_filename}`) issue("ATTACHMENT_PATH", "Attachment path does not match containing IDs/filename", p.id); }
     if (p.primary_attachment_id && !p.attachments.some((a) => a.id === p.primary_attachment_id)) issue("PRIMARY_ATTACHMENT", "Primary attachment does not belong to publication", p.id);
     const revisions = p.arxiv_versions ?? [];
+    if (p.type === "arxiv") {
+      if (!p.identifiers.arxiv || !revisions.length) issue("ARXIV_HISTORY", "arXiv records require an ID and complete version history", p.id);
+      if (revisions.length && (p.publication_date !== revisions[0]!.submission_date || p.submission_date !== revisions[0]!.submission_date)) issue("ARXIV_FIRST_DATE", "Publication and submission dates must equal the v1 date", p.id);
+      for (const [index, revision] of revisions.entries()) {
+        if (revision.version !== index + 1 || !/^\d{4}-\d{2}-\d{2}$/.test(revision.submission_date) || !revision.title || !Array.isArray(revision.authors) || !revision.abstract) issue("ARXIV_HISTORY", "Store every version from v1 with its full date, title, ordered authors, and abstract", p.id);
+        if (index && revision.submission_date < revisions[index - 1]!.submission_date) issue("ARXIV_REVISION", "Revision dates must not decrease", p.id);
+      }
+    }
+
     if (revisions.length && (p.type !== "arxiv" || !p.submission_date || p.submission_date !== revisions.map((r) => r.submission_date).sort()[0])) issue("ARXIV_REVISION", "Revisions require an arXiv record and its original submission date", p.id);
     for (let i = 0; i < revisions.length; i++) { if (i && revisions[i]!.version <= revisions[i - 1]!.version) issue("ARXIV_REVISION", "Revision numbers must ascend", p.id); reference(revisions[i]!.source_review_id, "review", p.id); }
     if (p.submission_date && p.acceptance_date && p.submission_date > p.acceptance_date) issue("DATE_ORDER", "Acceptance predates submission", p.id, "warning");

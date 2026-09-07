@@ -4,7 +4,7 @@ import type { StatusResult } from "../core/types.js";
 const line = (text: string): string => text.replace(/[\x00-\x1f\x7f-\x9f]/g, " ");
 const count = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
-export function formatStatus(s: StatusResult, root: string): string {
+export function formatStatus(s: StatusResult, root: string, details = false): string {
   const lines = [`Library:   ${line(root)}`];
   const changes = s.changes ?? [];
   if (s.git) {
@@ -20,7 +20,7 @@ export function formatStatus(s: StatusResult, root: string): string {
   if (!s.lfs) issues.push("Git LFS not installed");
   if (issues.length) lines.push(`Attention: ${issues.join("; ")}`);
 
-  if (s.git && s.dirty && changes.length) {
+  if (details && s.git && s.dirty && changes.length) {
     lines.push("", "Uncommitted files:");
     for (const change of changes) {
       const kind = change.path.startsWith("catalog/publications/") ? "publication" : change.path.startsWith("catalog/reviews/") ? "review" : change.path.startsWith("catalog/gscholar/") ? "Scholar" : change.path.startsWith("catalog/authors/") ? "author" : change.path.startsWith("catalog/venues/") ? "venue" : change.path.startsWith("attachments/") ? "attachment" : managedPath(change.path) ? "config" : "other";

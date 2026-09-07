@@ -34,7 +34,7 @@ export interface Publication extends RecordBase {
   authors: AuthorCredit[]; authorship_note?: string; venue?: PublicationVenue;
   publication_date?: string; submission_date?: string; acceptance_date?: string; online_date?: string; issued_date?: string;
   identifiers: PublicationIdentifiers;
-  arxiv_versions?: Array<{ version: number; submission_date: string; source_review_id?: string }>;
+  arxiv_versions?: Array<{ version: number; submission_date: string; title: string; authors: string[]; abstract: string; source_review_id?: string }>;
   volume?: string; issue?: string; pages?: string; article_number?: string; urls: string[]; tags: string[]; notes?: string;
   relations: Relation[]; attachments: Attachment[]; primary_attachment_id?: string; archived_at?: string;
 }

@@ -14,7 +14,7 @@ test("catalog workflows preserve distinct publications and derive incoming relat
   const root = await mkdtemp(join(tmpdir(), "mypub-test-"));
   try {
     const catalog = new Catalog({ root }); await catalog.initialize("Test Library");
-    const preprint = await catalog.add({ citation_key: "Ada2025Example", type: "arxiv", title: "An Example Paper", authors: [{ name: "Ada Lovelace" }], submission_date: "2025-01-01", identifiers: { arxiv: "2501.00001v2" }, urls: [], tags: ["example"] });
+    const preprint = await catalog.add({ citation_key: "Ada2025Example", type: "arxiv", title: "An Example Paper", authors: [{ name: "Ada Lovelace" }], publication_date: "2025-01-01", arxiv_versions: [{ version: 1, submission_date: "2025-01-01", title: "An Example Paper", authors: ["Ada Lovelace"], abstract: "Original abstract" }], submission_date: "2025-01-01", identifiers: { arxiv: "2501.00001v2" }, urls: [], tags: ["example"] });
     const conference = await catalog.add({ citation_key: "Ada2026Example", type: "conference", title: "An Example Paper, Revised", authors: [{ name: "Ada Lovelace" }], publication_date: "2026", identifiers: { doi: "https://doi.org/10.1000/EXAMPLE" }, urls: [], tags: [] });
     await catalog.addRelation(conference.id, preprint.id, "published_version_of");
     const details = await catalog.details(preprint.id); assert.equal(details.incoming_relations[0]?.source_id, conference.id); assert.equal(details.incoming_relations[0]?.label, "Published version");
@@ -54,5 +54,33 @@ test("refresh imports do not erase unobserved fields or truncate curated authors
   try {
     const catalog = new Catalog({ root }); await catalog.initialize(); await catalog.add({ citation_key: "complete2026", type: "journal", title: "Complete Record", authors: [{ name: "First Author" }, { name: "Second Author" }], publication_date: "2026", identifiers: { doi: "10.1000/complete" }, urls: ["https://example.test/paper"], tags: ["kept"] }); const source = join(root, "refresh.csv");
     await writeFile(source, "title,year,doi,authors\nComplete Record,2026,10.1000/complete,First Author\n", "utf8"); await importFile(catalog, source); const review = (await listReviews(catalog, "pending"))[0]!; assert.equal(review.proposals.some((change) => ["/authors", "/urls", "/tags"].includes(change.path ?? "")), false);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("arXiv writes require complete metadata and a stable first-version date", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mypub-arxiv-history-"));
+  try {
+    const c = new Catalog({ root }); await c.initialize();
+    const input = { citation_key: "history", type: "arxiv" as const, title: "Revised", authors: [{ name: "Ada" }], identifiers: { arxiv: "2501.12345" }, publication_date: "2025-01-01", submission_date: "2025-01-01", arxiv_versions: [{ version: 1, submission_date: "2025-01-01", title: "Original", authors: ["Ada"], abstract: "First abstract" }, { version: 2, submission_date: "2026-02-01", title: "Revised", authors: ["Ada"], abstract: "Second abstract" }] };
+    const p = await c.add(input);
+    await assert.rejects(c.update(p.id, { publication_date: "2026-02-01" }));
+    await assert.rejects(c.update(p.id, { arxiv_versions: [input.arxiv_versions[1]!] }));
+    await assert.rejects(c.update(p.id, { arxiv_versions: [{ ...input.arxiv_versions[0]!, abstract: "" }] }));
+    assert.equal((await c.get(p.id)).publication_date, "2025-01-01");
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("arXiv imports stay separate from conferences and refresh historical and current bylines", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mypub-arxiv-refresh-"));
+  try {
+    const c = new Catalog({ root }); await c.initialize();
+    await c.add({ citation_key: "conf", type: "conference", title: "Paper", authors: [{ name: "Ada" }] });
+    const file = join(root, "versions.json");
+    const input = { citation_key: "arxiv_2501_12345", type: "arxiv", title: "Paper", authors: [{ name: "Ada" }, { name: "Bob" }], identifiers: { arxiv: "2501.12345" }, publication_date: "2025-01-01", submission_date: "2025-01-01", arxiv_versions: [{ version: 1, submission_date: "2025-01-01", title: "Paper", authors: ["Ada", "Bob"], abstract: "Original" }] };
+    await writeFile(file, JSON.stringify(input)); const first = await importFile(c, file); await decideReview(c, first.review_ids[0]!, "accepted");
+    assert.equal((await c.list()).length, 2);
+    const changed = { ...input, authors: [{ name: "Bob" }], arxiv_versions: [...input.arxiv_versions, { version: 2, submission_date: "2026-01-01", title: "Paper", authors: ["Bob"], abstract: "Revised" }] };
+    await writeFile(file, JSON.stringify(changed)); const update = await importFile(c, file); await decideReview(c, update.review_ids[0]!, "accepted");
+    const result = await c.get("2501.12345"); assert.deepEqual(result.authors, [{ name: "Bob" }]); assert.equal(result.arxiv_versions?.length, 2); assert.equal(result.publication_date, "2025-01-01");
   } finally { await rm(root, { recursive: true, force: true }); }
 });

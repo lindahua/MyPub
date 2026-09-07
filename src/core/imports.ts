@@ -45,11 +45,22 @@ function fromJson(value: unknown): Imported[] {
 }
 function proposalsFor(current: Publication, incoming: Imported, completeness: Coverage): Proposal[] {
   const proposals: Proposal[] = [];
-  const fields = ["title", "authors", "venue", "publication_date", "submission_date", "acceptance_date", "online_date", "issued_date", "identifiers", "urls", "tags", "type", "volume", "issue", "pages"] as const;
+  const fields = ["title", "authors", "venue", "publication_date", "submission_date", "acceptance_date", "online_date", "issued_date", "identifiers", "arxiv_versions", "urls", "tags", "type", "volume", "issue", "pages"] as const;
   for (const field of fields) {
     let proposed: unknown = incoming[field]; if (proposed === undefined) continue;
     if (field === "authors") {
       // Source spelling alone cannot move a confirmed identity to another credit.
+      if (incoming.type === "arxiv" && incoming.arxiv_versions?.length && completeness === "complete") {
+        const used = new Set<string>();
+        proposed = incoming.authors.map(a => {
+          const matches = current.authors.filter(old => normalizeText(old.name) === normalizeText(a.name));
+          const credit = { ...(matches.length === 1 ? matches[0] : {}), ...a };
+          if (credit.author_id) { if (used.has(credit.author_id)) delete credit.author_id; else used.add(credit.author_id); }
+          return credit;
+        });
+        if (fingerprint(current.authors) !== fingerprint(proposed)) proposals.push({ id: uuid(), target: { entity_type: "publication", entity_id: current.id }, operation: "replace", path: "/authors", expected_revision: fingerprint(current), current: current.authors, proposed, state: "pending" });
+        continue;
+      }
       if (completeness !== "complete" || incoming.authors.length < current.authors.length) continue;
       if (current.authors.some(a => a.author_id || a.roles?.length) && fingerprint(current.authors.map(a => a.name)) !== fingerprint(incoming.authors.map(a => a.name))) continue;
       proposed = incoming.authors.map((a, i) => ({ ...current.authors[i], ...a }));
@@ -70,7 +81,7 @@ export async function stageImport(c: Catalog, inputs: Imported[], provider: stri
     const r: Review = { schema_version: 2, id: uuid(), summary: `Import ${inputs.length} publication records from ${provider}`, kind: "import", state: "pending", targets: [], proposals: [], evidence: { provider, captured_at: time, ...(sourceReference ? { source_reference: sourceReference } : {}), payload, completeness, parser_version: "mypub/2", input_fingerprint: inputFingerprint }, created_at: time, updated_at: time };
     for (const input of inputs) {
       const { raw, ...fields } = input; const proposed = publicationFromInput(fields);
-      const candidates = s.publications.filter(p => p.id === fields.id || (proposed.identifiers.doi && p.identifiers.doi === proposed.identifiers.doi) || (proposed.identifiers.arxiv && p.identifiers.arxiv === proposed.identifiers.arxiv) || (normalizeText(p.title) === normalizeText(proposed.title) && p.authors.some(a => proposed.authors.some(b => normalizeText(a.name) === normalizeText(b.name)))));
+      const candidates = s.publications.filter(p => (proposed.type !== "arxiv" || p.type === "arxiv") && (p.id === fields.id || (proposed.identifiers.doi && p.identifiers.doi === proposed.identifiers.doi) || (proposed.identifiers.arxiv && p.identifiers.arxiv === proposed.identifiers.arxiv) || (normalizeText(p.title) === normalizeText(proposed.title) && p.authors.some(a => proposed.authors.some(b => normalizeText(a.name) === normalizeText(b.name))))));
       if (candidates.length === 1) { const p = candidates[0]!; r.targets.push({ entity_type: "publication", entity_id: p.id }); r.proposals.push(...proposalsFor(p, input, completeness)); matched++; }
       else { r.targets.push({ entity_type: "publication", entity_id: proposed.id }); r.proposals.push({ id: uuid(), target: { entity_type: "publication", entity_id: proposed.id }, operation: "create", proposed, ...(candidates.length ? { candidate_ids: candidates.map(p => p.id) } : {}), state: "pending" }); created++; }
     }

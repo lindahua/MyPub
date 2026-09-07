@@ -50,7 +50,7 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   gscholar exclude ENTRY --reason TEXT [--unlink-publications] [--preview]
   gscholar include ENTRY [--reason TEXT] [--preview]
   commit [--message TEXT]
-  sync [--message TEXT] | status | history [RECORD_UUID]
+  sync [--message TEXT] | status [--details] | history [RECORD_UUID]
   conflicts [ID --choice ours|theirs [--file FILE]]
   export --format bibtex|csv|json [--output FILE] [filters]
   validate [--skip-attachments] | audit | recover | repair-paths
@@ -127,7 +127,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       else if (sub === "exclude" || sub === "include") { const id = a.shift("entry")!, reason = a.take("--reason"), unlink = a.takeFlag("--unlink-publications"), preview = a.takeFlag("--preview"); action = () => matchingPolicy(c, id, sub === "exclude", reason, unlink, preview); }
       else usage("invalid gscholar action"); break;
     }
-    case "status": action = async () => { const result = await status(c); return json ? result : formatStatus(result, c.root); }; break;
+    case "status": { const details = a.takeFlag("--details"); action = async () => { const result = await status(c); return json ? result : formatStatus(result, c.root, details); }; break; }
     case "history": { const id = a.shift(); action = () => history(c, id); break; }
     case "commit": { const message = a.take("--message"); action = async () => { const result = await commit(c, message); return json ? result : result.state === "no-changes" ? "No local changes to commit." : `Committed locally: ${result.commit!.slice(0, 12)} — ${result.message}\nNothing was uploaded. Run mypub sync when ready to synchronize.`; }; break; }
     case "sync": { const message = a.take("--message"); action = async () => { const result = await sync(c, message, json ? undefined : event => { process.stderr.write(`${event.message}\n`); }); if (result.state === "needs-review") exitCode = 4; return json ? result : ({ "needs-review": "Synchronization paused: conflicts need review. Run mypub conflicts. Your current catalog is preserved.", "up-to-date": "Already synchronized with the configured upstream.", pushed: "Uploaded local commits. Synchronized with the configured upstream.", pulled: "Downloaded and applied remote commits. Synchronized with the configured upstream.", merged: "Combined local and remote commits. Synchronized with the configured upstream." })[result.state]; }; break; }

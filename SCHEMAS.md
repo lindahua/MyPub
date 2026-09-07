@@ -157,7 +157,7 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `publication_date` | optional local date | Main bibliographic date, with the supplied year/month/day precision. It need not be classified as online, issue, or submission date. |
 | `submission_date`, `acceptance_date`, `online_date`, `issued_date` | optional local dates | Independently supported lifecycle dates; see section 4.4. They are not required to record a publication date. |
 | `identifiers` | required identifier object | Identifiers belonging to this publication. `{}` is valid. Related-version identifiers do not belong here. |
-| `arxiv_versions` | optional non-empty array of arXiv revisions | Observed revisions for an arXiv record; see section 4.5. Omit for no revision evidence. |
+| `arxiv_versions` | required non-empty array for `type: arxiv`; absent for other types | Complete observed history from v1 through the latest retrieved version; see section 4.5. |
 | `volume` | optional non-empty string | Bibliographic volume, preserved as text (for example `42` or `S1`). |
 | `issue` | optional non-empty string | Bibliographic issue/number, preserved as text. |
 | `pages` | optional non-empty string | Page or electronic-location range as printed. Do not parse it into numbers. |
@@ -240,11 +240,14 @@ Every present identifier is a non-empty string. `{}` is valid.
 
 | Field | Presence and form | Semantics |
 | --- | --- | --- |
-| `version` | required positive integer | Numeric suffix (`v1` becomes `1`). Unique and ascending in the array. |
-| `submission_date` | required local date | Submission date of this revision. |
+| `version` | required positive integer | Numeric suffix (`v1` becomes `1`). Contiguous and ascending from 1 through the latest retrieved version; no gaps. |
+| `submission_date` | required full `YYYY-MM-DD` date | arXiv submission date of this specific revision (UTC date). |
+| `title` | required non-empty string | Title of this specific version. |
+| `authors` | required ordered array of non-empty strings | Literal byline of this version; preserve order and repeated names. Identity links and current authorship roles must not be copied into historical snapshots. |
+| `abstract` | required non-empty string | Abstract of this specific version, with XML entities decoded. |
 | `source_review_id` | optional UUID | Review evidence supporting this observation. |
 
-When revisions exist, the publication's `submission_date` equals the earliest known/original submission rather than the latest revision date. Later revisions do not change its main `publication_date` automatically.
+Every arXiv record requires its base identifier and complete version history. `publication_date` and `submission_date` both equal the date of v1, from arXiv's original `published` timestamp. Each version's date comes from that version's `updated` timestamp. Later revisions never change the publication date/year. Revision dates must not decrease. Missing history or version metadata blocks admission; refresh must retrieve all versions before accepting an update, not silently save a partial history. The record's current title and ordered author credits describe the latest retrieved version; historical title, authors, and abstract remain in each immutable source-backed snapshot. Preserve established author identity links only when supported by the updated byline. Do not use a conference/journal date or DOI for its separate arXiv record. Re-fetching may extend history; retain source evidence for every observation. Complete means through the latest version retrieved, not a claim that arXiv can never receive another revision.
 
 ### 4.6 Relation
 
