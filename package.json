@@ -4,7 +4,8 @@
   "description": "Portable, Git-backed publication catalog core and CLI",
   "type": "module",
   "bin": {
-    "mypub": "dist/cli/main.js"
+    "mypub": "dist/cli/main.js",
+    "mypub-view": "dist/cli/view.js"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -20,16 +21,30 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit",
+    "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json",
     "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-functions=80 dist/**/*.test.js",
     "test": "node --test dist/**/*.test.js",
-    "prepack": "npm run build"
+    "prepack": "npm run build:desktop",
+    "build:desktop": "npm run build && tsc -p tsconfig.renderer.json && node scripts/build-desktop.mjs",
+    "desktop": "npm run build:desktop && electron dist/desktop/main.js",
+    "test:desktop": "npm run build:desktop && playwright test --config tests/desktop/playwright.config.ts",
+    "format:desktop": "prettier --write src/desktop scripts/build-desktop.mjs tests/desktop tsconfig.renderer.json"
   },
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.12.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@types/node": "24.7.2",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.7",
+    "esbuild": "0.28.2",
+    "prettier": "3.9.6",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
     "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "electron": "44.2.0"
   }
 }

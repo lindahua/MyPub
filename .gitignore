@@ -3,3 +3,5 @@ dist/
 local/
 *.tgz
 *.log
+test-results/
+playwright-report/

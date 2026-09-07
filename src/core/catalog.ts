@@ -61,6 +61,14 @@ export class Catalog {
     });
   }
   async read(): Promise<CatalogState> { return this.withDatabase(readDatabaseState); }
+  /** One validated read generation, including actual paths (never reconstructed filenames). */
+  async snapshot(): Promise<{ state: CatalogState; source: string; paths: Record<string, string> }> {
+    return this.withDatabase(db => ({
+      state: readDatabaseState(db),
+      source: String(db.prepare("SELECT value FROM metadata WHERE key='source'").get()?.value),
+      paths: Object.fromEntries(db.prepare("SELECT id,path FROM records").all().map(r => [String(r.id), String(r.path)])),
+    }));
+  }
   async rebuildIndex(): Promise<{ indexed: number; path: string }> {
     return withLock(join(this.localDir, "write.lock"), async () => {
       await recoverTransactions(this.root);

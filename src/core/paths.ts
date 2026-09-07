@@ -1,10 +1,10 @@
 import { lstat, readdir } from "node:fs/promises";
 import { join } from "node:path";
-import type { CatalogState, Publication } from "./types.js";
+import type { CatalogState } from "./types.js";
 import { MyPubError } from "./errors.js";
 
-export function publicationDate(p: Publication): string | undefined { return p.publication_date ?? p.issued_date ?? p.online_date ?? (p.type === "arxiv" ? p.submission_date : undefined); }
-export function publicationYear(p: Publication): number | undefined { const d = publicationDate(p); return d ? Number(d.slice(0, 4)) : undefined; }
+import { publicationYear } from "./dates.js";
+export { publicationDate, publicationYear } from "./dates.js";
 export function slug(value: string, fallback: string): string {
   const normalized = value.normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}\p{M}]+/gu, "_").replace(/^[_\p{M}]+|_+$/gu, "");
   let result = ""; for (const char of normalized) { if (Buffer.byteLength(result + char, "utf8") > 120) break; result += char; }

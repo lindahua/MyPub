@@ -8,7 +8,7 @@ Requirements will evolve. Follow the user's latest explicit instructions when th
 
 ## Development
 
-- Implement the current phase described in DESIGN.md: the TypeScript core and CLI. Electron UI development belongs to a later phase.
+- Implement the TypeScript core, CLI, and Electron viewer described in DESIGN.md. The user approved desktop implementation after reviewing docs/ELECTRON_DESIGN_DRAFT.md; preserve its light theme, year/venue navigator, and inline expandable details. Editing/review/sync UI remains separate scope.
 - The codebase has never been used in production and no v1 catalogs exist. Implement schema version 2 directly; do not add a v1 migration or compatibility layer. This does not change the separate PubMan2 migration scope.
 - Name the CLI executable `mypub`, as specified in DESIGN.md.
 - Keep changes focused on the requested task and consistent with the design. Resolve routine implementation details using reasonable judgment.

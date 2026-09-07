@@ -4,7 +4,7 @@ MyPub is a local-first publication catalog with a reusable TypeScript API and th
 
 ## Requirements
 
-- Node.js 22 or newer
+- Node.js 22.12 or newer
 - Git
 - Git LFS
 
@@ -81,7 +81,7 @@ npm run coverage
 
 The coverage command enforces minimum aggregate thresholds of 90% for lines and 80% for functions.
 
-Electron, graphical previews, browser capture, and hosted services are deliberately not part of this phase. See [DESIGN.md](DESIGN.md) for architecture and requirements.
+The Electron viewer is available with `npm run desktop`. Embedded graphical previews, browser capture, desktop editing, and hosted services remain outside this viewer phase. See [DESIGN.md](DESIGN.md) for architecture and requirements.
 
 ## Local configuration
 
@@ -112,4 +112,35 @@ Ensure `~/.local/bin` is on your shell's `PATH`, then run `mypub --help`. This l
 
 The database refreshes automatically after catalog saves (including uncommitted edits), imports/review decisions, synchronization integration, restore, and transaction recovery. Before reads, MyPub hashes catalog contents and paths to detect external edits, renames, deletions, and Git checkout/reset changes. Unchanged sources reuse the database; missing, corrupt, or incompatible caches rebuild automatically. CLI search retains literal normalized substring matching.
 
-All edits must use the JSON-backed core operations. The database and its sidecar/temporary files are never tracked by Git or Git LFS; MyPub ensures `/local/` is ignored and refuses synchronization of tracked local files. A refresh failure leaves canonical JSON intact and reports `CACHE_STALE`; if its details say `saved: true`, retry a read instead of repeating the edit. `mypub index rebuild` remains available for explicit repair. Concurrent catalog operations report `CATALOG_LOCKED` for retry. Freshness checks still read catalog bytes on each operation; background watching and incremental refresh are deferred.
+All edits must use the JSON-backed core operations. The database and its sidecar/temporary files are never tracked by Git or Git LFS; MyPub ensures `/local/` is ignored and refuses synchronization of tracked local files. A refresh failure leaves canonical JSON intact and reports `CACHE_STALE`; if its details say `saved: true`, retry a read instead of repeating the edit. `mypub index rebuild` remains available for explicit repair. Concurrent catalog operations report `CATALOG_LOCKED` for retry. Freshness checks still read catalog bytes on each operation; the Electron viewer watches source/database changes in the background; incremental database refresh remains deferred.
+
+
+## Desktop viewer
+
+```sh
+npm install
+npm run build:desktop
+npm link
+mypub-view
+# Or choose an explicit existing catalog:
+mypub-view --root ~/Data/MyPubRepo
+# Help without opening a window:
+mypub-view --help
+```
+
+The light-themed Electron app opens the configured `repo_path`, or lets you choose a library folder. It has Overview, Publications, Authors, Venues and Google Scholar pages. Group publications by year or venue, use the left navigator, combine conditions with the Filter builder, and click any entry to expand details immediately below it. Multiple details may stay open. The overview shows the most cited papers, using observed Scholar counts rather than inferred totals.
+
+Search across the library with Command/Ctrl+K. Back/forward buttons (or Alt+Left/Right) restore the preceding view. The filter builder supports AND/OR groups, identity selectors, author roles, numeric ranges, missing values and constraints on a linked publication. Unknown citation counts are distinct from zero. The viewer can copy BibTeX and open local PDFs/images/text/videos or HTTP(S) links. Unmaterialized LFS attachments must first be fetched through the CLI.
+
+Catalog and database changes refresh automatically, including CLI edits and SQLite replacement. Filters and expanded rows remain in place. A failed refresh shows the last valid snapshot with an error; Retry rechecks the catalog. All metadata remains in the canonical JSON files. No automatic remote sync, Scholar capture or publication edit is performed by the viewer.
+
+Development requires Node.js 22.12+ and the npm-installed Electron runtime. The renderer and worker are bundled/compiled locally; no HTTP server is needed. After `npm link` (or installation of a packed MyPub package), `mypub-view` works from any directory. It stays attached to the terminal until Electron exits. Electron is a runtime dependency, and package creation builds and includes the desktop assets. `npm run desktop` remains a source-development shortcut; signed installers are not included.
+
+```sh
+npm run check
+npm run build:desktop
+npm test
+npm run test:desktop
+```
+
+Desktop tests launch Electron and need a graphical desktop session. See [the desktop design](docs/ELECTRON_DESIGN_DRAFT.md) and [the implemented scope](DESIGN.md#10-implemented-electron-viewer).
