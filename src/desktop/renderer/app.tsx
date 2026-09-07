@@ -711,9 +711,9 @@ function RecordDetails({
                 Scholar profile
               </LinkButton>
             )}
-            {venue?.urls.map((url) => (
-              <LinkButton key={url} url={url}>
-                Venue homepage
+            {venue?.urls.map((link) => (
+              <LinkButton key={link.url} url={link.url}>
+                {link.label ?? { homepage: "Venue homepage", proceedings: "Proceedings", submission: "Submission", other: "Venue resource" }[link.role]}
               </LinkButton>
             ))}
           </div>

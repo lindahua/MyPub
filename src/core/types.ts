@@ -17,9 +17,10 @@ export interface AuthorIdentity extends RecordBase {
   identifier_aliases?: Array<{ provider: "google_scholar" | "orcid"; value: string; note?: string }>;
   disambiguation_note?: string; archived_at?: string; merged_into?: string;
 }
+export interface VenueUrl { url: string; role: "homepage" | "proceedings" | "submission" | "other"; label?: string; }
 export interface VenueIdentity extends RecordBase {
   venue_key: string; kind: "journal" | "conference" | "workshop" | "repository" | "other";
-  preferred_name: string; abbreviation?: string; aliases: string[]; urls: string[];
+  preferred_name: string; abbreviation?: string; aliases: string[]; urls: VenueUrl[];
   disambiguation_note?: string; archived_at?: string; merged_into?: string;
 }
 export interface PublicationVenue { name: string; venue_id?: string; event_year?: number; }

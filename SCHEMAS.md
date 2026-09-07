@@ -154,7 +154,7 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `authors` | required array of author credits | Ordered printed byline. It may be empty only for a genuinely anonymous/unknown work and produces a warning. |
 | `authorship_note` | optional non-empty string | Readable publication-level statement about credited contribution/correspondence. It does not create roles by itself. |
 | `venue` | optional publication venue | Exact publication-specific venue wording and optional identity link. Absence means no venue is recorded. |
-| `publication_date` | optional local date | Main bibliographic date, with the supplied year/month/day precision. It need not be classified as online, issue, or submission date. |
+| `publication_date` | optional local date | Main bibliographic date, with the supplied year/month/day precision. For journal papers, this is the issue publication date; for arXiv papers, the first-version date. See section 4.4. |
 | `submission_date`, `acceptance_date`, `online_date`, `issued_date` | optional local dates | Independently supported lifecycle dates; see section 4.4. They are not required to record a publication date. |
 | `identifiers` | required identifier object | Identifiers belonging to this publication. `{}` is valid. Related-version identifiers do not belong here. |
 | `arxiv_versions` | required non-empty array for `type: arxiv`; absent for other types | Complete observed history from v1 through the latest retrieved version; see section 4.5. |
@@ -214,13 +214,15 @@ Publication dates are optional top-level fields:
 
 | Field | Meaning |
 | --- | --- |
-| `publication_date` | Main bibliographic publication date; `"2024"` is sufficient when only the year is known. A generic source publication date does not need a more specific lifecycle classification. |
+| `publication_date` | Main bibliographic publication date; `"2024"` is sufficient when only the year is known. For journal papers, use the issue publication date, not the earlier online-first date. |
 | `submission_date` | Original submission date; subsequent arXiv revision submissions belong in `arxiv_versions`. |
 | `acceptance_date` | Acceptance date when known. |
 | `online_date` | First online publication date when separately known. |
 | `issued_date` | Formal issue/publication date when separately known. |
 
 Every present value is a local date (`YYYY`, `YYYY-MM`, or `YYYY-MM-DD`), not a timestamp. Most records need only `publication_date`. Omit unknown dates; do not invent a month/day, copy the generic date into lifecycle fields, or infer dates from type or archive state. There is no version-2 nested `dates` object or separate duplicate `year` field on publications.
+
+For `type: "journal"`, `publication_date` means the publication date of the journal issue containing the paper. Preserve the known precision (year, month, or day); do not invent a day for a month-dated issue. Keep an earlier online-first date separately in `online_date`. If `issued_date` is also supplied, it describes the same issue date and must agree with `publication_date` at their shared precision. Do not infer the issue date from a DOI year, acceptance date, or Scholar year. If the issue date is unknown, leave `publication_date` unset pending verification rather than substituting the online-first date. Source metadata proposals still require review to establish that a generic provider date is an issue date. Scholar retains its literal source year/date even when it differs. For example, “Temporal Segment Networks for Action Recognition in Videos” belongs to the November 2019 TPAMI issue despite online publication in September 2018.
 
 Filing and default year filters use `publication_date` first, then `issued_date`, then `online_date`; an arXiv record without those dates may use its original `submission_date`. Otherwise use `unknown_year/`. Acceptance, import, event, and later revision years do not select the directory. Keep independently known dates even when their years differ; show which field supplies the filing year. Suspicious lifecycle ordering produces a warning, not an automatic rewrite of the bibliographic date.
 
@@ -333,7 +335,9 @@ Path: `catalog/venues/<preferred-name-slug>_<uuid-prefix>.json`.
   "preferred_name": "Journal of Example Research",
   "abbreviation": "J. Example Res.",
   "aliases": ["JER", "J. Example Research"],
-  "urls": ["https://example.org/journal"],
+  "urls": [
+    { "url": "https://example.org/journal", "role": "homepage" }
+  ],
   "created_at": "2026-09-06T08:00:00Z",
   "updated_at": "2026-09-06T08:00:00Z"
 }
@@ -348,13 +352,47 @@ Path: `catalog/venues/<preferred-name-slug>_<uuid-prefix>.json`.
 | `preferred_name` | required non-empty string | Default identity display name. It need not be unique. |
 | `abbreviation` | optional non-empty string | Default abbreviated display; it need not be unique. |
 | `aliases` | required unique string array | Curated historical/alternative names; omit the preferred name itself. |
-| `urls` | required array of unique absolute URIs | Identity-level venue homepages. |
+| `urls` | required array of venue URL objects | Labeled identity-level resources; see section 6.1. Use `[]` when none are recorded. |
 | `disambiguation_note` | optional non-empty string | Human aid for distinguishing similarly named venues. |
 | `archived_at` | optional timestamp | Presence means archived. Existing links remain resolvable. |
 | `merged_into` | optional UUID | Surviving venue for a merge tombstone; implies `archived_at` and forms no cycle. |
 | `created_at`, `updated_at` | required timestamps | Local record lifecycle. |
 
 A venue identifies a journal or recurring conference/workshop series, not an annual event, volume, issue, publisher, or proceedings book. Venue records never store publication IDs.
+
+### 6.1 Venue URLs
+
+Each venue URL is an object with the following fields:
+
+| Field | Presence and form | Semantics |
+| --- | --- | --- |
+| `url` | required absolute URI | Resource address, normally HTTPS. Unique within this venue's `urls` array. |
+| `role` | required enum | `homepage`, `proceedings`, `submission`, or `other`. |
+| `label` | optional non-empty string | Human-readable clarification, such as “IEEE proceedings” or “CVF Open Access”. |
+
+`homepage` identifies the official venue website; `proceedings` identifies a proceedings directory or archive; `submission` identifies an official submission portal or instructions; `other` covers additional venue resources. Prefer stable series-level resources over year-specific links. When a resource is year-specific, identify that year in its optional label.
+
+A venue may have multiple URLs with the same role, such as proceedings hosted by both IEEE and CVF. Array order is preferred display order. Do not repeat the same `url` with different roles or labels; uniqueness uses the stored URI string. Omit an unknown label rather than storing an empty string or `null`.
+
+For example, CVPR can record:
+
+```json
+"urls": [
+  {
+    "url": "https://cvpr.thecvf.com/",
+    "role": "homepage"
+  },
+  {
+    "url": "https://www.computer.org/csdl/proceedings/1000147",
+    "role": "proceedings",
+    "label": "IEEE proceedings"
+  }
+]
+```
+
+This object format applies only to venue URLs. Publication and author URL fields retain their existing string-array formats. Bare URL strings are not part of the new venue URL format.
+
+The runtime types, validators, core operations, and viewer implement this format. Venue merges deduplicate by `url`, preserving the surviving venue’s role, label, and ordering when both venues contain the same URL. Publication and author URL handling is unchanged.
 
 ## 7. Google Scholar mirror
 

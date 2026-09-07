@@ -47,6 +47,7 @@ export function validateState(s: CatalogState): ValidationResult {
     if (r.aliases.includes(r.preferred_name)) issue("IDENTITY_ALIAS", "Alias repeats preferred name", r.id);
     if (r.merged_into) { reference(r.merged_into, kind, r.id); if (!r.archived_at || r.merged_into === r.id || !resolveIdentity(rows as Array<{ id: string; merged_into?: string }>, r.id)) issue("REDIRECT_INVALID", "Invalid merge tombstone or redirect cycle", r.id); }
   }
+  for (const v of s.venues) unique(v.urls.map(link => [link.url, v.id]), "DUPLICATE_VENUE_URL");
   const owner = s.owner.self_author_id ? s.authors.find((a) => a.id === s.owner.self_author_id) : undefined;
   if (s.owner.self_author_id && (!owner || owner.merged_into)) issue("OWNER_INVALID", "self_author_id must identify a non-merged author");
   if (s.gscholar_profile && (!owner || ![owner.identifiers.google_scholar, ...(owner.identifier_aliases ?? []).filter((a) => a.provider === "google_scholar").map((a) => a.value)].includes(s.gscholar_profile.profile_id))) issue("PROFILE_OWNER", "Selected Scholar profile must be a confirmed owner identifier");

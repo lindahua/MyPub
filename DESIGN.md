@@ -225,6 +225,8 @@ Keep the author order and full supplied names; preserve Unicode and bibliographi
 
 Most publications need only a top-level `publication_date`. It accepts a year (`"2024"`), year/month (`"2024-06"`), or full date (`"2024-06-18"`) according to what is known. Optional top-level `submission_date`, `acceptance_date`, `online_date`, and `issued_date` retain more specific lifecycle facts when available. A generic date does not assert one of those lifecycle meanings. Omit unknown values rather than inventing a month/day or copying the generic value into every date field. The version-2 format has no nested `dates` object and no separate publication `year`; section 2.1 defines year derivation for filing and filters.
 
+For journal papers, the curated `publication_date` is the journal issue publication date, preserving its known precision. Store online-first publication separately in `online_date`; it does not replace the issue date. An unknown issue date remains unknown until verified. Review source dates before accepting them as issue dates, and retain Scholar’s literal source year even when it differs from the curated issue year. Thus the TPAMI paper “Temporal Segment Networks for Action Recognition in Videos” is counted in 2019 by issue publication, not in its 2018 online-first year.
+
 Publications have no lifecycle `status` field or status filter. Catalog archiving is represented solely by optional `archived_at`; restore removes it. Active in the catalog does not mean formally published. Metadata uses one `updated_at` per record, without per-field timestamps; source evidence remains in reviews, and citation observations keep their own dates.
 
 Start with three relation types:
@@ -829,3 +831,7 @@ Remaining refinements from the reviewed draft: optional table/density/theme swit
 An arXiv paper is one publication record spanning all its arXiv versions, separate from any peer-reviewed publication. Store every version from v1 through the latest retrieved version, including its submission date, title, ordered literal author list, and abstract. Versions may differ in all three metadata fields. Fetching only v1 and the latest is insufficient. Keep source evidence and never fill an older snapshot with current metadata.
 
 For arXiv, `publication_date` and `submission_date` always equal the full UTC date of the first version (`published` in arXiv). Revision dates use each version's `updated` timestamp. Revision updates never move the publication to a different year. Current title and author credits reflect the latest retrieved version; preserve supported identity links by name rather than array position. Missing or incomplete history blocks admission. A refresh obtains a complete history before applying a reviewed update atomically. No automatic merging of separate UUIDs or linking to peer-reviewed versions.
+
+### Labeled venue resources
+
+Venue `urls` contain objects with a required `url` and `role` (`homepage`, `proceedings`, `submission`, or `other`), plus an optional display `label`. Multiple resources can share a role; URL strings are unique within each venue. The viewer displays the custom label or a role-based default. Merging venues preserves the survivor’s metadata for duplicate URLs and appends new resources in source order. Publication URLs remain plain strings. SCHEMAS.md section 6.1 defines the implemented format.

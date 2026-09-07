@@ -180,3 +180,5 @@ Desktop paper lists use pages of 30; author and venue dropdown bibliographies us
   "max_pagesize_dropdown": 15
 }
 ```
+
+Venue links use labeled objects, for example `{"url":"https://cvpr.thecvf.com/","role":"homepage"}` or `{"url":"https://www.computer.org/csdl/proceedings/1000147","role":"proceedings","label":"IEEE proceedings"}`. Supported roles are `homepage`, `proceedings`, `submission`, and `other`. The viewer uses the label when supplied, otherwise a role-based caption. Publication URLs remain strings.

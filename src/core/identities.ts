@@ -60,7 +60,7 @@ export async function mergeIdentity(c: Catalog, kind: Kind, source: string, targ
   return c.change((s) => { const { from, to, affected } = preview(s);
     to.aliases = [...new Set([...to.aliases, from.preferred_name, ...from.aliases])].filter((a) => a !== to.preferred_name);
     if (kind === "author") { const a = from as AuthorIdentity; const b = to as AuthorIdentity; const all = [...(b.identifier_aliases ?? []), ...(a.identifier_aliases ?? [])]; for (const provider of ["google_scholar", "orcid"] as const) if (a.identifiers[provider] && a.identifiers[provider] !== b.identifiers[provider]) { if (!b.identifiers[provider]) b.identifiers[provider] = a.identifiers[provider]; else all.push({ provider, value: a.identifiers[provider] }); } b.identifier_aliases = all.filter((x, i) => b.identifiers[x.provider] !== x.value && all.findIndex((y) => y.provider === x.provider && y.value === x.value) === i); }
-    else { const a = from as VenueIdentity; const b = to as VenueIdentity; b.urls = [...new Set([...b.urls, ...a.urls])]; }
+    else { const a = from as VenueIdentity; const b = to as VenueIdentity; b.urls = [...b.urls, ...a.urls.filter(link => !b.urls.some(existing => existing.url === link.url))]; }
     for (const p of affected) { if (kind === "author") for (const a of p.authors) { if (a.author_id === from.id) a.author_id = to.id; } else if (p.venue) p.venue.venue_id = to.id; touch(p); }
     if (kind === "author" && s.owner.self_author_id === from.id) s.owner.self_author_id = to.id;
     from.merged_into = to.id; from.archived_at = now(); touch(from); touch(to);
