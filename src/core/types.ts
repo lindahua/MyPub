@@ -31,7 +31,7 @@ export interface Attachment {
   size_bytes: number; storage: "git-lfs"; path: string; sha256: string; source_url?: string;
 }
 export interface Publication extends RecordBase {
-  citation_key: string; gscholar_entry_id?: string; type: PublicationType; title: string;
+  citation_key: string; gscholar_entry_id?: string; type: PublicationType; title: string; abstract?: string;
   authors: AuthorCredit[]; authorship_note?: string; venue?: PublicationVenue;
   publication_date?: string; submission_date?: string; acceptance_date?: string; online_date?: string; issued_date?: string;
   identifiers: PublicationIdentifiers;

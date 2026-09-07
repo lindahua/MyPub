@@ -579,6 +579,12 @@ function RecordDetails({
               {pub.authorship_note && <p>{pub.authorship_note}</p>}
             </section>
           </div>
+          {pub.abstract && (
+            <section>
+              <h3>Abstract</h3>
+              <p className="preserve">{pub.abstract}</p>
+            </section>
+          )}
           {pub.notes && (
             <section>
               <h3>Notes</h3>

@@ -835,3 +835,8 @@ For arXiv, `publication_date` and `submission_date` always equal the full UTC da
 ### Labeled venue resources
 
 Venue `urls` contain objects with a required `url` and `role` (`homepage`, `proceedings`, `submission`, or `other`), plus an optional display `label`. Multiple resources can share a role; URL strings are unique within each venue. The viewer displays the custom label or a role-based default. Merging venues preserves the survivor’s metadata for duplicate URLs and appends new resources in source order. Publication URLs remain plain strings. SCHEMAS.md section 6.1 defines the implemented format.
+
+
+### Publication abstracts
+
+Publications support an optional plain-text `abstract`, separate from private notes. Preserve paragraphs and mathematical notation. The field is supported by core add/update, reviewed metadata import, native JSON, CSV/BibTeX import/export, and the expanded desktop details. DOI lookup retains supplied abstracts after removing JATS/XML markup; arXiv lookup uses the latest version’s abstract while preserving all version snapshots. Missing source abstracts never clear existing content. Existing records remain valid without an abstract; adding this field does not automatically backfill the catalog.

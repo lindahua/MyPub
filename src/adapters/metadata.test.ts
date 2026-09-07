@@ -7,8 +7,8 @@ const errorCode = (code: string) => (error: unknown): boolean => error instanceo
 
 test("Crossref metadata is normalized into a publication proposal", async () => {
   const original = globalThis.fetch;
-  globalThis.fetch = async () => new Response(JSON.stringify({ message: { title: ["Testing Systems"], author: [{ given: "Ada", family: "Lovelace", ORCID: "0000-0000" }], issued: { "date-parts": [[2026, 9, 1]] }, "container-title": ["Journal of Tests"], type: "journal-article", URL: "https://doi.org/10.1005/test" } }), { status: 200 });
-  try { const result = await lookupDoi("https://doi.org/10.1005/TEST"); assert.equal(result.identifiers?.doi, "10.1005/test"); assert.equal(result.type, "journal"); assert.equal(result.authors[0]?.name, "Ada Lovelace"); assert.equal(result.authors[0]?.name_parts?.family, "Lovelace"); assert.equal(result.publication_date, "2026-09-01"); }
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: { title: ["Testing Systems"], abstract: "<jats:p>First &amp; &#945;.</jats:p><jats:p>Second.</jats:p>", author: [{ given: "Ada", family: "Lovelace", ORCID: "0000-0000" }], issued: { "date-parts": [[2026, 9, 1]] }, "container-title": ["Journal of Tests"], type: "journal-article", URL: "https://doi.org/10.1005/test" } }), { status: 200 });
+  try { const result = await lookupDoi("https://doi.org/10.1005/TEST"); assert.equal(result.identifiers?.doi, "10.1005/test"); assert.equal(result.type, "journal"); assert.equal(result.authors[0]?.name, "Ada Lovelace"); assert.equal(result.authors[0]?.name_parts?.family, "Lovelace"); assert.equal(result.publication_date, "2026-09-01"); assert.equal(result.abstract, "First & α.\n\nSecond."); }
   finally { globalThis.fetch = original; }
 });
 
@@ -30,7 +30,7 @@ test("arXiv lookup retains each version's metadata and always dates the paper fr
     const result = await lookupArxiv("https://arxiv.org/abs/2602.00001v1", value => { evidence = value; });
     assert.equal(requests.length, 2); assert.match(requests[1]!, /2602.00001v1/);
     assert.equal(result.publication_date, "2026-02-03"); assert.equal(result.submission_date, "2026-02-03");
-    assert.equal(result.title, "Revised Title"); assert.equal(result.authors.length, 2); assert.equal(result.identifiers?.doi, undefined);
+    assert.equal(result.title, "Revised Title"); assert.equal(result.abstract, "Abstract 2 < α"); assert.equal(result.authors.length, 2); assert.equal(result.identifiers?.doi, undefined);
     assert.deepEqual(result.arxiv_versions?.map(v => [v.version, v.title, v.authors.length, v.abstract, v.submission_date]), [[1, "First & Original", 1, "Abstract 1 < α", "2026-02-03"], [2, "Revised Title", 2, "Abstract 2 < α", "2026-03-04"]]);
     assert.equal((evidence as { responses: string[] }).responses.length, 2);
   } finally { globalThis.fetch = original; }
