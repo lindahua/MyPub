@@ -11,7 +11,7 @@ import { importFile } from "./imports.js";
 import { decideReview, reopenReview } from "./reviews.js";
 import { nativeExport, importNative } from "./native.js";
 import { history } from "./history.js";
-import { initializeGit, sync } from "./sync.js";
+import { commit, initializeGit } from "./sync.js";
 import { run } from "../adapters/process.js";
 import { backup, restore } from "./backup.js";
 import { importScholarSnapshot, linkScholar } from "./scholar.js";
@@ -98,10 +98,10 @@ test("Git history uses historical committer across renames and survives a backup
   const { root, c } = await fixture(); const container = await mkdtemp(join(tmpdir(), "mypub-history-")); try {
     await initializeGit(c); await run("git", ["config", "user.name", "Actual Committer"], root); await run("git", ["config", "user.email", "committer@example.invalid"], root);
     const p = await c.add(input); await run("git", ["add", "catalog"], root); await run("git", ["commit", "--author", "Original Author <author@example.invalid>", "-m", "Add publication"], root);
-    await c.update(p.id, { title: "Renamed Publication", publication_date: "2026" }); await sync(c, "Rename and date");
+    await c.update(p.id, { title: "Renamed Publication", publication_date: "2026" }); await commit(c, "Rename and date");
     await run("git", ["config", "user.name", "Changed Configuration"], root);
     const events = await history(c, p.id); assert.equal(events.length, 2); assert.equal(events[1]?.committer.name, "Actual Committer"); assert.equal(events[1]?.author.name, "Original Author"); assert.ok(events[0]?.paths.some(path => path.includes("/2026/")));
-    const attachment = join(container, "paper.pdf"); await writeFile(attachment, "%PDF history fixture"); await c.addAttachment(p.id, attachment, "paper"); await sync(c, "Add file"); const withAttachment = await history(c, p.id);
+    const attachment = join(container, "paper.pdf"); await writeFile(attachment, "%PDF history fixture"); await c.addAttachment(p.id, attachment, "paper"); await commit(c, "Add file"); const withAttachment = await history(c, p.id);
     await backup(c, join(container, "backup")); const restored = new Catalog({ root: join(container, "restored") }); await restore(restored, join(container, "backup")); assert.deepEqual(await history(restored, p.id), withAttachment); assert.equal((await restored.validate(true)).valid, true);
   } finally { await rm(root, { recursive: true, force: true }); await rm(container, { recursive: true, force: true }); }
 });

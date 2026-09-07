@@ -85,8 +85,10 @@ export interface SyncConflict {
   record_type?: EntityType | "review" | "owner"; record_id?: string; path?: string; base: unknown | null; ours: unknown | null; theirs: unknown | null;
   details?: Record<string, unknown>; created_at: string;
 }
+export interface CommitResult { state: "committed" | "no-changes"; commit?: string; message?: string; }
 export interface SyncResult { state: "up-to-date" | "pushed" | "pulled" | "merged" | "needs-review"; commit?: string; conflicts: SyncConflict[]; }
-export interface StatusResult { catalog: "ready" | "missing"; git: boolean; lfs: boolean; branch?: string; upstream?: string; ahead?: number; behind?: number; dirty: boolean; pending_upload: boolean; needs_review: boolean; last_successful_sync?: string; }
+export interface StatusChange { path: string; previous_path?: string; status: "added" | "modified" | "deleted" | "renamed" | "copied" | "conflicted"; label?: string; }
+export interface StatusResult { changes?: StatusChange[]; catalog: "ready" | "missing"; git: boolean; lfs: boolean; branch?: string; upstream?: string; ahead?: number; behind?: number; dirty: boolean; pending_upload: boolean; needs_review: boolean; last_successful_sync?: string; }
 export interface ScholarReconciliation {
   source_review_id?: string; local_only: string[]; matched: string[]; source_only: string[]; excluded: string[]; missing: string[];
   candidates: Array<{ entry_id: string; publication_ids: string[] }>; rejected_pairs: Array<{ entry_id: string; publication_id: string }>;

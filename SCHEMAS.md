@@ -666,7 +666,7 @@ Path: `local/sync.json`.
 | `branch` | optional non-empty string | Full local branch name used for that success. |
 | `commit` | optional lowercase 40- or 64-hex string | Commit verified at that successful synchronization. |
 
-The four optional success fields are written together when a configured upstream exists; an unconfigured catalog may contain only `schema_version`.
+The four optional success fields are written together only after synchronization with the configured remote upstream succeeds. `mypub commit`, a failed synchronization, and a conflict-resolution choice do not update them. A failed push may leave integrated commits locally without advancing these success fields. An unconfigured catalog may contain only `schema_version`; `mypub sync` reports missing upstream configuration as an error.
 
 ### 11.2 Conflict record
 

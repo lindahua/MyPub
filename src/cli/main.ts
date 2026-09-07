@@ -11,13 +11,14 @@ import { decideReview, getReview, listReviews, reopenReview } from "../core/revi
 import { toBibtex, toCsv } from "../core/exports.js";
 import { nativeExport } from "../core/native.js";
 import { backup, restore } from "../core/backup.js";
-import { initializeGit, listConflicts, resolveConflict, status, sync } from "../core/sync.js";
+import { commit, initializeGit, listConflicts, resolveConflict, status, sync } from "../core/sync.js";
 import { lookupArxiv, lookupDoi } from "../adapters/metadata.js";
 import { run } from "../adapters/process.js";
 import { rebuildSearchIndex } from "../adapters/search.js";
 import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar } from "../core/scholar.js";
 import { addAuthor, addVenue, updateIdentity, archiveIdentity, identityDetails, updateCredit, unlinkCredit, linkVenue, mergeIdentity, configureOwner } from "../core/identities.js";
 import { history } from "../core/history.js";
+import { formatStatus } from "./status.js";
 import { publicationDate } from "../core/paths.js";
 import type { AttachmentRole, Coverage, RelationType, ReviewState, SearchFilters } from "../core/types.js";
 
@@ -48,11 +49,14 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   gscholar reconcile | link PUBLICATION ENTRY | unlink PUBLICATION
   gscholar exclude ENTRY --reason TEXT [--unlink-publications] [--preview]
   gscholar include ENTRY [--reason TEXT] [--preview]
+  commit [--message TEXT]
   sync [--message TEXT] | status | history [RECORD_UUID]
   conflicts [ID --choice ours|theirs [--file FILE]]
   export --format bibtex|csv|json [--output FILE] [filters]
   validate [--skip-attachments] | audit | recover | repair-paths
   backup DESTINATION [--files-only] | restore SOURCE | index rebuild
+
+Commit saves all managed edits locally without network access. Sync requires a clean tree and a remote upstream; its --message applies only to merge commits.
 
 Repository: --root overrides ~/.config/mypub/config.json repo_path; otherwise use the current directory.
 
@@ -123,9 +127,10 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       else if (sub === "exclude" || sub === "include") { const id = a.shift("entry")!, reason = a.take("--reason"), unlink = a.takeFlag("--unlink-publications"), preview = a.takeFlag("--preview"); action = () => matchingPolicy(c, id, sub === "exclude", reason, unlink, preview); }
       else usage("invalid gscholar action"); break;
     }
-    case "status": action = () => status(c); break;
+    case "status": action = async () => { const result = await status(c); return json ? result : formatStatus(result, c.root); }; break;
     case "history": { const id = a.shift(); action = () => history(c, id); break; }
-    case "sync": { const message = a.take("--message"); action = async () => { const result = await sync(c, message); if (result.state === "needs-review") exitCode = 4; return result; }; break; }
+    case "commit": { const message = a.take("--message"); action = async () => { const result = await commit(c, message); return json ? result : result.state === "no-changes" ? "No local changes to commit." : `Committed locally: ${result.commit!.slice(0, 12)} — ${result.message}\nNothing was uploaded. Run mypub sync when ready to synchronize.`; }; break; }
+    case "sync": { const message = a.take("--message"); action = async () => { const result = await sync(c, message, json ? undefined : event => { process.stderr.write(`${event.message}\n`); }); if (result.state === "needs-review") exitCode = 4; return json ? result : ({ "needs-review": "Synchronization paused: conflicts need review. Run mypub conflicts. Your current catalog is preserved.", "up-to-date": "Already synchronized with the configured upstream.", pushed: "Uploaded local commits. Synchronized with the configured upstream.", pulled: "Downloaded and applied remote commits. Synchronized with the configured upstream.", merged: "Combined local and remote commits. Synchronized with the configured upstream." })[result.state]; }; break; }
     case "conflicts": { const id = a.shift(); if (!id) action = () => listConflicts(c); else { const choice = a.take("--choice"), file = a.take("--file"); if (choice !== "ours" && choice !== "theirs") usage("choice must be ours or theirs"); action = () => resolveConflict(c, id, choice as "ours" | "theirs", file); } break; }
     case "export": { const format = a.take("--format") ?? "bibtex", dest = a.take("--output"), f = filters(a); if (!["bibtex", "csv", "json"].includes(format)) usage("format must be bibtex, csv, or json"); raw = !dest; action = async () => { const records = await c.list(f); const content = format === "bibtex" ? toBibtex(records) : format === "csv" ? toCsv(records) : `${JSON.stringify(nativeExport(await c.read(), records.map(p => p.id)), null, 2)}\n`; if (!dest) return content; await mkdir(dirname(resolve(dest)), { recursive: true }); await writeFile(resolve(dest), content); return { output: resolve(dest), count: records.length }; }; break; }
     case "validate": { const verify = !a.takeFlag("--skip-attachments"); action = async () => { const result = await c.validate(verify); exitCode = result.valid ? 0 : 4; return result; }; break; }

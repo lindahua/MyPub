@@ -11,7 +11,7 @@ import { importScholarSnapshot, linkScholar } from "../core/scholar.js";
 import { importFile } from "../core/imports.js";
 import { decideReview } from "../core/reviews.js";
 import { backup, restore } from "../core/backup.js";
-import { initializeGit, sync } from "../core/sync.js";
+import { commit, initializeGit, sync } from "../core/sync.js";
 import { catalogFiles } from "../core/paths.js";
 import { atomicWriteJson, now, sha256, uuid } from "../core/utils.js";
 import { MyPubError } from "../core/errors.js";
@@ -219,21 +219,21 @@ test("existing ignore rules survive and SQLite, sidecars and rebuild files never
   await run("git", ["add", "."], root);
   assert.equal((await run("git", ["ls-files", "--", "local"], root)).stdout, "");
   for (const path of ["local/index.sqlite", "local/index.sqlite-wal", "local/index.sqlite-shm", "local/index.sqlite-journal", "local/index-test.sqlite.tmp"]) assert.equal((await run("git", ["check-ignore", path], root)).stdout.trim(), path);
-  await sync(c);
+  await commit(c);
   assert.equal((await run("git", ["ls-tree", "-r", "--name-only", "HEAD", "--", "local"], root)).stdout, "");
   await run("git", ["add", "-f", "local/index.sqlite"], root);
   await assert.rejects(sync(c), code("LOCAL_TRACKED"));
 });
 
 test("sync integration and external Git reset refresh; fetch alone keeps the active view", { timeout: 30_000 }, async t => {
-  const { c, root } = await fixture(t); const p = await c.add(input); await initializeGit(c); await configureGit(root); await sync(c);
+  const { c, root } = await fixture(t); const p = await c.add(input); await initializeGit(c); await configureGit(root); await commit(c);
   const original = (await run("git", ["rev-parse", "HEAD"], root)).stdout.trim();
   const container = await mkdtemp(join(tmpdir(), "mypub-db-sync-")); t.after(() => rm(container, { recursive: true, force: true }));
   const remote = join(container, "remote.git"); await run("git", ["init", "--bare", "--initial-branch=main", remote], container);
   await run("git", ["remote", "add", "origin", remote], root); await run("git", ["push", "-u", "origin", "main"], root);
   const cloneRoot = join(container, "clone"); await run("git", ["clone", remote, cloneRoot], container); await configureGit(cloneRoot);
   const other = new Catalog({ root: cloneRoot });
-  await c.update(p.id, { title: "Remote Title" }); await sync(c);
+  await c.update(p.id, { title: "Remote Title" }); await commit(c); await sync(c);
   await run("git", ["fetch"], cloneRoot);
   assert.equal((await other.get(p.id)).title, input.title);
   await sync(other); assert.deepEqual(title(cloneRoot), ["Remote Title"]);

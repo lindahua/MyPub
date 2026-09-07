@@ -37,12 +37,38 @@ mypub search "paper title"
 mypub attachment add CITATION_KEY paper.pdf --role paper --primary
 mypub relation add CONFERENCE_KEY PREPRINT_KEY --type published_version_of
 mypub validate
+mypub commit --message "Update publication catalog"
 mypub sync
 ```
 
 Version 2 is the only supported catalog schema; there is no v1 migration layer. DOI and arXiv lookups stage review proposals and are available with `mypub add --doi ...` and `mypub add --arxiv ...`. CSV, BibTeX, and JSON imports first create durable review records; accepted catalog values remain authoritative. Reimporting identical source bytes returns the existing reviews instead of producing duplicates.
 
-`mypub status` distinguishes local dirtiness, commits pending upload, last successful sync, and stored conflicts. Sync validates before publishing, relies on the Git LFS pre-push hook to upload binary objects first, and persists Git conflicts under ignored local state for later resolution.
+`mypub status` shows compact labeled rows for the library, branch/upstream, uncommitted file count, upload/download commit counts, and last sync. A file list identifies changes by status, kind, and publication title or review summary. An `Attention` row appears only for problems; a `Next` line gives the immediate action. Routine catalog/LFS health is omitted. Saved edits await commit; only committed history counts as pending upload (`dirty` and `pending_upload` are separate in JSON). Remote comparisons use the last fetched state; status does not contact the remote. Use `mypub status --json` for structured output, including a `changes` list with paths, change statuses, optional labels, and previous paths for renames/copies. Sync validates before publishing, explicitly uploads outgoing Git LFS objects before pushing Git commits (even in clones without an LFS hook), and persists conflicts under ignored local state for later resolution.
+
+### Commit and synchronize
+
+Edits save immediately to the local catalog. `mypub commit` records a local checkpoint; `mypub sync` exchanges committed history with the configured upstream. Both commands print readable results by default and support `--json`.
+
+| Behavior | `mypub commit [--message TEXT]` | `mypub sync [--message TEXT]` |
+| --- | --- | --- |
+| Network | None | Fetches the configured remote branch and pushes outgoing commits |
+| Uncommitted changes | Validates and commits all managed changes | Refuses to proceed until the working tree and index are clean, including untracked files; ignored files are exempt |
+| Managed scope | `catalog/`, `attachments/`, `.gitattributes`, `.gitignore` | Synchronizes the branch's full committed history, including any files committed with ordinary Git |
+| Partial staging | Includes unstaged portions of managed files too | Never stages, commits edits, stashes, or discards changes |
+| Unrelated files | Leaves unstaged files alone; rejects unrelated staged files | Require ordinary Git handling or ignoring before sync |
+| No upstream | Local commits work | Reports synchronization is not configured |
+| No changes | No empty commit | Reports already synchronized only after a successful remote check |
+| Commit message | Supplied message or generated summary | Used only if a merge commit is needed |
+
+No-change commits return after Git preflight without reading or validating the unchanged catalog. Use `mypub validate` for an explicit integrity check. Commits containing edits retain full catalog and evidence validation; historical records are read in a single Git batch.
+
+Both require an initialized Git repository and a selected branch; finish or abort an active Git merge/rebase/cherry-pick/revert first. Pending catalog review proposals remain pending when committed. Commit validates attachment manifests against the staged LFS pointers and stores attachment bytes locally without uploading. A failed commit can leave managed files staged; it does not discard edits.
+
+Sync always fetches the upstream to check its current state. Identical histories return immediately after preflight/fetch without full catalog or attachment validation; use `mypub validate` for integrity checks. When histories differ, full validation remains required before integration or upload. Readable mode shows concise phase indicators on stderr; `--json` suppresses them. Network latency still applies to an unchanged sync.
+
+Sync fast-forwards when only the remote has new commits, uploads when only local history has advanced, and reconciles divergent histories by record UUID in a temporary workspace. A validated merge may create a merge commit; existing commits are never rebased or force-pushed. Conflicts preserve the current catalog. Record-resolution choices are saved locally and used by the next `sync`; changed histories require fresh reconciliation. Some reference or attachment conflicts require explicit catalog/Git edits, followed by `commit` where applicable.
+
+A failed upload retains local commits and any remote changes already integrated locally. Sync is not an atomic operation across both computers; retry safely after resolving the failure. Only a completed synchronization updates the last-successful-sync timestamp. Metadata sync retains LFS pointers without downloading attachments; use explicit attachment downloads for offline access.
 
 `mypub backup DESTINATION` captures current attachments, catalog JSON, Git history as a bundle, and fetched historical LFS objects when available. Keep backups outside the synchronized repository.
 
