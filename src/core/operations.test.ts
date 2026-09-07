@@ -47,7 +47,7 @@ test("backup and restore reproduce a catalog and refuse unsafe destinations", as
   const root = await mkdtemp(join(tmpdir(), "mypub-backup-source-")); const container = await mkdtemp(join(tmpdir(), "mypub-backup-target-"));
   try {
     const catalog = new Catalog({ root }); await catalog.initialize(); await catalog.add({ citation_key: "backup", type: "other", title: "Backup", authors: [{ name: "A" }] }); await run("git", ["init"], root); await run("git", ["config", "user.email", "test@example.invalid"], root); await run("git", ["config", "user.name", "Test"], root); await run("git", ["add", "."], root); await run("git", ["commit", "-m", "fixture"], root);
-    await assert.rejects(backup(catalog, join(root, "inside")), errorCode("UNSAFE_PATH")); const destination = join(container, "backup"); await backup(catalog, destination); await assert.rejects(backup(catalog, destination), errorCode("BACKUP_EXISTS"));
+    await assert.rejects(backup(catalog, join(root, "inside")), errorCode("UNSAFE_PATH")); const destination = join(container, "backup"); await backup(catalog, destination); const manifest = JSON.parse(await readFile(join(destination, "manifest.json"), "utf8")); assert.equal(manifest.includes_historical_lfs_objects, true); await assert.rejects(backup(catalog, destination), errorCode("BACKUP_EXISTS"));
     const restoredRoot = join(container, "restored"); const restored = new Catalog({ root: restoredRoot }); await restore(restored, destination); assert.equal((await restored.get("backup")).title, "Backup"); await assert.rejects(restore(restored, destination), errorCode("RESTORE_NOT_EMPTY"));
   } finally { await rm(root, { recursive: true, force: true }); await rm(container, { recursive: true, force: true }); }
 });

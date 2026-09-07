@@ -34,10 +34,11 @@ export async function backup(c: Catalog, destination: string, filesOnly = false)
     let includesHistoricalLfsObjects = false;
     if (gitRepo) {
       await run("git", ["bundle", "create", join(target, "repository.bundle"), "--all"], c.root);
-      // Failure to fetch historical objects is recorded, never advertised as complete.
-      const fetched = await run("git", ["lfs", "fetch", "--all"], c.root, true);
+      // Verify every reachable object, including an empty set; cached objects may be complete even when fetching is unavailable.
+      await run("git", ["lfs", "fetch", "--all"], c.root, true);
       const objects = (await run("git", ["rev-parse", "--git-path", "lfs/objects"], c.root)).stdout.trim(); const objectPath = resolve(c.root, objects);
-      if (await fileExists(objectPath)) { await copyTree(objectPath, join(target, "lfs-objects")); includesHistoricalLfsObjects = fetched.code === 0 && await verifyHistorical(c.root, objectPath); }
+      if (await fileExists(objectPath)) await copyTree(objectPath, join(target, "lfs-objects"));
+      includesHistoricalLfsObjects = await verifyHistorical(c.root, objectPath);
     }
     await copyTree(c.catalogDir, join(target, "catalog"));
     if (await fileExists(c.attachmentsDir)) await copyTree(c.attachmentsDir, join(target, "attachments")); else await mkdir(join(target, "attachments"));

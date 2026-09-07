@@ -82,3 +82,26 @@ npm run coverage
 The coverage command enforces minimum aggregate thresholds of 90% for lines and 80% for functions.
 
 Electron, graphical previews, browser capture, and hosted services are deliberately not part of this phase. See [DESIGN.md](DESIGN.md) for architecture and requirements.
+
+## Local configuration
+
+Create `~/.config/mypub/config.json` to select your default catalog:
+
+```json
+{
+  "repo_path": "~/Data/MyPubRepo"
+}
+```
+
+Then run `mypub list`, `mypub status`, or other commands from any directory. `mypub config show` prints the stored configuration and effective repository path. `mypub --root /path/to/another/catalog list` overrides the default. Without a configured path, commands use the current directory. `init` and `restore` follow the same rules; pass `--root` when creating a different catalog.
+
+Use an absolute path or `~/`; relative paths in the config are rejected. Only `repo_path` is currently supported. The file is local to your OS user and is outside catalog Git history and backups. Per-catalog device settings remain in `local/settings.json`, and commit identity remains controlled by Git.
+
+For an installation under your own account when npm's default global directory is not writable:
+
+```sh
+npm run build
+npm install --global --prefix "$HOME/.local" .
+```
+
+Ensure `~/.local/bin` is on your shell's `PATH`, then run `mypub --help`. This local-directory installation links to the codebase; run `npm run build` after source changes.

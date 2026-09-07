@@ -1,10 +1,14 @@
-# PubMan2 → MyPub migration proposal
+# PubMan2 → MyPub migration
 
-The snapshot-based [compatibility review](COMPATIBILITY.md) includes the 7 September 2026 recheck against the revised authoritative SCHEMAS.md. The core and CLI now implement the version-2 format; the review records the settled publication-date model and separates remaining migration inputs from nonblocking audit findings.
+Completed **7 September 2026**. The verified local data repository is `/Users/dhlin/Data/MyPubRepo`, with initial commit `5bb6d771339176f22ec717a0817889c104c00915` on `main`. It contains all 466 publications, 1,303 authors, 55 venues, 582 Scholar entries, and 4,156 ordered credits from the frozen snapshot. All entity UUIDs, 410 confirmed Scholar associations, and 35 exclusions were preserved. There are 1,164 dated total-citation samples and 509 annual snapshots; 73 unsupported current zeros became null. Two supported co-first credits were recovered.
 
-Updated 6 September 2026. **The read-only Supabase-to-SQLite snapshot is complete. Conversion to MyPub, attachment acquisition, and cutover have not been performed.** This plan targets MyPub schema version 2 in [DESIGN.md](../DESIGN.md). No v1 catalog migration is needed; this external database conversion remains separate.
+The user confirmed the existing owner/Profile association, confirmed that no separate attachment files exist, and supplied one surname/given-name correction. These decisions are preserved in private run inputs and migration evidence. The repository has 633 reviews, including 29 pending items: five same-name identity groups, 17 non-preprint arXiv attributions, three duplicate-arXiv groups, and four publication/Scholar year disagreements. No automatic identity merging or identifier removal was used to clear these questions.
 
-Migrate from a consistent PostgreSQL snapshot, preserve existing entity UUIDs and accepted associations, and build a separate private catalog for reconciliation. The chosen identity policy is to inherit the legacy UUIDs; the user delegated this decision, and no renumbering is needed for the four UUID-bearing entity tables. This is a one-time migration for the sole user of PubMan2. Keep PubMan2 available for recovery until the new catalog passes validation; there is no multiuser rollout or continuing integration to build. Use the legacy Excel export only for a human comparison: it is not a lossless migration source.
+Validation passed: structural/semantic checks (zero blocking errors or warnings), field-by-field comparison with SQLite, exact entity UUIDs and ordered links, all 520 sanitized historical events, native dependency-closed export/import, year/owner queries, index rebuild, Git integrity, and independent backup/restore with the same commit. The 3,042 catalog JSON files are stored under readable year/surname paths. The destination working tree is clean. Git LFS is configured for future attachments; no remote was created or data published. PubMan2 and the frozen SQLite source remain unchanged.
+
+Private artifacts remain in `/Users/dhlin/Temp/pubman_tmp/migration_20260907_reviewed/`: `catalog_state.json`, `reconciliation.json`, `verification.json`, `initial-backup/`, and disposable round-trip/restore verification catalogs. The backup includes the Git bundle and its manifest confirms completeness for the available data (there are no attachment bytes to acquire). The original SQLite snapshot and manifest remain in the workspace parent. Keep the initial backup independently; do not rely on a temporary workspace as the only long-term backup.
+
+The [compatibility review](COMPATIBILITY.md) records the source/design assessment. Historical planning sections below explain the mapping; the execution result above supersedes references to pending execution. This was a one-time conversion for the sole user. Do not rerun it over the active repository after new MyPub edits.
 
 ## Scope and code organization
 
@@ -12,16 +16,21 @@ All plans, helper scripts, mapping/correction files, migration-specific tests, a
 
 ```text
 migrate_pubman/
-├── README.md                # This plan and eventual run instructions
+├── README.md                # Migration record and run instructions
 ├── scripts/
-│   └── snapshot_supabase.py # Read-only inventory and SQLite snapshot
+│   ├── snapshot_supabase.py # Read-only inventory and SQLite snapshot
+│   ├── audit_compatibility.py # Source inventory
+│   ├── convert_pubman.py     # Deterministic conversion and reconciliation
+│   ├── verify_catalog.py     # Independent field/evidence checks
+│   └── install_catalog.mjs   # Staging, round-trip, backup, Git, activation
 ├── tests/
-│   └── test_snapshot_supabase.py
+│   ├── test_snapshot_supabase.py
+│   └── test_convert_pubman.py
 ├── requirements.txt         # Pinned snapshot dependencies
 └── .gitignore               # Python caches and a local virtual environment
 ```
 
-The snapshot helper and its offline encoding tests are implemented; the MyPub converter remains planned. Do not add a permanent PubMan2 adapter, migration CLI command, dependency, or compatibility layer to `src/`, the normal `mypub` package, or its public API. Scripts may call the ordinary MyPub version-2 API for validation and supported writes; the runtime must never import migration code. General author/venue/Scholar functionality required by the product remains normal MyPub work and is not moved into this folder.
+The snapshot helper, converter, independent field/evidence verifier, staged installer, and fictional fixture tests are implemented. All one-time code stays under this folder. The converter reads only the frozen SQLite snapshot and takes explicit owner/profile/correction inputs. The installer uses the ordinary version-2 core to validate/write the complete state, builds an index and exports, verifies native round-trip and backup restoration, commits using the normal Git committer, and activates by same-volume rename into an empty destination. No PubMan2-specific runtime adapter or CLI command was added to `src/`. A general backup fix correctly recognizes a repository with no reachable LFS objects as complete even without a remote.
 
 Use `/Users/dhlin/Temp/pubman_tmp` as the user-designated private migration workspace. Source snapshots, credentials, real-data correction files/reports, and the destination private catalog remain outside the tracked application codebase. Keep any private run files inside this folder ignored if used locally; commit only migration plans/code and fictional fixtures. After the transfer, retain this folder as a record of the one-time process, with no ongoing runtime dependency on it.
 
@@ -98,7 +107,7 @@ Google Scholar is the sole citation source, as confirmed by the user. Supabase c
 
 ## 2. Destination prerequisites and design gaps
 
-Implement the approved MyPub version-2 catalog first: author/venue identities, embedded ordered credits, Scholar entries and scalar links, recursive year/surname filing, readable filenames, ID-based lookup, durable review evidence, and transaction/sync validation. The current [MyPub types](../src/core/types.ts) still declare `SCHEMA_VERSION = 1`, embed name-only authors, and use a string venue. A migration must not feed version-2 data through those current write operations.
+Implement the approved MyPub version-2 catalog first: author/venue identities, embedded ordered credits, Scholar entries and scalar links, recursive year/surname filing, readable filenames, ID-based lookup, durable review evidence, and transaction/sync validation. The current [MyPub types](../src/core/types.ts) and validators implement version 2; conversion uses those general operations.
 
 The 7 September decisions settle the following issues in the version-2 design:
 
@@ -184,7 +193,7 @@ For example, `Jane Q. Doe*, Alex Chen*, Wei Wang` becomes this authors-array exc
 ]
 ```
 
-The user confirms that PubMan2 mishandled these annotations. Treat marker contamination as a known legacy defect requiring migration repair; the affected row count remains to be established by the source inventory. The inspected parser does not handle this marker: an attached star can remain in `last_name` (for example, `Doe*`), while a whitespace-separated star can itself become `last_name`, with the real surname moved into `mid_name`. Strip the annotation before deriving canonical names, aliases, name parts, surname buckets, and filename stems. In the standalone-star case, recover the clean literal full name, but resolve the surname split from reliable original/structured evidence or a reviewed correction; until then use `unknown_surname/`. Never put `*` into `name_parts.suffix`, and never discard a whole author row just because its stored surname is the marker.
+The user confirms that PubMan2 mishandled these annotations. Treat marker contamination as a known legacy defect requiring migration repair; the verified inventory contains five marked author rows and two leading credited slots; both slots were repaired. The inspected parser does not handle this marker: an attached star can remain in `last_name` (for example, `Doe*`), while a whitespace-separated star can itself become `last_name`, with the real surname moved into `mid_name`. Strip the annotation before deriving canonical names, aliases, name parts, surname buckets, and filename stems. In the standalone-star case, recover the clean literal full name, but resolve the surname split from reliable original/structured evidence or a reviewed correction; until then use `unknown_surname/`. Never put `*` into `name_parts.suffix`, and never discard a whole author row just because its stored surname is the marker.
 
 Roles belong to the **publication credit**, not to the shared author identity. Prefer a publication-specific stored input/audit byline when available and aligned to the current ordered list. If the marker is recoverable only from a shared legacy author row, a marked leading group can supply the proposed migration credits under this confirmed convention, but record that evidence limitation and flag conflicting publication-specific strings or ambiguous reuse. Do not propagate `co_first` to all publications linked to a marked identity. Singleton, non-leading/noncontiguous, repeated, or marker-only cases go into the anomaly report without inventing additional co-first authors or treating the marker as corresponding authorship. Preserve any cleanly supported annotation while resolving the anomaly.
 
@@ -242,6 +251,30 @@ Recommended sequence:
 
 No Supabase deletion, schema change, account removal, or backend decommissioning is part of this migration plan. Those are separate later actions after successful use and restore verification.
 
-## 7. Remaining conversion inputs
+## 7. Execution commands and remaining audit work
 
-The snapshot inventory and compatibility recheck are complete. Before conversion, confirm the bibliographic owner author UUID/profile assignment (independent of Git identity), and establish the separate destination catalog path and any actual attachment locations. Configure a private remote when synchronization is needed. Status removal, optional Scholar details, matching policy, byline completeness, record-level metadata times, nullable citation observations, admission of duplicate arXiv IDs, and the main `publication_date` with optional lifecycle dates are settled in the revised design. The remaining owner/destination/attachment choices have not been inferred from credentials or treated as already confirmed.
+The converter refuses a reused build directory, and the installer refuses a nonempty destination. Inputs below are private run files, not tracked publication fixtures:
+
+```sh
+python3 migrate_pubman/scripts/convert_pubman.py \
+  --snapshot /path/to/pubman.sqlite --sha256 VERIFIED_SNAPSHOT_HASH \
+  --captured-at SNAPSHOT_UTC_TIME --migration-time FIXED_MIGRATION_UTC_TIME \
+  --owner-id CONFIRMED_AUTHOR_UUID --profile-id CONFIRMED_PROFILE_ID \
+  --corrections /path/to/reviewed_name_corrections.json --output /path/to/fresh-build
+npm run build
+node migrate_pubman/scripts/install_catalog.mjs prepare /path/to/fresh-build /path/to/empty-destination
+PYTHONDONTWRITEBYTECODE=1 python3 migrate_pubman/scripts/verify_catalog.py \
+  /path/to/pubman.sqlite /path/to/fresh-build/repository \
+  --sha256 VERIFIED_SNAPSHOT_HASH --corrections /path/to/reviewed_name_corrections.json
+node migrate_pubman/scripts/install_catalog.mjs activate /path/to/fresh-build /path/to/empty-destination
+```
+
+Name corrections map full author UUIDs to `{"name_parts":{"given":"...","family":"..."},"reason":"..."}`. Raw source components remain unchanged in evidence. All original author spellings and associations remain traceable; source data cannot recover previously discarded historical variants.
+
+Tests use fictional data and do not touch the real snapshot:
+
+```sh
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s migrate_pubman/tests -v
+```
+
+The remaining work is ordinary catalog auditing through MyPub's retained review items, configuring a private remote if desired, and maintaining independent backups. There are no unresolved owner, destination, or attachment inputs. Source backend decommissioning is outside this migration.

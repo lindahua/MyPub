@@ -49,7 +49,7 @@ Optional values are omitted. Empty required collections are written as `[]` or `
 
 ### 2.2 Versions, identity, and time
 
-Every shared catalog record except `catalog/config/author.json` and `catalog/gscholar/profile.json` has an immutable `id`. Every catalog and local-state JSON file defined here has `schema_version: 2`. The backup manifest and native interchange envelope have independent versions as noted in sections 13 and 14.
+Every shared catalog record except `catalog/config/author.json` and `catalog/gscholar/profile.json` has an immutable `id`. Every catalog and repository-local state JSON file defined here has `schema_version: 2`. The per-user application configuration in section 10.1 has no catalog schema version. The backup manifest and native interchange envelope have independent versions as noted in sections 13 and 14.
 
 Entity `created_at` is when the record first entered this MyPub library, not when the publication, person, venue, or source object came into existence. `updated_at` is the last accepted change to that record. An evidence capture does not update a curated entity unless it produces an accepted change. Writers must not change `created_at`; accepted changes set `updated_at` to a timestamp no earlier than its previous value.
 
@@ -633,6 +633,22 @@ Path: `local/settings.json`. This file is not synchronized.
 | `updated_at` | required timestamp | Last settings edit. |
 
 Local availability, remote availability, and pending-upload state are computed from the worktree/LFS and are not persisted as authoritative fields here.
+
+### 10.1 Per-user application configuration
+
+Path: `~/.config/mypub/config.json`, outside all catalogs. This is a manually editable JSON object shared by MyPub commands for the current operating-system user. It is not synchronized, exported, or included in catalog backups. It has no timestamps or catalog schema version.
+
+```json
+{
+  "repo_path": "~/Data/MyPubRepo"
+}
+```
+
+`repo_path` is optional: a non-empty absolute directory path or a path beginning with `~/` (bare `~` is also supported). MyPub expands the current user's home directory; it does not expand environment variables or other users' tildes. Relative config paths are rejected so changing the working directory cannot select a different catalog accidentally. Unknown properties, malformed JSON, null values, and unreadable files report a `CONFIG` error. A missing file or `{}` supplies no default.
+
+Repository selection is explicit CLI `--root PATH`, then `repo_path`, then the current working directory. Relative `--root` paths resolve from the working directory; `~/` is expanded there too. An explicit `--root` bypasses configuration loading, allowing use while a malformed config is repaired. Help also works without loading config. `mypub config show` validates and prints the config file path, stored options, and effective repository path without opening the catalog. Reads do not create the config file or directory, initialize a catalog, or fall back from a configured but nonexistent repository. `init` and `restore` use the same selection rules; use `--root` to select a different destination explicitly.
+
+Only `repo_path` is currently supported. Additional application-wide preferences can be defined here when implemented. Git identity remains managed by Git; catalog-specific attachment preferences and pins remain in `local/settings.json`.
 
 ## 11. Synchronization state and conflicts
 

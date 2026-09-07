@@ -1,7 +1,9 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
+import { configPath, readUserConfig, resolveRepoRoot } from "../adapters/config.js";
 import { Catalog } from "../core/catalog.js";
 import { MyPubError } from "../core/errors.js";
 import { importFile, stageImport } from "../core/imports.js";
@@ -23,6 +25,7 @@ const HELP = `mypub — portable publication catalog
 
 Usage: mypub [--root PATH] [--json] <command> [options]
 
+  config show
   init [--name NAME]
   list|search [QUERY] [filters] | show ID
   add --json-file FILE | --doi DOI | --arxiv ID
@@ -51,6 +54,8 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   validate [--skip-attachments] | audit | recover | repair-paths
   backup DESTINATION [--files-only] | restore SOURCE | index rebuild
 
+Repository: --root overrides ~/.config/mypub/config.json repo_path; otherwise use the current directory.
+
 Filters: --year YYYY --venue ID_OR_NAME --author UUID_OR_KEY --role ROLE
          --type TYPE --tag TAG --include-archived
 Credit positions are one-based. show returns record_revision for credit edits. Metadata lookups stage reviews for acceptance.
@@ -72,8 +77,15 @@ function filters(a: Args): SearchFilters {
   return { ...(year ? { year: Number(year) } : {}), ...(venue ? { venue } : {}), ...(author ? { author } : {}), ...(role ? { role: role as SearchFilters["role"] & string } : {}), ...(type ? { type: type as SearchFilters["type"] & string } : {}), ...(tag ? { tag } : {}), includeArchived: a.takeFlag("--include-archived") };
 }
 export async function main(argv = process.argv.slice(2)): Promise<number> {
-  const a = new Args([...argv]); const root = resolve(a.take("--root") ?? process.cwd()), json = a.takeFlag("--json"), command = a.shift();
+  const a = new Args([...argv]); const explicitRoot = a.take("--root"), json = a.takeFlag("--json"), command = a.shift();
   if (!command || ["help", "--help", "-h"].includes(command)) { output(HELP, false); return 0; }
+  if (command === "config") {
+    if (a.shift() !== "show" || a.values.length) usage("Usage: mypub config show");
+    const config = await readUserConfig();
+    output({ config_file: configPath(), config, repo_path: await resolveRepoRoot(explicitRoot) }, json);
+    return 0;
+  }
+  const root = await resolveRepoRoot(explicitRoot);
   const c = new Catalog({ root }); let action: () => Promise<unknown>; let raw = false; let exitCode = 0;
   switch (command) {
     case "init": { const name = a.take("--name"); action = async () => { const l = await c.initialize(name); await initializeGit(c); return l; }; break; }
@@ -130,4 +142,4 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
   output(await action!(), raw ? false : json); return exitCode;
 }
 function table(records: Awaited<ReturnType<Catalog["list"]>>): string { return records.length ? ["KEY  YEAR  TYPE  TITLE", ...records.map(p => `${p.citation_key}  ${publicationDate(p)?.slice(0, 4) ?? ""}  ${p.type}  ${p.title}`)].join("\n") : "No publications."; }
-if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) main().then((code) => { process.exitCode = code; }).catch((error: unknown) => { const typed = error instanceof MyPubError ? error : new MyPubError(error instanceof Error ? error.message : String(error), "UNEXPECTED"); process.stderr.write(`${typed.code}: ${typed.message}\n`); if (process.env.MYPUB_DEBUG && error instanceof Error) process.stderr.write(`${error.stack ?? ""}\n`); process.exitCode = typed.code === "USAGE" ? 2 : typed.code === "NOT_FOUND" ? 3 : typed.code.includes("VALIDATION") || typed.code.includes("CONFLICT") ? 4 : 1; });
+if (import.meta.url === (process.argv[1] ? pathToFileURL(realpathSync(process.argv[1])).href : undefined)) main().then((code) => { process.exitCode = code; }).catch((error: unknown) => { const typed = error instanceof MyPubError ? error : new MyPubError(error instanceof Error ? error.message : String(error), "UNEXPECTED"); process.stderr.write(`${typed.code}: ${typed.message}\n`); if (process.env.MYPUB_DEBUG && error instanceof Error) process.stderr.write(`${error.stack ?? ""}\n`); process.exitCode = typed.code === "USAGE" ? 2 : typed.code === "NOT_FOUND" ? 3 : typed.code.includes("VALIDATION") || typed.code.includes("CONFLICT") ? 4 : 1; });
