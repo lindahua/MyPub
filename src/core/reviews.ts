@@ -63,7 +63,7 @@ export function applyProposals(s: CatalogState, proposals: Proposal[]): void {
     if (p.operation === "archive") record.archived_at = now();
     else if (p.operation === "restore") delete record.archived_at;
     else if (p.operation === "merge") throw new MyPubError("Use the reviewed identity merge operation", "PROPOSAL_OPERATION");
-    else record = setPointer(record, p.path!, p.proposed, p.operation === "remove" || p.operation === "unlink") as Record<string, unknown>;
+    else record = setPointer(record, p.path!, p.proposed, p.operation === "remove" || p.operation === "unlink" && !Object.hasOwn(p, "proposed")) as Record<string, unknown>;
     touch(record as unknown as { updated_at: string }); replaceTarget(s, p.target, record);
   }
 }

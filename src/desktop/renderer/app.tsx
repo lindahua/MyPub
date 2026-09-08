@@ -26,6 +26,7 @@ import type {
   ScholarEntry,
   VenueIdentity,
 } from "../../core/types.js";
+import { scholarEntryIds } from "../../core/scholar-links.js";
 import { DEFAULT_PAGE_SIZES, paginate } from "../pagination.js";
 import type { PageSizes } from "../pagination.js";
 import "./style.css";
@@ -664,18 +665,17 @@ function RecordDetails({
               )),
           )}
           <h3>Google Scholar</h3>
-          {pub.gscholar_entry_id ? (
+          {scholarEntryIds(pub).length ? (
             <>
-              <CitationSummary
-                entry={model.scholar.get(pub.gscholar_entry_id)!}
-              />
-              <EntityLink page="scholar" id={pub.gscholar_entry_id}>
-                View Scholar source and linked publications
-              </EntityLink>
-              <Comparison
-                publication={pub}
-                entry={model.scholar.get(pub.gscholar_entry_id)!}
-              />
+              {scholarEntryIds(pub).length > 1 && <p className="muted">Combined citation totals may overlap across Scholar entries.</p>}
+              {scholarEntryIds(pub).map(entryId => {
+                const scholarEntry = model.scholar.get(entryId)!;
+                return <React.Fragment key={entryId}>
+                  <CitationSummary entry={scholarEntry} />
+                  <p><EntityLink page="scholar" id={entryId}>View Scholar source and linked publications</EntityLink></p>
+                  <Comparison publication={pub} entry={scholarEntry} />
+                </React.Fragment>;
+              })}
             </>
           ) : (
             <p className="muted">No confirmed Scholar association.</p>
@@ -803,7 +803,7 @@ function RecordDetails({
                 r.id === entry.source_review_id ||
                 r.proposals.some(
                   (p) =>
-                    p.path === "/gscholar_entry_id" && p.proposed === entry.id,
+                    p.path === "/gscholar_entry_id" && (p.proposed === entry.id || p.candidate_ids?.includes(entry.id)),
                 ),
             )
             .map((r) => (
@@ -1182,8 +1182,8 @@ function Entry({ row, collection }: { row: Row; collection: Collection }) {
     entry =
       collection === "scholar"
         ? model.scholar.get(row.id)
-        : p?.gscholar_entry_id
-          ? model.scholar.get(p.gscholar_entry_id)
+        : p && scholarEntryIds(p).length
+          ? model.scholar.get(scholarEntryIds(p)[0]!)
           : undefined;
   return (
     <article

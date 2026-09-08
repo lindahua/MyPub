@@ -90,7 +90,7 @@ The legacy repository is `/Users/dhlin/Work/PubMan2`, inspected at commit `c685d
 | --- | --- | --- |
 | Four entity tables have integer `id` and stable UUID `uid`: `publications`, `authors`, `venues`, `gs_entries` | Reuse `uid` as MyPub `id`; translate integer foreign keys through lookup maps | [Active schema](../../PubMan2/mypubs_pg.sql) |
 | `publication_authors` stores `publication_id`, `author_id`, and one-based `author_order` | Preserve each association and its order directly | [Active schema](../../PubMan2/mypubs_pg.sql) |
-| `gs_entries.publication_id` is nullable and unique | Existing confirmed matches fit MyPub's at-most-one-entry-per-publication rule; invert the foreign key into the publication JSON | [Scholar migration](../../PubMan2/migrations/003_google_scholar_entries.sql) |
+| `gs_entries.publication_id` is nullable and unique | Existing confirmed matches fit MyPub's scalar one-entry subset; invert the foreign key into the publication JSON | [Scholar migration](../../PubMan2/migrations/003_google_scholar_entries.sql) |
 | Scholar records include inactive entries, explicit matching exclusions, detailed metadata, raw parsed payloads, and annual citation breakdowns | Import all relevant states and preserve their different meanings | [Schema](../../PubMan2/mypubs_pg.sql), [presence migration](../../PubMan2/migrations/004_google_scholar_active_entries.sql) |
 | The CLI Excel export emits only venue and publication sheets, flattening authors and omitting entity UUIDs, Scholar records, `pub_date`, `gs_page`, `pdf_url`, and audit history | Use a direct relational snapshot, not an Excel round trip | [CLI export](../../PubMan2/pubmanlib/cli/export_cmd.py), [web export](../../PubMan2/pubmanlib/web/export.py) |
 | The CLI author lookup ignores middle names; the web lookup includes them | Some source identities may already conflate different spellings or people; preserve associations, then review suspicious cases | [CLI importer](../../PubMan2/pubmanlib/cli/import_cmd.py), [web writes](../../PubMan2/pubmanlib/web/queries.py) |
@@ -107,7 +107,7 @@ Google Scholar is the sole citation source, as confirmed by the user. Supabase c
 
 ## 2. Destination prerequisites and design gaps
 
-Implement the approved MyPub version-2 catalog first: author/venue identities, embedded ordered credits, Scholar entries and scalar links, recursive year/surname filing, readable filenames, ID-based lookup, durable review evidence, and transaction/sync validation. The current [MyPub types](../src/core/types.ts) and validators implement version 2; conversion uses those general operations.
+Implement the approved MyPub version-2 catalog first: author/venue identities, embedded ordered credits, Scholar entries and backward-compatible scalar-or-array links, recursive year/surname filing, readable filenames, ID-based lookup, durable review evidence, and transaction/sync validation. The current [MyPub types](../src/core/types.ts) and validators implement version 2; conversion uses those general operations.
 
 The 7 September decisions settle the following issues in the version-2 design:
 
@@ -162,7 +162,7 @@ Generate missing citation, author, and venue keys deterministically once, with c
 | `publications.gs_page` | Preserve as a URL. It is evidence for a possible link, not authoritative over `gs_entries.publication_id` and not a reason to fabricate another entry |
 | `publications.pdf_url` | Preserve as a URL and an attachment acquisition candidate; do not create an attachment manifest until bytes have been obtained and verified |
 | `publication_authors` | Sort by `author_order`; emit one credit per row with the resolved author UUID and a marker-free credited name. Preserve original order values in evidence, report gaps, reject duplicates/dangling links. Leading authors carrying the confirmed trailing `*` receive `co_first`; other roles remain unrecorded unless supported |
-| `gs_entries.publication_id` | Invert each confirmed match to `publication.gscholar_entry_id = gs_entries.uid`. Preserve unmatched rows. Legacy one-to-one links are a valid subset of MyPub's many-publications-to-one-entry model; do not add extra matches automatically |
+| `gs_entries.publication_id` | Invert each confirmed match to scalar `publication.gscholar_entry_id = gs_entries.uid`. Preserve unmatched rows. Legacy one-to-one links are a valid subset of MyPub's scalar-or-array model; do not add extra matches automatically |
 | `gs_entries.uid`, `citation_id`, `profile_user_id` | Scholar `id`, `scholar_id`, `profile_id`; preserve the full `citation_for_view` identifier, including its profile prefix, and check consistency with `profile_user_id` |
 | `title`, `venue`, `year`, `author_names`, `authors` | Source entry fields. Prefer a validated full `author_names` array for `authors`, retaining the literal overview string as proposed `authors_text`. Conflicting or truncated lists remain labeled and do not overwrite publication credits |
 | Scholar detail columns and URLs | Map to the specified optional entry detail fields; retain every original column in review evidence. Patents and otherwise unsupported items may remain external entries without creating local publications |

@@ -3,6 +3,7 @@ import { basename, extname } from "node:path";
 import { Catalog, clean, findPublication, manualReview, pairRejected, touch } from "./catalog.js";
 import type { CatalogState, Coverage, Proposal, Review, ScholarEntry, ScholarReconciliation } from "./types.js";
 import { fingerprint, normalizeText, now, uuid } from "./utils.js";
+import { scholarEntryIds, scholarLinkValue } from "./scholar-links.js";
 import { publicationYear } from "./paths.js";
 import { isObject, validTimestamp } from "./schemas.js";
 import { MyPubError } from "./errors.js";
@@ -13,15 +14,15 @@ const detailFields = ["publication_date", "volume", "issue", "pages", "publisher
 const externalId = (profile: string, value: string): string => value.startsWith(`${profile}:`) ? value : `${profile}:${value}`;
 function findEntry(s: CatalogState, ref: string): ScholarEntry { const matches = s.gscholar_entries.filter((g) => g.id === ref || g.scholar_id === ref || externalId(g.profile_id, ref) === externalId(g.profile_id, g.scholar_id)); if (matches.length !== 1) throw new MyPubError("Scholar entry not found or ambiguous", "NOT_FOUND"); return matches[0]!; }
 export function reconcileState(s: CatalogState): ScholarReconciliation {
-  const result: ScholarReconciliation = { local_only: s.publications.filter((p) => !p.gscholar_entry_id).map((p) => p.id), matched: [], source_only: [], excluded: [], missing: [], candidates: [], rejected_pairs: [], differences: [], shared_counts: [] };
+  const result: ScholarReconciliation = { local_only: s.publications.filter((p) => !scholarEntryIds(p).length).map((p) => p.id), matched: [], source_only: [], excluded: [], missing: [], candidates: [], rejected_pairs: [], differences: [], shared_counts: [] };
   for (const g of s.gscholar_entries) {
-    const linked = s.publications.filter((p) => p.gscholar_entry_id === g.id);
+    const linked = s.publications.filter((p) => scholarEntryIds(p).includes(g.id));
     if (g.presence === "missing") result.missing.push(g.id);
     if (g.matching.policy === "excluded") result.excluded.push(g.id);
     else if (linked.length) result.matched.push(g.id); else result.source_only.push(g.id);
     for (const p of s.publications) if (pairRejected(s, p.id, g.id)) result.rejected_pairs.push({ publication_id: p.id, entry_id: g.id });
     if (g.matching.policy === "eligible" && g.presence === "present") {
-      const candidates = s.publications.filter((p) => !p.archived_at && !p.gscholar_entry_id && !pairRejected(s, p.id, g.id) && normalizeText(p.title) === normalizeText(g.title) && (!g.year || !publicationYear(p) || Math.abs(g.year - publicationYear(p)!) <= 1));
+      const candidates = s.publications.filter((p) => !p.archived_at && !scholarEntryIds(p).includes(g.id) && !pairRejected(s, p.id, g.id) && normalizeText(p.title) === normalizeText(g.title) && (!g.year || !publicationYear(p) || Math.abs(g.year - publicationYear(p)!) <= 1));
       if (candidates.length) result.candidates.push({ entry_id: g.id, publication_ids: candidates.map((p) => p.id) });
     }
     for (const p of linked) for (const [field, local, observed] of [["title", p.title, g.title], ["year", publicationYear(p), g.year], ["venue", p.venue?.name, g.venue]] as const) if (local !== undefined && observed !== undefined && local !== observed) result.differences.push({ publication_id: p.id, entry_id: g.id, field, local, observed });
@@ -100,28 +101,36 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
     }
     const result = reconcileState(s);
     const proposals: Proposal[] = result.candidates.flatMap((candidate) => candidate.publication_ids.flatMap((publicationId) => {
-      if (s.reviews.some((r) => r.proposals.some((p) => ["pending", "deferred"].includes(p.state) && p.target.entity_id === publicationId && p.path === "/gscholar_entry_id" && p.proposed === candidate.entry_id))) return [];
-      const p = s.publications.find((p) => p.id === publicationId)!; return [{ id: uuid(), target: { entity_type: "publication" as const, entity_id: p.id }, operation: "link" as const, path: "/gscholar_entry_id", expected_revision: fingerprint(p), proposed: candidate.entry_id, state: "pending" as const }];
+      if (s.reviews.some((r) => r.proposals.some((p) => ["pending", "deferred"].includes(p.state) && p.target.entity_id === publicationId && p.path === "/gscholar_entry_id" && (p.proposed === candidate.entry_id || p.candidate_ids?.includes(candidate.entry_id))))) return [];
+      const p = s.publications.find((p) => p.id === publicationId)!; const current = p.gscholar_entry_id; const proposed = scholarLinkValue([...scholarEntryIds(p), candidate.entry_id]); return [{ id: uuid(), target: { entity_type: "publication" as const, entity_id: p.id }, operation: "link" as const, path: "/gscholar_entry_id", expected_revision: fingerprint(p), ...(current !== undefined ? { current: clean(current) } : {}), proposed, candidate_ids: [candidate.entry_id], state: "pending" as const }];
     }));
     if (proposals.length) s.reviews.push({ schema_version: 2, id: uuid(), summary: `Match Google Scholar ${captured}`, kind: "change", state: "pending", targets: [], source_review_id: source.id, proposals, created_at: time, updated_at: time });
     return { ...result, source_review_id: source.id };
   });
 }
 export async function linkScholar(c: Catalog, publication: string, entry?: string): Promise<void> {
-  await c.change((s) => { const p = findPublication(s, publication); const old = p.gscholar_entry_id; const g = entry ? findEntry(s, entry) : undefined;
-    const proposal: Proposal = { id: uuid(), target: { entity_type: "publication", entity_id: p.id }, operation: g ? old ? "replace" : "link" : "unlink", path: "/gscholar_entry_id", expected_revision: fingerprint(p), ...(old ? { current: old } : {}), ...(g ? { proposed: g.id } : {}), state: "accepted", decided_at: now() };
-    if (!old && !g) return;
-    if (g) p.gscholar_entry_id = g.id; else delete p.gscholar_entry_id; touch(p); s.reviews.push(manualReview(`${g ? "Link" : "Unlink"} Scholar ${p.title}`, [proposal.target], [proposal]));
+  await c.change((s) => { const p = findPublication(s, publication); const old = p.gscholar_entry_id; const g = entry ? findEntry(s, entry) : undefined; const oldIds = scholarEntryIds(p);
+    if (g && oldIds.includes(g.id) || !g && !oldIds.length) return;
+    const next = g ? scholarLinkValue([...oldIds, g.id]) : undefined;
+    const proposal: Proposal = { id: uuid(), target: { entity_type: "publication", entity_id: p.id }, operation: g ? "link" : "unlink", path: "/gscholar_entry_id", expected_revision: fingerprint(p), ...(old !== undefined ? { current: clean(old) } : {}), ...(g ? { proposed: clean(next), candidate_ids: [g.id] } : {}), state: "accepted", decided_at: now() };
+    if (next === undefined) delete p.gscholar_entry_id; else p.gscholar_entry_id = next; touch(p); s.reviews.push(manualReview(`${g ? "Link" : "Unlink"} Scholar ${p.title}`, [proposal.target], [proposal]));
+  });
+}
+export async function unlinkScholar(c: Catalog, publication: string, entry?: string): Promise<void> {
+  if (!entry) return linkScholar(c, publication);
+  await c.change((s) => { const p = findPublication(s, publication); const g = findEntry(s, entry); const old = p.gscholar_entry_id; const ids = scholarEntryIds(p); if (!ids.includes(g.id)) return; const next = scholarLinkValue(ids.filter(id => id !== g.id));
+    const proposal: Proposal = { id: uuid(), target: { entity_type: "publication", entity_id: p.id }, operation: "unlink", path: "/gscholar_entry_id", expected_revision: fingerprint(p), current: clean(old), ...(next !== undefined ? { proposed: clean(next) } : {}), candidate_ids: [g.id], state: "accepted", decided_at: now() };
+    if (next === undefined) delete p.gscholar_entry_id; else p.gscholar_entry_id = next; touch(p); s.reviews.push(manualReview(`Unlink Scholar ${p.title}`, [proposal.target], [proposal]));
   });
 }
 export async function matchingPolicy(c: Catalog, entry: string, excluded: boolean, reason?: string, unlinkPublications = false, preview = false): Promise<{ entry_id: string; publication_ids: string[]; applied: boolean }> {
-  const inspect = (s: CatalogState) => { const g = findEntry(s, entry); return { g, linked: s.publications.filter((p) => p.gscholar_entry_id === g.id) }; };
+  const inspect = (s: CatalogState) => { const g = findEntry(s, entry); return { g, linked: s.publications.filter((p) => scholarEntryIds(p).includes(g.id)) }; };
   if (preview) { const { g, linked } = inspect(await c.read()); return { entry_id: g.id, publication_ids: linked.map((p) => p.id), applied: false }; }
   return c.change((s) => { const { g, linked } = inspect(s); if (excluded && !reason?.trim()) throw new MyPubError("Exclusion requires a reason", "EXCLUSION_REASON"); if (excluded && linked.length && !unlinkPublications) throw new MyPubError("Excluding this entry requires --unlink-publications", "EXCLUDED_LINK", linked.map((p) => p.id));
     const review = manualReview(`${excluded ? "Exclude" : "Include"} Scholar ${g.title}`, [{ entity_type: "gscholar_entry", entity_id: g.id }]);
     const matching = { policy: excluded ? "excluded" as const : "eligible" as const, ...(reason ? { reason } : {}), decision_review_id: review.id };
     review.proposals.push({ id: uuid(), target: review.targets[0]!, operation: "replace", path: "/matching", expected_revision: fingerprint(g), current: clean(g.matching), proposed: matching, state: "accepted", decided_at: now() });
-    if (excluded) for (const p of linked) { review.targets.push({ entity_type: "publication", entity_id: p.id }); review.proposals.push({ id: uuid(), target: { entity_type: "publication", entity_id: p.id }, operation: "unlink", path: "/gscholar_entry_id", expected_revision: fingerprint(p), current: g.id, state: "accepted", decided_at: now() }); delete p.gscholar_entry_id; touch(p); }
+    if (excluded) for (const p of linked) { const old = clean(p.gscholar_entry_id); const next = scholarLinkValue(scholarEntryIds(p).filter(id => id !== g.id)); review.targets.push({ entity_type: "publication", entity_id: p.id }); review.proposals.push({ id: uuid(), target: { entity_type: "publication", entity_id: p.id }, operation: "unlink", path: "/gscholar_entry_id", expected_revision: fingerprint(p), current: old, ...(next !== undefined ? { proposed: clean(next) } : {}), candidate_ids: [g.id], state: "accepted", decided_at: now() }); if (next === undefined) delete p.gscholar_entry_id; else p.gscholar_entry_id = next; touch(p); }
     g.matching = matching; touch(g); s.reviews.push(review); return { entry_id: g.id, publication_ids: linked.map((p) => p.id), applied: true };
   });
 }

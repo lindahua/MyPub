@@ -6,6 +6,7 @@ import type {
   VenueIdentity,
 } from "../core/types.js";
 import { publicationDate, publicationYear } from "../core/dates.js";
+import { scholarEntryIds } from "../core/scholar-links.js";
 import type { Collection, Snapshot } from "./types.js";
 export type Value = string | number | null | string[];
 export interface Row {
@@ -112,7 +113,9 @@ export class ViewModel {
         return person ? [person] : [];
       });
       const venue = resolved(this.venues, p.venue?.venue_id),
-        entry = this.scholar.get(p.gscholar_entry_id ?? "");
+        entries = scholarEntryIds(p).flatMap(id => this.scholar.get(id) ?? []),
+        counts = entries.map(entry => entry.citation_history.at(-1)?.count ?? null),
+        citationCount = !counts.length || counts.some(count => count === null) ? null : counts.reduce<number>((sum, count) => sum + count!, 0);
       const fileStates = p.attachments.map(
         (a) => snapshot.availability[a.id] ?? "error",
       );
@@ -124,8 +127,8 @@ export class ViewModel {
         type: p.type,
         author: authors.map((a) => a.id),
         tag: p.tags,
-        citations: entry?.citation_history.at(-1)?.count ?? null,
-        link: entry ? "linked" : "unlinked",
+        citations: citationCount,
+        link: entries.length ? "linked" : "unlinked",
         doi: p.identifiers.doi ?? null,
         arxiv: p.identifiers.arxiv ?? null,
         files: p.attachments.length ? fileStates : ["none"],
@@ -247,11 +250,11 @@ export class ViewModel {
     });
     const scholarRows: Row[] = s.gscholar_entries.map((g) => {
       const pubs = publicationRows.filter(
-        (p) => this.publications.get(p.id)?.gscholar_entry_id === g.id,
+        (p) => scholarEntryIds(this.publications.get(p.id)!).includes(g.id),
       );
       const proposals = s.reviews.flatMap((r) =>
         r.proposals.filter(
-          (p) => p.path === "/gscholar_entry_id" && p.proposed === g.id,
+          (p) => p.path === "/gscholar_entry_id" && (p.proposed === g.id || p.candidate_ids?.includes(g.id)),
         ),
       );
       return {

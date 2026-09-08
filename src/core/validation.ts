@@ -1,6 +1,7 @@
 import type { AuditFinding, CatalogState, EntityType, Review, ValidationIssue, ValidationResult } from "./types.js";
 import { recordIssues, validOrcid } from "./schemas.js";
 import { fingerprint, normalizeArxiv, normalizeDoi } from "./utils.js";
+import { scholarEntryIds } from "./scholar-links.js";
 
 export function reviewState(review: Review): Review["state"] {
   if (!review.proposals.length) return review.state;
@@ -53,7 +54,8 @@ export function validateState(s: CatalogState): ValidationResult {
   if (s.gscholar_profile && (!owner || ![owner.identifiers.google_scholar, ...(owner.identifier_aliases ?? []).filter((a) => a.provider === "google_scholar").map((a) => a.value)].includes(s.gscholar_profile.profile_id))) issue("PROFILE_OWNER", "Selected Scholar profile must be a confirmed owner identifier");
   const allAttachments: Array<[string, string]> = [];
   for (const p of s.publications) {
-    reference(p.venue?.venue_id, "venue", p.id); reference(p.gscholar_entry_id, "gscholar_entry", p.id);
+    reference(p.venue?.venue_id, "venue", p.id); scholarEntryIds(p).forEach(id => reference(id, "gscholar_entry", p.id));
+    if (p.archived_at && scholarEntryIds(p).length) issue("ARCHIVED_SCHOLAR_LINK", "Archived publications cannot have confirmed Scholar links", p.id);
     if (p.venue && !p.venue.venue_id) issue("UNRESOLVED_VENUE", "Venue identity is unresolved", p.id, "warning");
     if (!p.authors.length) issue("EMPTY_BYLINE", "No authors recorded", p.id, "warning");
     const ids = new Set<string>();
@@ -104,7 +106,7 @@ export function validateState(s: CatalogState): ValidationResult {
     if (g.matching.policy === "excluded") {
       const decision = reviews.get(g.matching.decision_review_id ?? "");
       if (!g.matching.reason || !decision || !(decision.state === "accepted" || decision.proposals.some((p) => p.state === "accepted" && p.target.entity_id === g.id && p.path === "/matching"))) issue("EXCLUSION_DECISION", "Exclusion requires reason and accepted decision", g.id);
-      if (s.publications.some((p) => p.gscholar_entry_id === g.id)) issue("EXCLUDED_LINK", "Excluded entry has confirmed publication links", g.id);
+      if (s.publications.some((p) => scholarEntryIds(p).includes(g.id))) issue("EXCLUDED_LINK", "Excluded entry has confirmed publication links", g.id);
     }
     if (g.scholar_url) { const q = new URL(g.scholar_url).searchParams; const expected = g.scholar_id.startsWith(`${g.profile_id}:`) ? g.scholar_id : g.scholar_id.startsWith(`${g.profile_id}:`) ? g.scholar_id : `${g.profile_id}:${g.scholar_id}`; if (q.has("user") && q.get("user") !== g.profile_id || q.has("citation_for_view") && q.get("citation_for_view") !== expected) issue("SCHOLAR_URL", "URL identity disagrees with entry", g.id); }
     const captures = new Set<string>(); const counts = new Map<number, string>(); let previous = -Infinity;

@@ -84,6 +84,7 @@ mypub gscholar update
 mypub gscholar import snapshot.json
 mypub gscholar reconcile
 mypub gscholar link PUBLICATION_KEY ENTRY_UUID
+mypub gscholar unlink PUBLICATION_KEY [ENTRY_UUID]
 mypub gscholar exclude ENTRY_UUID --reason "Not my publication" --unlink-publications
 mypub audit
 mypub history RECORD_UUID

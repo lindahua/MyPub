@@ -16,7 +16,7 @@ import { lookupArxiv, lookupDoi } from "../adapters/metadata.js";
 import { run } from "../adapters/process.js";
 import { rebuildSearchIndex } from "../adapters/search.js";
 import { updateScholar } from "../core/scholar-update.js";
-import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar } from "../core/scholar.js";
+import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar, unlinkScholar } from "../core/scholar.js";
 import { addAuthor, addVenue, updateIdentity, archiveIdentity, identityDetails, updateCredit, unlinkCredit, linkVenue, mergeIdentity, configureOwner } from "../core/identities.js";
 import { history } from "../core/history.js";
 import { formatStatus } from "./status.js";
@@ -48,7 +48,7 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   review reopen ID [--proposal ID]
   gscholar update
   gscholar import FILE [--coverage complete|partial|unknown] [--observed-at TIME]
-  gscholar reconcile | link PUBLICATION ENTRY | unlink PUBLICATION
+  gscholar reconcile | link PUBLICATION ENTRY | unlink PUBLICATION [ENTRY]
   gscholar exclude ENTRY --reason TEXT [--unlink-publications] [--preview]
   gscholar include ENTRY [--reason TEXT] [--preview]
   commit [--message TEXT]
@@ -133,7 +133,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           `Total missing: ${result.missing.length}`].join("\n");
       };
       else if (sub === "reconcile") action = () => reconcileScholar(c);
-      else if (sub === "link" || sub === "unlink") { const pub = a.shift("publication")!, entry = sub === "link" ? a.shift("entry")! : undefined; action = () => linkScholar(c, pub, entry); }
+      else if (sub === "link" || sub === "unlink") { const pub = a.shift("publication")!, entry = a.shift(sub === "link" ? "entry" : undefined); action = () => sub === "link" ? linkScholar(c, pub, entry!) : unlinkScholar(c, pub, entry); }
       else if (sub === "exclude" || sub === "include") { const id = a.shift("entry")!, reason = a.take("--reason"), unlink = a.takeFlag("--unlink-publications"), preview = a.takeFlag("--preview"); action = () => matchingPolicy(c, id, sub === "exclude", reason, unlink, preview); }
       else usage("invalid gscholar action"); break;
     }

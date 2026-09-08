@@ -5,6 +5,7 @@ import { basename, extname, join, resolve } from "node:path";
 import type { AddPublicationInput, Attachment, AttachmentRole, AuthorCredit, AuthorIdentity, CatalogOptions, CatalogState, EntityRecord, Library, Publication, PublicationDetails, RelationType, Review, SearchFilters, ValidationResult, VenueIdentity } from "./types.js";
 import { assertRecord } from "./schemas.js";
 import { fileExists, fingerprint, normalizeArxiv, normalizeDoi, now, safePath, sha256, uuid, withLock } from "./utils.js";
+import { scholarEntryIds } from "./scholar-links.js";
 import { catalogFiles } from "./paths.js";
 import { loadState, recoverTransactions, refreshStoredDatabase, writeState } from "./storage.js";
 import { assertUnchangedEvidence, auditState, resolveIdentity, validateState } from "./validation.js";
@@ -29,9 +30,10 @@ export function findPublication(s: CatalogState, ref: string): Publication {
   return matches[0]!;
 }
 export function pairRejected(s: CatalogState, publicationId: string, entryId: string): boolean {
-  return s.reviews.some((r) => r.proposals.some((p) => p.state === "rejected" && ["link", "replace"].includes(p.operation) && p.path === "/gscholar_entry_id" && p.target.entity_id === publicationId && p.proposed === entryId));
+  return s.reviews.some((r) => r.proposals.some((p) => p.state === "rejected" && ["link", "replace"].includes(p.operation) && ["/gscholar_entry_id", "/gscholar_entry_ids"].includes(p.path ?? "") && p.target.entity_id === publicationId && (p.proposed === entryId || p.candidate_ids?.includes(entryId))));
 }
-export function currentCitations(s: CatalogState, publication: Publication): number | null { const g = s.gscholar_entries.find((g) => g.id === publication.gscholar_entry_id); return g?.citation_history.at(-1)?.count ?? null; }
+export function citationCounts(s: CatalogState, publication: Publication): Array<{ entry_id: string; count: number | null }> { return scholarEntryIds(publication).map(entry_id => ({ entry_id, count: s.gscholar_entries.find(g => g.id === entry_id)?.citation_history.at(-1)?.count ?? null })); }
+export function currentCitations(s: CatalogState, publication: Publication): number | null { const counts = citationCounts(s, publication); return !counts.length || counts.some(item => item.count === null) ? null : counts.reduce((sum, item) => sum + item.count!, 0); }
 export function manualReview(summary: string, targets: Review["targets"], proposals: Review["proposals"] = []): Review {
   const time = now(); return { schema_version: 2, id: uuid(), summary, kind: "change", state: "accepted", targets, proposals, created_at: time, updated_at: time, decided_at: time };
 }
@@ -98,7 +100,7 @@ export class Catalog {
         const previous = before.publications.find((x) => x.id === p.id);
         for (const c of p.authors) if (c.author_id && !previous?.authors.some((a) => a.author_id === c.author_id) && resolveIdentity(loaded.state.authors, c.author_id)?.archived_at) throw new MyPubError("Restore the author before linking", "ARCHIVED_IDENTITY");
         if (p.venue?.venue_id && previous?.venue?.venue_id !== p.venue.venue_id && resolveIdentity(loaded.state.venues, p.venue.venue_id)?.archived_at) throw new MyPubError("Restore the venue before linking", "ARCHIVED_IDENTITY");
-        if (p.gscholar_entry_id && p.gscholar_entry_id !== previous?.gscholar_entry_id && pairRejected(loaded.state, p.id, p.gscholar_entry_id)) throw new MyPubError("Reopen the rejected pair before linking", "MATCH_REJECTED");
+        for (const entryId of scholarEntryIds(p).filter(id => !previous || !scholarEntryIds(previous).includes(id))) if (pairRejected(loaded.state, p.id, entryId)) throw new MyPubError("Reopen the rejected pair before linking", "MATCH_REJECTED");
       }
       await writeState(this.root, originalFiles, loaded.state, binaries); return result === undefined ? result : clean(result);
     });
@@ -117,12 +119,12 @@ export class Catalog {
       return JSON.parse(matches[0]!.json as string) as Publication;
     });
   }
-  async details(ref: string): Promise<PublicationDetails> { const s = await this.read(); const publication = findPublication(s, ref); return { publication, record_revision: fingerprint(publication), citation_count: currentCitations(s, publication), incoming_relations: s.publications.flatMap((p) => p.relations.filter((r) => r.target_id === publication.id).map((r) => ({ source_id: p.id, source_title: p.title, type: r.type, label: r.type === "published_version_of" ? "Published version" : r.type === "extends" ? "Extended by" : "Related publication", ...(r.note ? { note: r.note } : {}) }))) }; }
+  async details(ref: string): Promise<PublicationDetails> { const s = await this.read(); const publication = findPublication(s, ref); const counts = citationCounts(s, publication); return { publication, record_revision: fingerprint(publication), citation_count: currentCitations(s, publication), citation_counts: counts, citation_count_potentially_overlapping: counts.length > 1, incoming_relations: s.publications.flatMap((p) => p.relations.filter((r) => r.target_id === publication.id).map((r) => ({ source_id: p.id, source_title: p.title, type: r.type, label: r.type === "published_version_of" ? "Published version" : r.type === "extends" ? "Extended by" : "Related publication", ...(r.note ? { note: r.note } : {}) }))) }; }
   async add(input: AddPublicationInput): Promise<Publication> { return this.change((s) => { const p = publicationFromInput(input); s.publications.push(p); return p; }); }
   async update(ref: string, patch: Partial<Omit<Publication, "schema_version" | "id" | "created_at">>, expected?: string): Promise<Publication> {
     return this.change((s) => { const p = findPublication(s, ref); if (expected && fingerprint(p) !== expected) throw new MyPubError("Publication changed", "STALE_REVISION"); for (const field of ["id", "schema_version", "created_at", "updated_at", "status", "dates"]) if (Object.hasOwn(patch, field)) throw new MyPubError(`Cannot update ${field}`, "SCHEMA_INVALID"); const updated = clean({ ...p, ...patch }); if (updated.identifiers?.doi) updated.identifiers.doi = normalizeDoi(updated.identifiers.doi); if (updated.identifiers?.arxiv) updated.identifiers.arxiv = normalizeArxiv(updated.identifiers.arxiv); touch(updated); s.publications[s.publications.indexOf(p)] = updated; return updated; });
   }
-  async archive(ref: string): Promise<Publication> { return this.update(ref, { archived_at: now() }); }
+  async archive(ref: string): Promise<Publication> { return this.change((s) => { const p = findPublication(s, ref); if (p.archived_at) return p; const links = scholarEntryIds(p); const previous = p.gscholar_entry_id === undefined ? undefined : clean(p.gscholar_entry_id); const revision = fingerprint(p); p.archived_at = now(); delete p.gscholar_entry_id; touch(p); if (links.length) { const target = { entity_type: "publication" as const, entity_id: p.id }; s.reviews.push(manualReview(`Unlink Scholar while archiving ${p.title}`, [target], [{ id: uuid(), target, operation: "unlink", path: "/gscholar_entry_id", expected_revision: revision, current: previous, candidate_ids: links, state: "accepted", decided_at: now() }])); } return p; }); }
   async restorePublication(ref: string): Promise<Publication> { return this.change((s) => { const p = findPublication(s, ref); delete p.archived_at; touch(p); return p; }); }
   async addRelation(source: string, target: string, type: RelationType, note?: string): Promise<Publication> { return this.change((s) => { const p = findPublication(s, source); p.relations.push({ type, target_id: findPublication(s, target).id, ...(note ? { note } : {}) }); touch(p); return p; }); }
   async removeRelation(source: string, target: string, type?: RelationType): Promise<Publication> { return this.change((s) => { const p = findPublication(s, source); const id = findPublication(s, target).id; p.relations = p.relations.filter((r) => r.target_id !== id || type && r.type !== type); touch(p); return p; }); }

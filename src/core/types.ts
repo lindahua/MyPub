@@ -31,7 +31,7 @@ export interface Attachment {
   size_bytes: number; storage: "git-lfs"; path: string; sha256: string; source_url?: string;
 }
 export interface Publication extends RecordBase {
-  citation_key: string; gscholar_entry_id?: string; type: PublicationType; title: string; abstract?: string; official_url?: string; paper_url?: string;
+  citation_key: string; gscholar_entry_id?: string | string[]; type: PublicationType; title: string; abstract?: string; official_url?: string; paper_url?: string;
   authors: AuthorCredit[]; authorship_note?: string; venue?: PublicationVenue;
   publication_date?: string; submission_date?: string; acceptance_date?: string; online_date?: string; issued_date?: string;
   identifiers: PublicationIdentifiers;
@@ -73,7 +73,7 @@ export interface CatalogState {
 }
 export type EntityRecord = Publication | AuthorIdentity | VenueIdentity | ScholarEntry | Review;
 export interface IncomingRelation { source_id: string; source_title: string; type: RelationType; label: string; note?: string; }
-export interface PublicationDetails { publication: Publication; record_revision: string; incoming_relations: IncomingRelation[]; citation_count: number | null; }
+export interface PublicationDetails { publication: Publication; record_revision: string; incoming_relations: IncomingRelation[]; citation_count: number | null; citation_counts: Array<{ entry_id: string; count: number | null }>; citation_count_potentially_overlapping: boolean; }
 export interface SearchFilters { query?: string; year?: number; venue?: string; author?: string; role?: AuthorRole | "first" | "first_listed"; type?: PublicationType; tag?: string; includeArchived?: boolean; }
 export interface ValidationIssue { severity: "error" | "warning"; code: string; message: string; path?: string; publication_id?: string; entity_id?: string; }
 export interface ValidationResult { valid: boolean; issues: ValidationIssue[]; publication_count: number; }

@@ -7,6 +7,7 @@ export * from "./core/exports.js";
 export * from "./core/sync.js";
 export * from "./core/backup.js";
 export * from "./core/scholar.js";
+export * from "./core/scholar-links.js";
 export * from "./adapters/metadata.js";
 export * from "./adapters/search.js";
 export * from "./core/identities.js";

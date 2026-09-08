@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import { Catalog } from "./catalog.js";
-import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar } from "./scholar.js";
+import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar, unlinkScholar } from "./scholar.js";
 import { addAuthor, configureOwner } from "./identities.js";
 import { decideReview, reopenReview } from "./reviews.js";
 
@@ -24,6 +24,28 @@ test("Scholar capture preserves source details, requires explicit matching, and 
     assert.equal((await c.details(first.id)).citation_count, null);
     await importScholarSnapshot(c, await snapshot(root, "2026-08-01T00:00:00Z", [{ scholar_id: "entry", title: "Older spelling", citation_count: 5 }]));
     assert.equal((await c.read()).gscholar_entries[0]?.title, "Shared Paper"); assert.equal((await c.details(first.id)).citation_count, null);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("a publication accepts scalar or multiple Scholar links and aggregates current counts", async () => {
+  const { root, c } = await fixture(); try {
+    const p = await c.add({ citation_key: "versions", type: "arxiv", title: "Versioned Paper", authors: [{ name: "Self" }], identifiers: { arxiv: "2601.00001" }, publication_date: "2026-01-01", submission_date: "2026-01-01", arxiv_versions: [{ version: 1, submission_date: "2026-01-01", title: "Versioned Paper", authors: ["Self"], abstract: "Abstract" }] });
+    await importScholarSnapshot(c, await snapshot(root, "2026-09-01T00:00:00Z", [{ scholar_id: "v1", title: "Versioned Paper", citation_count: 10 }, { scholar_id: "v2", title: "Versioned Paper", citation_count: 5 }]));
+    const entries = (await c.read()).gscholar_entries; const v1 = entries.find(entry => entry.scholar_id.endsWith(":v1"))!; const v2 = entries.find(entry => entry.scholar_id.endsWith(":v2"))!;
+    await linkScholar(c, p.id, v1!.id); assert.equal((await c.get(p.id)).gscholar_entry_id, v1!.id);
+    await linkScholar(c, p.id, v2!.id); assert.deepEqual((await c.get(p.id)).gscholar_entry_id, [v1!.id, v2!.id]);
+    const combined = await c.details(p.id); assert.equal(combined.citation_count, 15); assert.equal(combined.citation_count_potentially_overlapping, true); assert.deepEqual(combined.citation_counts, [{ entry_id: v1!.id, count: 10 }, { entry_id: v2!.id, count: 5 }]);
+    await unlinkScholar(c, p.id, v1!.id); assert.equal((await c.get(p.id)).gscholar_entry_id, v2!.id); assert.equal((await c.details(p.id)).citation_count, 5);
+    await assert.rejects(c.update(p.id, { gscholar_entry_id: [v2!.id] }));
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("archiving a publication atomically removes all Scholar links", async () => {
+  const { root, c } = await fixture(); try {
+    const p = await c.add({ citation_key: "archive", type: "other", title: "Archived Paper", authors: [{ name: "Self" }] });
+    await importScholarSnapshot(c, await snapshot(root, "2026-09-01T00:00:00Z", [{ scholar_id: "one", title: "Archived Paper", citation_count: 3 }, { scholar_id: "two", title: "Archived Paper", citation_count: 4 }]));
+    const entries = (await c.read()).gscholar_entries; await linkScholar(c, p.id, entries[0]!.id); await linkScholar(c, p.id, entries[1]!.id);
+    const archived = await c.archive(p.id); assert.ok(archived.archived_at); assert.equal(archived.gscholar_entry_id, undefined); assert.equal((await c.details(p.id)).citation_count, null);
+    const state = await c.read(); assert.equal(state.reviews.some(r => r.summary.startsWith("Unlink Scholar while archiving") && r.state === "accepted"), true); assert.equal((await reconcileScholar(c)).source_only.length, 2);
+    await assert.rejects(c.update(p.id, { gscholar_entry_id: entries[0]!.id }));
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 test("exclusion requires atomic unlinking, survives refresh, and does not lose citations", async () => {

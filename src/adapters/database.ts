@@ -4,11 +4,12 @@ import { mkdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import type { CatalogState, Publication, SearchFilters } from "../core/types.js";
 import { fingerprint, normalizeText, uuid } from "../core/utils.js";
+import { scholarEntryIds } from "../core/scholar-links.js";
 import { publicationDate, publicationYear } from "../core/paths.js";
 import { resolveIdentity } from "../core/validation.js";
 import { MyPubError } from "../core/errors.js";
 
-export const DATABASE_VERSION = 1;
+export const DATABASE_VERSION = 2;
 export const databasePath = (root: string): string => join(root, "local/index.sqlite");
 
 /** Keep the final rule authoritative even when an existing file contains negations. */
@@ -28,11 +29,12 @@ CREATE TABLE authors (id TEXT PRIMARY KEY, author_key TEXT, preferred_name TEXT,
 CREATE INDEX authors_key ON authors(author_key);
 CREATE TABLE venues (id TEXT PRIMARY KEY, venue_key TEXT, preferred_name TEXT, resolved_id TEXT, archived_at TEXT, json TEXT NOT NULL);
 CREATE INDEX venues_key ON venues(venue_key);
-CREATE TABLE publications (id TEXT PRIMARY KEY, citation_key TEXT, title TEXT, venue_id TEXT, venue TEXT, normalized_venue TEXT, year INTEGER, date TEXT, type TEXT, archived_at TEXT, gscholar_entry_id TEXT, citation_count INTEGER, search_text TEXT, json TEXT NOT NULL);
+CREATE TABLE publications (id TEXT PRIMARY KEY, citation_key TEXT, title TEXT, venue_id TEXT, venue TEXT, normalized_venue TEXT, year INTEGER, date TEXT, type TEXT, archived_at TEXT, gscholar_entry_ids TEXT, citation_count INTEGER, search_text TEXT, json TEXT NOT NULL);
 CREATE INDEX publication_key ON publications(citation_key);
 CREATE INDEX publication_year ON publications(year,type);
 CREATE INDEX publication_venue ON publications(venue_id);
-CREATE INDEX publication_scholar ON publications(gscholar_entry_id);
+CREATE TABLE publication_scholar_links (publication_id TEXT, entry_id TEXT, position INTEGER, PRIMARY KEY(publication_id,entry_id));
+CREATE INDEX publication_scholar ON publication_scholar_links(entry_id,publication_id);
 CREATE TABLE authorship (publication_id TEXT, position INTEGER, author_id TEXT, original_author_id TEXT, name TEXT, roles TEXT, json TEXT NOT NULL, PRIMARY KEY(publication_id,position));
 CREATE INDEX authorship_author ON authorship(author_id,publication_id);
 CREATE TABLE identifiers (publication_id TEXT, provider TEXT, value TEXT, PRIMARY KEY(publication_id,provider));
@@ -111,6 +113,7 @@ function populate(db: DatabaseSync, state: CatalogState, files: Map<string, unkn
   const venue = db.prepare("INSERT INTO venues VALUES (?,?,?,?,?,?)");
   for (const v of state.venues) venue.run(v.id, v.venue_key, v.preferred_name, resolveIdentity(state.venues, v.id)?.id ?? null, v.archived_at ?? null, JSON.stringify(v));
   const pub = db.prepare("INSERT INTO publications VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)");
+  const scholarLink = db.prepare("INSERT INTO publication_scholar_links VALUES (?,?,?)");
   const credit = db.prepare("INSERT INTO authorship VALUES (?,?,?,?,?,?,?)");
   const identifier = db.prepare("INSERT INTO identifiers VALUES (?,?,?)");
   const tag = db.prepare("INSERT INTO tags VALUES (?,?,?,?)");
@@ -127,7 +130,11 @@ function populate(db: DatabaseSync, state: CatalogState, files: Map<string, unkn
     });
     const venues = [p.venue?.name, v?.preferred_name, v?.abbreviation, ...(v?.aliases ?? [])].filter(Boolean).join(" ");
     const text = normalizeText([p.title, p.citation_key, venues, ...p.authors.map(a => a.name), ...names.slice(p.authors.length), ...p.tags, ...Object.values(p.identifiers)].filter(Boolean).join(" "));
-    pub.run(p.id, p.citation_key, p.title, v?.id ?? null, p.venue?.name ?? null, normalizeText(p.venue?.name ?? ""), publicationYear(p) ?? null, publicationDate(p) ?? null, p.type, p.archived_at ?? null, p.gscholar_entry_id ?? null, state.gscholar_entries.find(g => g.id === p.gscholar_entry_id)?.citation_history.at(-1)?.count ?? null, text, JSON.stringify(p));
+    const scholarIds = scholarEntryIds(p);
+    const counts = scholarIds.map(id => state.gscholar_entries.find(g => g.id === id)?.citation_history.at(-1)?.count ?? null);
+    const citationCount = !counts.length || counts.some(count => count === null) ? null : counts.reduce<number>((sum, count) => sum + count!, 0);
+    pub.run(p.id, p.citation_key, p.title, v?.id ?? null, p.venue?.name ?? null, normalizeText(p.venue?.name ?? ""), publicationYear(p) ?? null, publicationDate(p) ?? null, p.type, p.archived_at ?? null, scholarIds.length ? JSON.stringify(scholarIds) : null, citationCount, text, JSON.stringify(p));
+    scholarIds.forEach((entryId, position) => scholarLink.run(p.id, entryId, position));
     for (const [provider, value] of Object.entries(p.identifiers)) identifier.run(p.id, provider, value);
     p.tags.forEach((t, i) => tag.run(p.id, i, t, normalizeText(t)));
     p.relations.forEach((r, i) => relation.run(p.id, i, r.target_id, r.type, r.note ?? null));
