@@ -588,10 +588,15 @@ def scan_acm(f, source, author, key):
     )
 
 
-from historical import with_historical
+from historical import with_historical, scan_historical
+from language_robotics import scan_anthology, scan_rss, scan_findings
 
 
 SCANNERS = {
+    **{key: (lambda f, s, a, k=key: scan_anthology(f, s, a, k)) for key in ("acl", "emnlp", "naacl")},
+    "rss": scan_rss,
+    "findings": scan_findings,
+    **{key: (lambda f, s, a, k=key: scan_historical(f, k, a)) for key in ("icra", "iros")},
     "cvpr": lambda f, s, a: scan_cvf(f, s, a, "CVPR"),
     "iccv": lambda f, s, a: with_historical(f, s, a, "iccv", lambda f, s, a: scan_cvf(f, s, a, "ICCV")),
     "eccv": lambda f, s, a: with_historical(f, s, a, "eccv", scan_eccv),

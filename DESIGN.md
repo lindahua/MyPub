@@ -488,7 +488,7 @@ sources for an exact credited full name, independently of a catalog. Optional
 MyPub comparison reports existing conference records, other versions, possible
 title variants, duplicate candidates, and metadata differences without importing
 them. Adapters cover CVPR, ICCV, ECCV, NeurIPS, ICML, ICLR, AAAI, IJCAI,
-SIGGRAPH, ACM Multimedia, and CoRL. Source responses are cached with timestamps
+SIGGRAPH, ACM Multimedia, CoRL, ACL, EMNLP, NAACL, ICRA, IROS, and RSS. The six latter adapters scan 2020 onward; ACL Anthology tracks remain labeled separately; Findings of the Association for Computational Linguistics (ACL Findings) is a separate venue from ACL, EMNLP and NAACL main conferences, with host and event year retained in each publication, RSS uses official indexes, and ICRA/IROS use an explicit IEEE Crossref fallback excluding journal and workshop records. Source responses are cached with timestamps
 and hashes; reports explicitly enumerate scanned coverage and unsupported years.
 ICLR acceptance comes from published proceedings or official accepted-paper
 programs, never an unfiltered submission search. PMLR colocated workshops are

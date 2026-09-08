@@ -1,15 +1,18 @@
-"""Historical ICCV/ECCV search using publisher-deposited Crossref metadata.
+"""ICCV/ECCV historical and ICRA/IROS search using publisher-deposited metadata.
 
 This is not a complete publisher table-of-contents crawl. All search results are
 paged, exact credited names are required, and initial-only credits are reported
 separately. No catalog data is used to discover papers.
 """
 import re
+from datetime import datetime
 from urllib.parse import urlencode
 from bs4 import BeautifulSoup
 from cvpr import normalized
 
 CONFIG = {
+    'icra': ('10.1109', 'International Conference on Robotics and Automation', datetime.now().year, range(2020, datetime.now().year + 1)),
+    'iros': ('10.1109', 'International Conference on Intelligent Robots and Systems', datetime.now().year, range(2020, datetime.now().year + 1)),
     'iccv': ('10.1109', 'International Conference on Computer Vision', 2011, range(2005, 2012, 2)),
     'eccv': ('10.1007', 'Computer Vision ECCV', 2016, range(2004, 2017, 2)),
 }
@@ -28,7 +31,8 @@ def edition(record, key):
                 return int(m[1])
     elif record.get('type') == 'proceedings-article':
         for t in titles:
-            if re.search(r'International Conference on Computer Vision|\bICCV\b', t, re.I):
+            pattern = {'iccv': r'International Conference on Computer Vision|\bICCV\b', 'icra': r'International Conference on Robotics and Automation|\bICRA\b', 'iros': r'International Conference on Intelligent Robots and Systems|\bIROS\b'}[key]
+            if re.search(pattern, t, re.I):
                 years = re.findall(r'\b(?:19|20)\d{2}\b', t)
                 if len(set(years)) == 1:
                     return int(years[0])
@@ -48,6 +52,7 @@ def initial_candidate(name, author):
 
 def scan_historical(fetch, key, author):
     prefix, container, end, years = CONFIG[key]
+    start = min(years)
     sources, seen, records = [], set(), []
     cursor, cursors, total = '*', set(), None
     for _ in range(100):
@@ -56,7 +61,7 @@ def scan_historical(fetch, key, author):
         cursors.add(cursor)
         url = 'https://api.crossref.org/works?' + urlencode({
             'query.author': author, 'query.container-title': container,
-            'filter': f'prefix:{prefix},from-pub-date:2004-01-01,until-pub-date:{end}-12-31',
+            'filter': f'prefix:{prefix},from-pub-date:{start}-01-01,until-pub-date:{end}-12-31',
             'rows': 1000,
             'select': 'DOI,title,author,published,event,container-title,abstract,page,URL,type,link',
             'cursor': cursor,
@@ -98,7 +103,7 @@ def scan_historical(fetch, key, author):
         p = {'title': r['title'][0], 'authors': names, 'year': year,
              'doi': r['DOI'], 'official_url': r.get('URL') or 'https://doi.org/' + r['DOI'],
              'conference': ' / '.join(r.get('container-title', [])),
-             'source': {'provider': ('IEEE' if key == 'iccv' else 'Springer') + ' via Crossref',
+             'source': {'provider': ('Springer' if key == 'eccv' else 'IEEE') + ' via Crossref',
                         'url': 'https://api.crossref.org/works/' + r['DOI']},
              'author_order_verified': False}
         parts = r.get('published', {}).get('date-parts', [[]])[0]
@@ -114,8 +119,8 @@ def scan_historical(fetch, key, author):
                 break
         (found if exact else candidates).append(p)
     return found, [{
-        'method': 'historical publisher-deposited Crossref metadata',
-        'requested_years': list(years), 'minimum_year': 2004,
+        'method': ('IEEE publisher-deposited Crossref metadata' if key in ('icra', 'iros') else 'historical publisher-deposited Crossref metadata'),
+        'requested_years': list(years), 'minimum_year': start,
         'search_results_scanned': len(records), 'search_results_total': total,
         'matching_venue_search_results_by_year': counts,
         'author_papers': len(found), 'initial_only_candidates': candidates,

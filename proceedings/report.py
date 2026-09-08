@@ -25,10 +25,10 @@ def write_report(result, path):
     for scope in result["coverage"]:
         source = scope["sources"][0]["url"]
         lines.append(
-            f'| {scope.get("year", scope.get("method", "unknown"))} | {scope.get("indexed_papers", scope.get("search_results_scanned", "?"))} | {scope["author_papers"]} | [index]({source}) |'
+            f'| {scope.get("year", scope.get("method", "unknown"))} {scope.get("track", "")} | {scope.get("indexed_papers", scope.get("search_results_scanned", "?"))} | {scope["author_papers"]} | [index]({source}) |'
         )
         if scope.get("limitation"):
-            lines += ["", "**Historical coverage:** " + scope["limitation"], "",
+            lines += ["", "**Metadata coverage:** " + scope["limitation"], "",
                       "Requested editions: " + ", ".join(map(str, scope["requested_years"])), ""]
         elif scope.get("direct_proceedings_verified") is False:
             lines += [
@@ -90,7 +90,7 @@ def write_report(result, path):
                 )
     for scope in result["coverage"]:
         if scope.get("initial_only_candidates"):
-            lines += ["", "## Historical initial-only author candidates (not counted)", ""]
+            lines += ["", "## Initial-only author candidates (not counted)", ""]
             lines += [f'- {p["year"]}: [{p["title"]}]({p["official_url"]}) — {", ".join(p["authors"])}' for p in scope["initial_only_candidates"]]
         if scope.get("related_journal_candidates"):
             lines += ["", "## TOG papers requiring event verification", ""]

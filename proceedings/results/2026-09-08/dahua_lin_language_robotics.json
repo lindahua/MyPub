@@ -1,0 +1,2743 @@
+{
+  "author": "Dahua Lin",
+  "since": 2020,
+  "scope": "Public proceedings extraction; no catalog data. Track and source limitations retained.",
+  "conferences": {
+    "acl": {
+      "papers": [
+        {
+          "title": "ANAH: Analytical Annotation of Hallucinations in Large Language Models",
+          "authors": [
+            "Ziwei Ji",
+            "Yuzhe Gu",
+            "Wenwei Zhang",
+            "Chengqi Lyu",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.acl-long.442/",
+          "source": {
+            "url": "https://aclanthology.org/2024.acl-long.442/",
+            "captured_at": "2026-09-08T06:01:19.617502+00:00",
+            "sha256": "3084d00aef472ac88b7b04b3dc68a666c5cdc559b880b3f678704032867b089f"
+          },
+          "doi": "10.18653/v1/2024.acl-long.442",
+          "paper_url": "https://aclanthology.org/2024.acl-long.442.pdf",
+          "publication_date": "2024/8",
+          "pages": "8135-8158",
+          "track": "long",
+          "conference": "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "F-Eval: Asssessing Fundamental Abilities with Refined Evaluation Methods",
+          "authors": [
+            "Yu Sun",
+            "Keyu Chen",
+            "Shujie Wang",
+            "Peiji Li",
+            "Qipeng Guo",
+            "Hang Yan",
+            "Xipeng Qiu (邱锡鹏)",
+            "Xuan-Jing Huang (黄萱菁)",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.acl-long.507/",
+          "source": {
+            "url": "https://aclanthology.org/2024.acl-long.507/",
+            "captured_at": "2026-09-08T06:01:21.080883+00:00",
+            "sha256": "c1c033b695411d0dbfbf08dc74af95e84dbf2a98ecbff076ba6d124ca190966c"
+          },
+          "doi": "10.18653/v1/2024.acl-long.507",
+          "paper_url": "https://aclanthology.org/2024.acl-long.507.pdf",
+          "publication_date": "2024/8",
+          "pages": "9348-9369",
+          "track": "long",
+          "conference": "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "Navigating the OverKill in Large Language Models",
+          "authors": [
+            "Chenyu Shi",
+            "Xiao Wang",
+            "Qiming Ge",
+            "Songyang Gao",
+            "Xianjun Yang",
+            "Tao Gui",
+            "Qi Zhang",
+            "Xuan-Jing Huang (黄萱菁)",
+            "Xun Zhao",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.acl-long.253/",
+          "source": {
+            "url": "https://aclanthology.org/2024.acl-long.253/",
+            "captured_at": "2026-09-08T06:01:17.787945+00:00",
+            "sha256": "967c97a889d81c919ef9cc4463cdd0e9225bb9190cf1e84323384403006930bf"
+          },
+          "doi": "10.18653/v1/2024.acl-long.253",
+          "paper_url": "https://aclanthology.org/2024.acl-long.253.pdf",
+          "publication_date": "2024/8",
+          "pages": "4602-4614",
+          "track": "long",
+          "conference": "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "T-Eval: Evaluating the Tool Utilization Capability of Large Language Models Step by Step",
+          "authors": [
+            "Zehui Chen",
+            "Weihua Du",
+            "Wenwei Zhang",
+            "Kuikun Liu",
+            "Jiangning Liu",
+            "Miao Zheng",
+            "Jingming Zhuo",
+            "Songyang Zhang",
+            "Dahua Lin",
+            "Kai Chen",
+            "Feng Zhao"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.acl-long.515/",
+          "source": {
+            "url": "https://aclanthology.org/2024.acl-long.515/",
+            "captured_at": "2026-09-08T06:01:22.662292+00:00",
+            "sha256": "828e8b0f0ddc90c2b65e1a294e9b04214f35904a784dafe4a34837c1a3cbd271"
+          },
+          "doi": "10.18653/v1/2024.acl-long.515",
+          "paper_url": "https://aclanthology.org/2024.acl-long.515.pdf",
+          "publication_date": "2024/8",
+          "pages": "9510-9529",
+          "track": "long",
+          "conference": "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "Uncertainty Aware Learning for Language Model Alignment",
+          "authors": [
+            "Yikun Wang",
+            "Rui Zheng",
+            "Liang Ding",
+            "Qi Zhang",
+            "Dahua Lin",
+            "Dacheng Tao"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.acl-long.597/",
+          "source": {
+            "url": "https://aclanthology.org/2024.acl-long.597/",
+            "captured_at": "2026-09-08T06:01:24.174191+00:00",
+            "sha256": "9036385c2cdf53864ee4f745c99d999cd3d6cc7e5c299514ecd4e1fdc5bce8d1"
+          },
+          "doi": "10.18653/v1/2024.acl-long.597",
+          "paper_url": "https://aclanthology.org/2024.acl-long.597.pdf",
+          "publication_date": "2024/8",
+          "pages": "11087-11099",
+          "track": "long",
+          "conference": "Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "SongComposer: A Large Language Model for Lyric and Melody Generation in Song Composition",
+          "authors": [
+            "Shuangrui Ding",
+            "Zihan Liu",
+            "Xiaoyi Dong",
+            "Pan Zhang",
+            "Rui Qian",
+            "Junhao Huang",
+            "Conghui He",
+            "Dahua Lin",
+            "Jiaqi Wang"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.acl-long.352/",
+          "source": {
+            "url": "https://aclanthology.org/2025.acl-long.352/",
+            "captured_at": "2026-09-08T06:01:18.779893+00:00",
+            "sha256": "eead9542d187d7d8dd1112804c998f2fb8956df893771dd4ff85768232d9fc3f"
+          },
+          "doi": "10.18653/v1/2025.acl-long.352",
+          "paper_url": "https://aclanthology.org/2025.acl-long.352.pdf",
+          "publication_date": "2025/7",
+          "pages": "7108-7127",
+          "track": "long",
+          "conference": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "What are the Essential Factors in Crafting Effective Long Context Multi-Hop Instruction Datasets? Insights and Best Practices",
+          "authors": [
+            "Zhi Chen",
+            "Qiguang Chen (陈麒光)",
+            "Libo Qin",
+            "Qipeng Guo",
+            "Haijun Lv",
+            "Yicheng Zou",
+            "Hang Yan",
+            "Kai Chen",
+            "Dahua Lin"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.acl-long.1316/",
+          "source": {
+            "url": "https://aclanthology.org/2025.acl-long.1316/",
+            "captured_at": "2026-09-08T06:01:20.323752+00:00",
+            "sha256": "51cf18f9108959ab246d70297f20097c65db97628af2b30c22c16df50b0ed723"
+          },
+          "doi": "10.18653/v1/2025.acl-long.1316",
+          "paper_url": "https://aclanthology.org/2025.acl-long.1316.pdf",
+          "publication_date": "2025/7",
+          "pages": "27129-27151",
+          "track": "long",
+          "conference": "Proceedings of the 63rd Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "MinerU2.5: A Decoupled Vision-Language Model for Efficient High-Resolution Document Parsing",
+          "authors": [
+            "Junbo Niu",
+            "Zheng Liu",
+            "Zhuangcheng Gu",
+            "Bin Wang",
+            "Linke Ouyang",
+            "Zhiyuan Zhao",
+            "Tao Chu",
+            "Tianyao He",
+            "Fan Wu",
+            "Qintong Zhang",
+            "Zhenjiang Jin",
+            "Guang Liang",
+            "Rui Zhang",
+            "Wenzheng Zhang",
+            "Yuan Qu",
+            "Zhifei Ren",
+            "Yuefeng Sun",
+            "Zirui Tang",
+            "Boyu Niu",
+            "Yuanhong Zheng",
+            "Dongsheng Ma",
+            "Ziyang Miao",
+            "Hejun Dong",
+            "Siyi Qian",
+            "Junyuan Zhang",
+            "Fangdong Wang",
+            "Jingzhou Chen",
+            "Xiaomeng Zhao",
+            "Liqun Wei",
+            "Wei Li",
+            "Shasha Wang",
+            "RuiLiang Xu",
+            "Yuanyuan Cao",
+            "Lu Chen",
+            "Qianqian Wu",
+            "Huaiyu Gu",
+            "Lindong Lu",
+            "Dechen Lin",
+            "Shenguanlin",
+            "Xuanhe Zhou",
+            "Linfeng Zhang",
+            "Yuhang Zang",
+            "Xiaoyi Dong",
+            "Jiaqi Wang",
+            "Bo Zhang",
+            "Lei Bai",
+            "Pei Chu",
+            "Weijia Li",
+            "Jiang Wu",
+            "Lijun Wu",
+            "Zhenxiang Li",
+            "Guangyu Wang",
+            "Zhongying Tu",
+            "Chao Xu",
+            "Kai Chen",
+            "Bowen Zhou",
+            "Dahua Lin",
+            "Wentao Zhang",
+            "Conghui He"
+          ],
+          "year": 2026,
+          "official_url": "https://aclanthology.org/2026.acl-industry.3/",
+          "source": {
+            "url": "https://aclanthology.org/2026.acl-industry.3/",
+            "captured_at": "2026-09-08T06:01:26.295614+00:00",
+            "sha256": "36e50e213d41331ebe409c9de8c6854ef28200ee4c40c2563fb2e4fa22650b97"
+          },
+          "doi": "10.18653/v1/2026.acl-industry.3",
+          "paper_url": "https://aclanthology.org/2026.acl-industry.3.pdf",
+          "publication_date": "2026/7",
+          "pages": "13-42",
+          "track": "industry",
+          "conference": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 6: Industry Track)"
+        },
+        {
+          "title": "Timely Machine: Awareness of Time Makes Test-Time Scaling Agentic",
+          "authors": [
+            "Yichuan Ma",
+            "Linyang Li",
+            "Yongkang Chen",
+            "Peiji Li",
+            "Xiaozhe Li",
+            "Qipeng Guo",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2026,
+          "official_url": "https://aclanthology.org/2026.acl-long.211/",
+          "source": {
+            "url": "https://aclanthology.org/2026.acl-long.211/",
+            "captured_at": "2026-09-08T06:01:31.985193+00:00",
+            "sha256": "13db4671731dc0f56a62cbbb0a13c1ff0696ca89f748a536992c34cc86615861"
+          },
+          "doi": "10.18653/v1/2026.acl-long.211",
+          "paper_url": "https://aclanthology.org/2026.acl-long.211.pdf",
+          "publication_date": "2026/7",
+          "pages": "4619-4636",
+          "track": "long",
+          "conference": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        },
+        {
+          "title": "Tracing the Roots: A Multi-Agent Framework for Uncovering Data Lineage in Post-Training LLMs",
+          "authors": [
+            "Yu Li",
+            "Xiaoran Shang",
+            "Qizhi Pei",
+            "Yun Zhu",
+            "Xin Gao",
+            "Honglin Lin",
+            "Zhanping Zhong",
+            "Zhuoshi Pan",
+            "Zheng Liu",
+            "Xiaoyang Wang",
+            "Conghui He",
+            "Dahua Lin",
+            "Feng Zhao",
+            "Lijun Wu"
+          ],
+          "year": 2026,
+          "official_url": "https://aclanthology.org/2026.acl-long.435/",
+          "source": {
+            "url": "https://aclanthology.org/2026.acl-long.435/",
+            "captured_at": "2026-09-08T06:01:33.510422+00:00",
+            "sha256": "b274255db31e10f4950047ee081af4887b81ecf6889dcc06c72d9ed129c5cae9"
+          },
+          "doi": "10.18653/v1/2026.acl-long.435",
+          "paper_url": "https://aclanthology.org/2026.acl-long.435.pdf",
+          "publication_date": "2026/7",
+          "pages": "9606-9625",
+          "track": "long",
+          "conference": "Proceedings of the 64th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)"
+        }
+      ],
+      "coverage": [
+        {
+          "year": 2020,
+          "track": "main",
+          "indexed_papers": 778,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2020.acl-main/",
+              "captured_at": "2026-09-08T06:01:07.362505+00:00",
+              "sha256": "294268c74d4ea259bed71c4803510d1e191a2e4653d658741eed7600f3cb7bbf"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "demo",
+          "indexed_papers": 43,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.acl-demo/",
+              "captured_at": "2026-09-08T06:01:05.805754+00:00",
+              "sha256": "594f60acc38d9c2da7a43ef37b8744902c8d05b23936428d065bebd87f73eb6e"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "long",
+          "indexed_papers": 571,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.acl-long/",
+              "captured_at": "2026-09-08T06:01:07.538747+00:00",
+              "sha256": "07f4c4371d014e35ab002e4c56ed8cb05a73ae46cca19488bc67b9311cbc491c"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "short",
+          "indexed_papers": 139,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.acl-short/",
+              "captured_at": "2026-09-08T06:01:06.098422+00:00",
+              "sha256": "ed8a064472af3fa0988816463804d87073b7c66677e45327f4a263065f5ba2e2"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "demo",
+          "indexed_papers": 27,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.acl-demo/",
+              "captured_at": "2026-09-08T06:01:08.009266+00:00",
+              "sha256": "2164c812d8813905acb36f6abca3ffa2b3db5564575790077b2f06664c78dff8"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "long",
+          "indexed_papers": 603,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.acl-long/",
+              "captured_at": "2026-09-08T06:01:10.514686+00:00",
+              "sha256": "4129cb4f04fc37edacc91616f604196c0a75e4220587c434e653e5e946254a38"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "short",
+          "indexed_papers": 97,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.acl-short/",
+              "captured_at": "2026-09-08T06:01:09.839692+00:00",
+              "sha256": "b34bcc7cab090a991c80b0951bea2f03c102efcd5f359b1d31c3ef8c7e58a438"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "demo",
+          "indexed_papers": 58,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.acl-demo/",
+              "captured_at": "2026-09-08T06:01:10.099880+00:00",
+              "sha256": "11c0db433d09424ac90e7d1fb876f2610b9f06c6cecc2fcac1a9e8957746d50e"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "industry",
+          "indexed_papers": 76,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.acl-industry/",
+              "captured_at": "2026-09-08T06:01:11.927495+00:00",
+              "sha256": "2722760f06774fe92fef7f64ce734470892eba0193becad663445da69cfc38c9"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "long",
+          "indexed_papers": 911,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.acl-long/",
+              "captured_at": "2026-09-08T06:01:13.918952+00:00",
+              "sha256": "6d2f48e55fb1b5f6a8759fa25ff071a7c4b569fa5bd1f639ebd18a80632acf89"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "short",
+          "indexed_papers": 164,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.acl-short/",
+              "captured_at": "2026-09-08T06:01:13.235568+00:00",
+              "sha256": "f1ae8124ee65a16376964587ec2de993ce909074f5e22c6a135363db79979d11"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "long",
+          "indexed_papers": 864,
+          "author_papers": 5,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.acl-long/",
+              "captured_at": "2026-09-08T06:01:15.915424+00:00",
+              "sha256": "8b9fa8112873961b47a519ff6349652035295e5a9679747a55b6a85e808797bf"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "short",
+          "indexed_papers": 76,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.acl-short/",
+              "captured_at": "2026-09-08T06:01:15.290867+00:00",
+              "sha256": "4ad6e0cc4089018dd54c112571da4c3d531a60f9cc20a179d102c2a4a5fa577c"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "demo",
+          "indexed_papers": 64,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.acl-demo/",
+              "captured_at": "2026-09-08T06:01:16.641100+00:00",
+              "sha256": "ff7a098d4f20a11930c41021d18bf577645cdd4bb5a87bb45ded249b9699aa8b"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "industry",
+          "indexed_papers": 109,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.acl-industry/",
+              "captured_at": "2026-09-08T06:01:17.412623+00:00",
+              "sha256": "bbc255d2c7c77f394b34939daaae8d283d2cc41acd8c3cd4eca505426dd08364"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "long",
+          "indexed_papers": 1602,
+          "author_papers": 2,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.acl-long/",
+              "captured_at": "2026-09-08T05:59:14.046716+00:00",
+              "sha256": "99a57e7e6f5a26127e96373a55f07d901b7323a154ac67a153a93185e0e4565b"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "short",
+          "indexed_papers": 97,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.acl-short/",
+              "captured_at": "2026-09-08T06:01:19.559886+00:00",
+              "sha256": "b38cf970ed1738c7ffc65877874570e557f401fb355478db6123c70b64e3e619"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2026,
+          "track": "demo",
+          "indexed_papers": 85,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2026.acl-demo/",
+              "captured_at": "2026-09-08T06:01:22.372954+00:00",
+              "sha256": "267a0adbe0dd22e5c47e84015c93c4f591d376026f24cb814621f924f79d4eff"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2026,
+          "track": "industry",
+          "indexed_papers": 154,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2026.acl-industry/",
+              "captured_at": "2026-09-08T06:01:24.698620+00:00",
+              "sha256": "c9a9cbf4caf379f982299599c4cb7828c6551c493501be88a4f466625c6385d1"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2026,
+          "track": "long",
+          "indexed_papers": 2222,
+          "author_papers": 2,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2026.acl-long/",
+              "captured_at": "2026-09-08T06:01:29.150250+00:00",
+              "sha256": "5a39eb6726e3a874653eedcb70600a308bb28a90e8305061bd2bd0952cff86ba"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        },
+        {
+          "year": 2026,
+          "track": "short",
+          "indexed_papers": 74,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2026.acl-short/",
+              "captured_at": "2026-09-08T06:01:28.358826+00:00",
+              "sha256": "14a2ac24e51de78df5b58efc912a6ee28e2afb7d305f1de2606e9c871ae0569b"
+            },
+            {
+              "url": "https://aclanthology.org/venues/acl/",
+              "captured_at": "2026-09-08T05:59:09.745160+00:00",
+              "sha256": "02f16254dd999beffe979e6ce11d287015117eb2b3888bbef7e0db3b5d242294"
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "emnlp": {
+      "papers": [
+        {
+          "title": "CLEVA: Chinese Language Models EVAluation Platform",
+          "authors": [
+            "Yanyang Li",
+            "Jianqiao Zhao",
+            "Duo Zheng",
+            "Zi-Yuan Hu",
+            "Zhi Chen",
+            "Xiaohui Su",
+            "Yongfeng Huang",
+            "Shijia Huang",
+            "Dahua Lin",
+            "Michael R. Lyu",
+            "Liwei Wang"
+          ],
+          "year": 2023,
+          "official_url": "https://aclanthology.org/2023.emnlp-demo.17/",
+          "source": {
+            "url": "https://aclanthology.org/2023.emnlp-demo.17/",
+            "captured_at": "2026-09-08T06:01:45.265046+00:00",
+            "sha256": "d2d55e479413fe00ac07744b1e0f690df9d0af458b33d5df275a443aeff2d0a2"
+          },
+          "doi": "10.18653/v1/2023.emnlp-demo.17",
+          "paper_url": "https://aclanthology.org/2023.emnlp-demo.17.pdf",
+          "publication_date": "2023/12",
+          "pages": "186-217",
+          "track": "demo",
+          "conference": "Proceedings of the 2023 Conference on Empirical Methods in Natural Language Processing: System Demonstrations"
+        },
+        {
+          "title": "Turn Waste into Worth: Rectifying Top-k Router of MoE",
+          "authors": [
+            "Zhiyuan Zeng",
+            "Qipeng Guo",
+            "Zhaoye Fei",
+            "Zhangyue Yin",
+            "Yunhua Zhou",
+            "Linyang Li",
+            "Tianxiang Sun",
+            "Hang Yan",
+            "Dahua Lin",
+            "Xipeng Qiu (邱锡鹏)"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.emnlp-main.739/",
+          "source": {
+            "url": "https://aclanthology.org/2024.emnlp-main.739/",
+            "captured_at": "2026-09-08T06:01:59.050541+00:00",
+            "sha256": "6bb4de171fd9c34c31ac961c181be663a8a0b651c03958a717ca2d9019bd925c"
+          },
+          "doi": "10.18653/v1/2024.emnlp-main.739",
+          "paper_url": "https://aclanthology.org/2024.emnlp-main.739.pdf",
+          "publication_date": "2024/11",
+          "pages": "13305-13320",
+          "track": "main",
+          "conference": "Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing"
+        },
+        {
+          "title": "More Data or Better Data? A Critical Analysis of Data Selection and Synthesis for Mathematical Reasoning",
+          "authors": [
+            "Yike Zhao",
+            "Simin Guo",
+            "Ziqing Yang",
+            "Shifan Han",
+            "Dahua Lin",
+            "Fei Tan"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.emnlp-industry.43/",
+          "source": {
+            "url": "https://aclanthology.org/2025.emnlp-industry.43/",
+            "captured_at": "2026-09-08T06:01:54.149805+00:00",
+            "sha256": "448872d77a7819e5018af8d0bf760715e301de4246944f1aebf7223f4f06877d"
+          },
+          "doi": "10.18653/v1/2025.emnlp-industry.43",
+          "paper_url": "https://aclanthology.org/2025.emnlp-industry.43.pdf",
+          "publication_date": "2025/11",
+          "pages": "618-629",
+          "track": "industry",
+          "conference": "Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing: Industry Track"
+        },
+        {
+          "title": "ReSURE: Regularizing Supervision Unreliability for Multi-turn Dialogue Fine-tuning",
+          "authors": [
+            "Yiming Du",
+            "Yifan Xiang",
+            "Bin Liang (梁斌)",
+            "Dahua Lin",
+            "Kam-Fai Wong",
+            "Fei Tan"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.emnlp-main.959/",
+          "source": {
+            "url": "https://aclanthology.org/2025.emnlp-main.959/",
+            "captured_at": "2026-09-08T06:02:05.676857+00:00",
+            "sha256": "7149ac177593c4c1bf09637f34d9eeb3a45ca263002099d34da3cd52bcef7a0c"
+          },
+          "doi": "10.18653/v1/2025.emnlp-main.959",
+          "paper_url": "https://aclanthology.org/2025.emnlp-main.959.pdf",
+          "publication_date": "2025/11",
+          "pages": "18967-18985",
+          "track": "main",
+          "conference": "Proceedings of the 2025 Conference on Empirical Methods in Natural Language Processing"
+        }
+      ],
+      "coverage": [
+        {
+          "year": 2020,
+          "track": "main",
+          "indexed_papers": 751,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2020.emnlp-main/",
+              "captured_at": "2026-09-08T06:01:40.071937+00:00",
+              "sha256": "7402e96196401ba9e573a962d781fa04cdcefab3b82b8294b2adbc832262867e"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "demo",
+          "indexed_papers": 42,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.emnlp-demo/",
+              "captured_at": "2026-09-08T06:01:38.404846+00:00",
+              "sha256": "66c6febfbb39c5b69fbb231f7a8601e98c4b96747ce72f0bd61b9e82a4768f95"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "main",
+          "indexed_papers": 847,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.emnlp-main/",
+              "captured_at": "2026-09-08T06:01:40.424782+00:00",
+              "sha256": "921e963847fa373589ebd514859edc96ba1f5d28dbc642950db594b985938c10"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "industry",
+          "indexed_papers": 65,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.emnlp-industry/",
+              "captured_at": "2026-09-08T06:01:41.934316+00:00",
+              "sha256": "87ec601192765b257e2f3699cb9d882110b8da07dbceb8fcd003965a9d7ec1c3"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "main",
+          "indexed_papers": 828,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.emnlp-main/",
+              "captured_at": "2026-09-08T06:01:44.070861+00:00",
+              "sha256": "010090ab58bfbaba32715393f54f167a7d85febd2dea45a917abac951ae043b6"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "demo",
+          "indexed_papers": 52,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.emnlp-demo/",
+              "captured_at": "2026-09-08T06:01:43.783014+00:00",
+              "sha256": "958e9cfed2d3feed594698e8d2f6eaf6ecd9328c42c8650ff8ef0c049719e861"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "industry",
+          "indexed_papers": 77,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.emnlp-industry/",
+              "captured_at": "2026-09-08T06:01:46.194037+00:00",
+              "sha256": "a9552c221a5f78a42e62c509b9326456286e764d3e989f957379149890b1add5"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "main",
+          "indexed_papers": 1047,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.emnlp-main/",
+              "captured_at": "2026-09-08T06:01:47.840553+00:00",
+              "sha256": "7c593fba12c1b3ba9b1eb0f5a10e99b5ce5ca00b3589d43a57e8be9fc4b02e6b"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "demo",
+          "indexed_papers": 52,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.emnlp-demo/",
+              "captured_at": "2026-09-08T06:01:47.703992+00:00",
+              "sha256": "e33f093e853b08847ac4bb90631a977fe3965a78abb592a3aa8bcdf57c0895fb"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "industry",
+          "indexed_papers": 121,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.emnlp-industry/",
+              "captured_at": "2026-09-08T06:01:48.974603+00:00",
+              "sha256": "03dd487b4d748cba9f29a97cd252d3e6f1701cb73ac4254f775b24428767f4b7"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "main",
+          "indexed_papers": 1268,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.emnlp-main/",
+              "captured_at": "2026-09-08T06:01:56.927957+00:00",
+              "sha256": "a33b54c091cb32b3c9f4fd63842d7476feef5d84be3b28a0204067e9747ae7b6"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "industry",
+          "indexed_papers": 193,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.emnlp-industry/",
+              "captured_at": "2026-09-08T06:01:52.563584+00:00",
+              "sha256": "1df71dd67857bdde0532f1ae490034fd2e2b840638dc4a860e15d872cf6f1590"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "main",
+          "indexed_papers": 1809,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.emnlp-main/",
+              "captured_at": "2026-09-08T06:02:03.324185+00:00",
+              "sha256": "7389347c68cd6337821fa91f5815d186780c97a5e0a922b636a5d15f450d1215"
+            },
+            {
+              "url": "https://aclanthology.org/venues/emnlp/",
+              "captured_at": "2026-09-08T06:01:36.583561+00:00",
+              "sha256": "00f77eb2bc0ff2e8f715af9f12c16e6e2908a9a6c876ecd347b5143da5e72333"
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "naacl": {
+      "papers": [
+        {
+          "title": "Ada-LEval: Evaluating long-context LLMs with length-adaptable benchmarks",
+          "authors": [
+            "Chonghua Wang",
+            "Haodong Duan",
+            "Songyang Zhang",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.naacl-long.205/",
+          "source": {
+            "url": "https://aclanthology.org/2024.naacl-long.205/",
+            "captured_at": "2026-09-08T06:02:17.522717+00:00",
+            "sha256": "495cebb4b41969c8057744627340b3e48ab401cb268d3d57fbacec93dfa2b969"
+          },
+          "doi": "10.18653/v1/2024.naacl-long.205",
+          "paper_url": "https://aclanthology.org/2024.naacl-long.205.pdf",
+          "publication_date": "2024/6",
+          "pages": "3712-3724",
+          "track": "long",
+          "conference": "Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)"
+        },
+        {
+          "title": "Flames: Benchmarking Value Alignment of LLMs in Chinese",
+          "authors": [
+            "Kexin Huang",
+            "Xiangyang Liu",
+            "Qianyu Guo",
+            "Tianxiang Sun",
+            "Jiawei Sun",
+            "Yaru Wang",
+            "Zeyang Zhou",
+            "Yixu Wang",
+            "Yan Teng",
+            "Xipeng Qiu (邱锡鹏)",
+            "Yingchun Wang",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.naacl-long.256/",
+          "source": {
+            "url": "https://aclanthology.org/2024.naacl-long.256/",
+            "captured_at": "2026-09-08T06:02:19.008259+00:00",
+            "sha256": "40cfcefcde882ee9631c629daa971c2644dc018cbfd43d3082e87822385ece80"
+          },
+          "doi": "10.18653/v1/2024.naacl-long.256",
+          "paper_url": "https://aclanthology.org/2024.naacl-long.256.pdf",
+          "publication_date": "2024/6",
+          "pages": "4551-4591",
+          "track": "long",
+          "conference": "Proceedings of the 2024 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies (Volume 1: Long Papers)"
+        }
+      ],
+      "coverage": [
+        {
+          "year": 2021,
+          "track": "industry",
+          "indexed_papers": 39,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.naacl-industry/",
+              "captured_at": "2026-09-08T06:02:08.856760+00:00",
+              "sha256": "ee8410c685e6f9067a88f92a3875ffea9bfc2c8e5426f150fb7af971654eff9b"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "main",
+          "indexed_papers": 477,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.naacl-main/",
+              "captured_at": "2026-09-08T06:02:10.905876+00:00",
+              "sha256": "67a47062058c6be5a10c3d57028b26d69e2aedcbdfa4e9f0a0633deb9abcd176"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "demo",
+          "indexed_papers": 14,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.naacl-demo/",
+              "captured_at": "2026-09-08T06:02:08.634814+00:00",
+              "sha256": "d9d3ed91cdf33cbd72b2077e93b214b14d1056e2aa8b2837b73c9efe80551edb"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "industry",
+          "indexed_papers": 40,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.naacl-industry/",
+              "captured_at": "2026-09-08T06:02:10.496585+00:00",
+              "sha256": "1b7b5236495f961bb49f375f25dfbdfb5539354a3fdc16e1901648e15175460a"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "main",
+          "indexed_papers": 442,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.naacl-main/",
+              "captured_at": "2026-09-08T06:02:12.460837+00:00",
+              "sha256": "72a37eb4f0b9dc8cfb64a8776b82aa2c75a57ba2f8504cb743b45b12d3c47ec5"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "demo",
+          "indexed_papers": 21,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.naacl-demo/",
+              "captured_at": "2026-09-08T06:02:11.990741+00:00",
+              "sha256": "9f74cf20284bcc4cadb7bf700b1dd6c3b5cb8a77e3ee95a98b28d164a954321e"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "industry",
+          "indexed_papers": 43,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.naacl-industry/",
+              "captured_at": "2026-09-08T06:02:13.027715+00:00",
+              "sha256": "8834cb0143281e0e275833c56fcc7fbca6b1b86967c6a438e64130aaeda3e2b8"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "long",
+          "indexed_papers": 487,
+          "author_papers": 2,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.naacl-long/",
+              "captured_at": "2026-09-08T06:02:15.844601+00:00",
+              "sha256": "83b0eddde22bf0984ceba258e76d6359b4a1bd7e04210851ea01a9f102af9b3f"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "short",
+          "indexed_papers": 75,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.naacl-short/",
+              "captured_at": "2026-09-08T06:02:14.690789+00:00",
+              "sha256": "be8788ed491c6b48b254bee96a4a05f429c9125b1a41ca8eaba77f5df2c1f7c5"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "demo",
+          "indexed_papers": 44,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.naacl-demo/",
+              "captured_at": "2026-09-08T06:02:16.297115+00:00",
+              "sha256": "04719b479ba3098812448812114582bcf84f465a39f60d98a4c660a4ce4ea574"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "industry",
+          "indexed_papers": 80,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.naacl-industry/",
+              "captured_at": "2026-09-08T06:02:16.930928+00:00",
+              "sha256": "7856d8acd3d7c358559ff31b35c925a8e4cf169e9eab42b9228bff1f475c487f"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "long",
+          "indexed_papers": 637,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.naacl-long/",
+              "captured_at": "2026-09-08T06:02:20.561650+00:00",
+              "sha256": "8f22dd9f0a5c3ae33a312acc392073c98a5b4ba10db5e590342e9b23b7504aee"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "short",
+          "indexed_papers": 81,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.naacl-short/",
+              "captured_at": "2026-09-08T06:02:19.046637+00:00",
+              "sha256": "6a73973d34ef99f285f4aa2e99b91d01305e1d1fc172470e5b862c52e9d72452"
+            },
+            {
+              "url": "https://aclanthology.org/venues/naacl/",
+              "captured_at": "2026-09-08T06:02:07.045209+00:00",
+              "sha256": "d492e3f75096681681e66c62dfd968a7cc0e0782e14b94fec6f4961941dea75b"
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "findings": {
+      "papers": [
+        {
+          "title": "Agent-FLAN: Designing Data and Methods of Effective Agent Tuning for Large Language Models",
+          "authors": [
+            "Zehui Chen",
+            "Kuikun Liu",
+            "Qiuchen Wang",
+            "Wenwei Zhang",
+            "Jiangning Liu",
+            "Dahua Lin",
+            "Kai Chen",
+            "Feng Zhao"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-acl.557/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-acl.557/",
+            "captured_at": "2026-09-08T06:01:24.176847+00:00",
+            "sha256": "3c9e667f63d9281584f4a94eeac65778f7edd184ef791ff76c49f6ef3a2b6cc8"
+          },
+          "doi": "10.18653/v1/2024.findings-acl.557",
+          "paper_url": "https://aclanthology.org/2024.findings-acl.557.pdf",
+          "publication_date": "2024/8",
+          "pages": "9354-9366",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2024",
+          "host_conference": "acl"
+        },
+        {
+          "title": "Balanced Data Sampling for Language Model Training with Clustering",
+          "authors": [
+            "Yunfan Shao",
+            "Linyang Li",
+            "Zhaoye Fei",
+            "Hang Yan",
+            "Dahua Lin",
+            "Xipeng Qiu (邱锡鹏)"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-acl.833/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-acl.833/",
+            "captured_at": "2026-09-08T06:01:27.239836+00:00",
+            "sha256": "18dda5243e8abe6115cca794ef0ee158f2d5566b2b5a29a5b8306420afa0fc0d"
+          },
+          "doi": "10.18653/v1/2024.findings-acl.833",
+          "paper_url": "https://aclanthology.org/2024.findings-acl.833.pdf",
+          "publication_date": "2024/8",
+          "pages": "14012-14023",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2024",
+          "host_conference": "acl"
+        },
+        {
+          "title": "BotChat: Evaluating LLMs’ Capabilities of Having Multi-Turn Dialogues",
+          "authors": [
+            "Haodong Duan",
+            "Jueqi Wei",
+            "Chonghua Wang",
+            "Hongwei Liu",
+            "Yixiao Fang",
+            "Songyang Zhang",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-naacl.201/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-naacl.201/",
+            "captured_at": "2026-09-08T06:02:14.363016+00:00",
+            "sha256": "3422bccea930f845ff22d9944beca64b5c70e66eb9d01d408c390db5162effa6"
+          },
+          "doi": "10.18653/v1/2024.findings-naacl.201",
+          "paper_url": "https://aclanthology.org/2024.findings-naacl.201.pdf",
+          "publication_date": "2024/6",
+          "pages": "3184-3200",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: NAACL 2024",
+          "host_conference": "naacl"
+        },
+        {
+          "title": "Code Needs Comments: Enhancing Code LLMs with Comment Augmentation",
+          "authors": [
+            "Demin Song",
+            "Honglin Guo",
+            "Yunhua Zhou",
+            "Shuhao Xing",
+            "Yudong Wang",
+            "Zifan Song",
+            "Wenwei Zhang",
+            "Qipeng Guo",
+            "Hang Yan",
+            "Xipeng Qiu (邱锡鹏)",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-acl.809/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-acl.809/",
+            "captured_at": "2026-09-08T06:01:25.720033+00:00",
+            "sha256": "26136f4c8f72df991552502f810e920af64969dd54c1c0df1edfd004c74fb172"
+          },
+          "doi": "10.18653/v1/2024.findings-acl.809",
+          "paper_url": "https://aclanthology.org/2024.findings-acl.809.pdf",
+          "publication_date": "2024/8",
+          "pages": "13640-13656",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2024",
+          "host_conference": "acl"
+        },
+        {
+          "title": "Identifying Semantic Induction Heads to Understand In-Context Learning",
+          "authors": [
+            "Jie Ren",
+            "Qipeng Guo",
+            "Hang Yan",
+            "Dongrui Liu",
+            "Quanshi Zhang",
+            "Xipeng Qiu (邱锡鹏)",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-acl.412/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-acl.412/",
+            "captured_at": "2026-09-08T06:01:22.621254+00:00",
+            "sha256": "ee5597a9e6d882a6e54744caa90b67557e7509ae7e88be2bc33898b0e9cfbb10"
+          },
+          "doi": "10.18653/v1/2024.findings-acl.412",
+          "paper_url": "https://aclanthology.org/2024.findings-acl.412.pdf",
+          "publication_date": "2024/8",
+          "pages": "6916-6932",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2024",
+          "host_conference": "acl"
+        },
+        {
+          "title": "LongWanjuan: Towards Systematic Measurement for Long Text Quality",
+          "authors": [
+            "Xiaoran Liu",
+            "Kai Lv",
+            "Qipeng Guo",
+            "Hang Yan",
+            "Conghui He",
+            "Xipeng Qiu (邱锡鹏)",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-emnlp.327/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-emnlp.327/",
+            "captured_at": "2026-09-08T06:02:01.129060+00:00",
+            "sha256": "65229eab15b97fcd397d29fc1931d1dde798b247acd108af02f41096103c06a8"
+          },
+          "doi": "10.18653/v1/2024.findings-emnlp.327",
+          "paper_url": "https://aclanthology.org/2024.findings-emnlp.327.pdf",
+          "publication_date": "2024/11",
+          "pages": "5709-5725",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: EMNLP 2024",
+          "host_conference": "emnlp"
+        },
+        {
+          "title": "MathBench: Evaluating the Theory and Application Proficiency of LLMs with a Hierarchical Mathematics Benchmark",
+          "authors": [
+            "Hongwei Liu",
+            "Zilong Zheng",
+            "Yuxuan Qiao",
+            "Haodong Duan",
+            "Zhiwei Fei",
+            "Fengzhe Zhou",
+            "Wenwei Zhang",
+            "Songyang Zhang",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-acl.411/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-acl.411/",
+            "captured_at": "2026-09-08T06:01:21.159145+00:00",
+            "sha256": "e1a5f63ad8dcf8a774ba0759f789b04107fb7f6efc3c07ba9cb4e6d4aad5c618"
+          },
+          "doi": "10.18653/v1/2024.findings-acl.411",
+          "paper_url": "https://aclanthology.org/2024.findings-acl.411.pdf",
+          "publication_date": "2024/8",
+          "pages": "6884-6915",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2024",
+          "host_conference": "acl"
+        },
+        {
+          "title": "ProSA: Assessing and Understanding the Prompt Sensitivity of LLMs",
+          "authors": [
+            "Jingming Zhuo",
+            "Songyang Zhang",
+            "Xinyu Fang",
+            "Haodong Duan",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-emnlp.108/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-emnlp.108/",
+            "captured_at": "2026-09-08T06:01:58.103873+00:00",
+            "sha256": "6794b8f2b04162c4b2ffee06b9377a257a61124d9e84eafadbe07ea6ef1e0a66"
+          },
+          "doi": "10.18653/v1/2024.findings-emnlp.108",
+          "paper_url": "https://aclanthology.org/2024.findings-emnlp.108.pdf",
+          "publication_date": "2024/11",
+          "pages": "1950-1976",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: EMNLP 2024",
+          "host_conference": "emnlp"
+        },
+        {
+          "title": "SALAD-Bench: A Hierarchical and Comprehensive Safety Benchmark for Large Language Models",
+          "authors": [
+            "Lijun Li",
+            "Bowen Dong",
+            "Ruohui Wang",
+            "Xuhao Hu",
+            "Wangmeng Zuo",
+            "Dahua Lin",
+            "Yu Qiao",
+            "Jing Shao"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-acl.235/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-acl.235/",
+            "captured_at": "2026-09-08T06:01:19.639003+00:00",
+            "sha256": "b9b2ee46fda3d764d23ca934f6399e416278f88f040f10e0ccdbba8f8bea00a8"
+          },
+          "doi": "10.18653/v1/2024.findings-acl.235",
+          "paper_url": "https://aclanthology.org/2024.findings-acl.235.pdf",
+          "publication_date": "2024/8",
+          "pages": "3923-3954",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2024",
+          "host_conference": "acl"
+        },
+        {
+          "title": "Scaling Behavior for Large Language Models regarding Numeral Systems: An Example using Pythia",
+          "authors": [
+            "Zhejian Zhou",
+            "Jiayu Wang",
+            "Dahua Lin",
+            "Kai Chen"
+          ],
+          "year": 2024,
+          "official_url": "https://aclanthology.org/2024.findings-emnlp.218/",
+          "source": {
+            "url": "https://aclanthology.org/2024.findings-emnlp.218/",
+            "captured_at": "2026-09-08T06:01:59.570821+00:00",
+            "sha256": "4df1117e4fa072b5f66d61ed10668080cfff1303de8a645d06636c397c2174b1"
+          },
+          "doi": "10.18653/v1/2024.findings-emnlp.218",
+          "paper_url": "https://aclanthology.org/2024.findings-emnlp.218.pdf",
+          "publication_date": "2024/11",
+          "pages": "3806-3820",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: EMNLP 2024",
+          "host_conference": "emnlp"
+        },
+        {
+          "title": "Consultant Decoding: Yet Another Synergistic Mechanism",
+          "authors": [
+            "Chuanghao Ding",
+            "Jiaping Wang",
+            "Ziqing Yang",
+            "Xiaoliang Wang",
+            "Dahua Lin",
+            "Cam-Tu Nguyen",
+            "Fei Tan"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.findings-acl.797/",
+          "source": {
+            "url": "https://aclanthology.org/2025.findings-acl.797/",
+            "captured_at": "2026-09-08T06:01:30.401491+00:00",
+            "sha256": "e250e21e0d44f631e469e9c03fd5c143086764ee4c45661c878d2e14af25e4a0"
+          },
+          "doi": "10.18653/v1/2025.findings-acl.797",
+          "paper_url": "https://aclanthology.org/2025.findings-acl.797.pdf",
+          "publication_date": "2025/7",
+          "pages": "15438-15452",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2025",
+          "host_conference": "acl"
+        },
+        {
+          "title": "GRAIT: Gradient-Driven Refusal-Aware Instruction Tuning for Effective Hallucination Mitigation",
+          "authors": [
+            "Runchuan Zhu",
+            "Zinco Jiang",
+            "Jiang Wu",
+            "Zhipeng Ma",
+            "Jiahe Song",
+            "Fengshuo Bai",
+            "Dahua Lin",
+            "Lijun Wu",
+            "Conghui He"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.findings-naacl.223/",
+          "source": {
+            "url": "https://aclanthology.org/2025.findings-naacl.223/",
+            "captured_at": "2026-09-08T06:02:18.582592+00:00",
+            "sha256": "d4c55a40abc731e2f610a455890cc8ef7b659f5d190ed6122fdfff97594bfa81"
+          },
+          "doi": "10.18653/v1/2025.findings-naacl.223",
+          "paper_url": "https://aclanthology.org/2025.findings-naacl.223.pdf",
+          "publication_date": "2025/4",
+          "pages": "4006-4021",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: NAACL 2025",
+          "host_conference": "naacl"
+        },
+        {
+          "title": "InternLM-XComposer2.5-Reward: A Simple Yet Effective Multi-Modal Reward Model",
+          "authors": [
+            "Yuhang Zang",
+            "Xiaoyi Dong",
+            "Pan Zhang",
+            "Yuhang Cao",
+            "Ziyu Liu",
+            "Shengyuan Ding",
+            "Shenxi Wu",
+            "Yubo Ma",
+            "Haodong Duan",
+            "Wenwei Zhang",
+            "Kai Chen",
+            "Dahua Lin",
+            "Jiaqi Wang"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.findings-acl.340/",
+          "source": {
+            "url": "https://aclanthology.org/2025.findings-acl.340/",
+            "captured_at": "2026-09-08T06:01:25.631749+00:00",
+            "sha256": "28072ab89ac465c7bbba90fd5c1bffc8418d566570926bf1c301813e9170df79"
+          },
+          "doi": "10.18653/v1/2025.findings-acl.340",
+          "paper_url": "https://aclanthology.org/2025.findings-acl.340.pdf",
+          "publication_date": "2025/7",
+          "pages": "6547-6563",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2025",
+          "host_conference": "acl"
+        },
+        {
+          "title": "OpenHuEval: Evaluating Large Language Model on Hungarian Specifics",
+          "authors": [
+            "Haote Yang",
+            "Xingjian Wei",
+            "Jiang Wu",
+            "Noémi Ligeti-Nagy",
+            "Jiaxing Sun",
+            "Yinfan Wang",
+            "Zijian Győző Yang",
+            "Junyuan Gao",
+            "Jingchao Wang",
+            "Bowen Jiang",
+            "Shasha Wang",
+            "Nanjun Yu",
+            "Zihao Zhang",
+            "Shixin Hong",
+            "Hongwei Liu",
+            "Wei Li",
+            "Songyang Zhang",
+            "Dahua Lin",
+            "Lijun Wu",
+            "Gabor Proszeky",
+            "Conghui He"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.findings-acl.390/",
+          "source": {
+            "url": "https://aclanthology.org/2025.findings-acl.390/",
+            "captured_at": "2026-09-08T06:01:27.205869+00:00",
+            "sha256": "48765ab305fe9e6c9eb48fb5741fe5f4348a647f72bfc0935a033200dbb21207"
+          },
+          "doi": "10.18653/v1/2025.findings-acl.390",
+          "paper_url": "https://aclanthology.org/2025.findings-acl.390.pdf",
+          "publication_date": "2025/7",
+          "pages": "7464-7520",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2025",
+          "host_conference": "acl"
+        },
+        {
+          "title": "Training Language Models to Critique With Multi-agent Feedback",
+          "authors": [
+            "Tian Lan",
+            "Wenwei Zhang",
+            "Chengqi Lyu",
+            "Shuaibin Li",
+            "Chen Xu",
+            "He-Yan Huang (黄河燕)",
+            "Dahua Lin",
+            "Xian-Ling Mao",
+            "Kai Chen"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.findings-emnlp.78/",
+          "source": {
+            "url": "https://aclanthology.org/2025.findings-emnlp.78/",
+            "captured_at": "2026-09-08T06:02:04.219587+00:00",
+            "sha256": "5eb897f77e90deb0bd4ab8f2d59a6c16831c12228194caa2fcebe42835d1ee00"
+          },
+          "doi": "10.18653/v1/2025.findings-emnlp.78",
+          "paper_url": "https://aclanthology.org/2025.findings-emnlp.78.pdf",
+          "publication_date": "2025/11",
+          "pages": "1474-1501",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: EMNLP 2025",
+          "host_conference": "emnlp"
+        },
+        {
+          "title": "daDPO: Distribution-Aware DPO for Distilling Conversational Abilities",
+          "authors": [
+            "Zhengze Zhang",
+            "Shiqi Wang",
+            "Yiqun Shen",
+            "Simin Guo",
+            "Dahua Lin",
+            "Xiaoliang Wang",
+            "Cam-Tu Nguyen",
+            "Fei Tan"
+          ],
+          "year": 2025,
+          "official_url": "https://aclanthology.org/2025.findings-acl.796/",
+          "source": {
+            "url": "https://aclanthology.org/2025.findings-acl.796/",
+            "captured_at": "2026-09-08T06:01:28.845526+00:00",
+            "sha256": "b1b22cac2a62827dc706b8996d357c10226e4c65a83c8b1d85de5f6c05f8b371"
+          },
+          "doi": "10.18653/v1/2025.findings-acl.796",
+          "paper_url": "https://aclanthology.org/2025.findings-acl.796.pdf",
+          "publication_date": "2025/7",
+          "pages": "15421-15437",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2025",
+          "host_conference": "acl"
+        },
+        {
+          "title": "Half-S: Halving the Scale for Near-Lossless 4-Bit LLM Training",
+          "authors": [
+            "Jinyang Du",
+            "Ruihao Gong",
+            "Linghan Ai",
+            "Zining Wang",
+            "Yunke Peng",
+            "Yao Wang",
+            "Lei Yan",
+            "Wxuefei",
+            "Yaoyuan Wang",
+            "Jinyang Guo",
+            "Dahua Lin",
+            "Xianglong Liu"
+          ],
+          "year": 2026,
+          "official_url": "https://aclanthology.org/2026.findings-acl.241/",
+          "source": {
+            "url": "https://aclanthology.org/2026.findings-acl.241/",
+            "captured_at": "2026-09-08T06:01:35.227813+00:00",
+            "sha256": "3487c488ff1a092c4242ef2dc01ff7ecfd0df293617d74a61d8ac072776fd506"
+          },
+          "doi": "10.18653/v1/2026.findings-acl.241",
+          "paper_url": "https://aclanthology.org/2026.findings-acl.241.pdf",
+          "publication_date": "2026/7",
+          "pages": "4890-4903",
+          "track": "findings",
+          "conference": "Findings of the Association for Computational Linguistics: ACL 2026",
+          "host_conference": "acl"
+        }
+      ],
+      "coverage": [
+        {
+          "year": 2021,
+          "track": "findings",
+          "indexed_papers": 457,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.findings-acl/",
+              "captured_at": "2026-09-08T06:01:08.199422+00:00",
+              "sha256": "171b8f9ac4b288550295e2b4defd635118f5191aa94ac2994f34d55599bc7fcb"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "findings",
+          "indexed_papers": 331,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.findings-acl/",
+              "captured_at": "2026-09-08T06:01:10.792766+00:00",
+              "sha256": "3579197d4f2a53409827f09f49d3acf52133a394eab02873fe162a4b1162c449"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "findings",
+          "indexed_papers": 901,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.findings-acl/",
+              "captured_at": "2026-09-08T06:01:14.232775+00:00",
+              "sha256": "7a75795767754afc12eaa0dd86413e525f9449072d2c1619db633da004fffe8f"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "findings",
+          "indexed_papers": 975,
+          "author_papers": 6,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.findings-acl/",
+              "captured_at": "2026-09-08T06:01:17.700080+00:00",
+              "sha256": "c39ff71977fae05de957f3d6ed01501bd871dd0f233b2e5edcf8e17210c5aa42"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "findings",
+          "indexed_papers": 1387,
+          "author_papers": 4,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.findings-acl/",
+              "captured_at": "2026-09-08T06:01:23.453872+00:00",
+              "sha256": "12070f53b2baeadd57ecfb64da3a175aaa70d743a838d95070e5262906c3127d"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2026,
+          "track": "findings",
+          "indexed_papers": 2163,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2026.findings-acl/",
+              "captured_at": "2026-09-08T06:01:32.525904+00:00",
+              "sha256": "ca13166f4cb6816bb2c64b4d1e8a078764cc4e647f7f8cce1cb6852469979e86"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2020,
+          "track": "findings",
+          "indexed_papers": 447,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2020.findings-emnlp/",
+              "captured_at": "2026-09-08T06:01:39.792484+00:00",
+              "sha256": "3e9b8121e85b445bd66dec94180fc40c74a425eb546a95909417cf3fd15e2e8c"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "track": "findings",
+          "indexed_papers": 424,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2021.findings-emnlp/",
+              "captured_at": "2026-09-08T06:01:45.451475+00:00",
+              "sha256": "f02f2fe2fef9136dd1eaf1525ec0afe075c5274cbfc5bc744f38ce1276d634b6"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "findings",
+          "indexed_papers": 548,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.findings-emnlp/",
+              "captured_at": "2026-09-08T06:01:43.893909+00:00",
+              "sha256": "015a9ce1b6863b7464a7174c11a109313eacde1081225a52fba5167df50557ec"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "track": "findings",
+          "indexed_papers": 1059,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2023.findings-emnlp/",
+              "captured_at": "2026-09-08T06:01:53.598246+00:00",
+              "sha256": "ed90567c772f137d4b8c8ff09d1afe756d0fef758bf92b98435676b1059f32a3"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "findings",
+          "indexed_papers": 1003,
+          "author_papers": 3,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.findings-emnlp/",
+              "captured_at": "2026-09-08T06:01:56.268073+00:00",
+              "sha256": "6c88fd7da0afcd150e9dfefbd4c35c17773e861aaba46b8ddf4a44fd44b3cf91"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "findings",
+          "indexed_papers": 1405,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.findings-emnlp/",
+              "captured_at": "2026-09-08T06:02:02.155062+00:00",
+              "sha256": "bfda2b8765f83f335808ed92aa8781e830d33420472ac5be15e220c3c5e3e12f"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "track": "findings",
+          "indexed_papers": 209,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2022.findings-naacl/",
+              "captured_at": "2026-09-08T06:02:09.722895+00:00",
+              "sha256": "2ff456e004e20280501e6b6a7a05301084f8a876199c665c903ad5c607cde275"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "track": "findings",
+          "indexed_papers": 296,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2024.findings-naacl/",
+              "captured_at": "2026-09-08T06:02:12.747326+00:00",
+              "sha256": "2b2dbc990da2cadca48915a79cc32c316323838ea64cb3ae208d8ab387508980"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "track": "findings",
+          "indexed_papers": 475,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://aclanthology.org/volumes/2025.findings-naacl/",
+              "captured_at": "2026-09-08T06:02:16.824221+00:00",
+              "sha256": "d6534f4c4eed3c37e733a227ec1911cba5a64f7bc8440e8cab481efcd58c34bc"
+            },
+            {
+              "url": "https://aclanthology.org/venues/findings/",
+              "captured_at": "2026-09-08T06:01:04.038670+00:00",
+              "sha256": "dbeab298ee6ff3ceadac0d5dbb127ae33f8a3cd5d975541477088c292603e914"
+            }
+          ]
+        }
+      ],
+      "errors": []
+    },
+    "icra": {
+      "papers": [],
+      "coverage": [
+        {
+          "method": "IEEE publisher-deposited Crossref metadata",
+          "requested_years": [
+            2020,
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+            2026
+          ],
+          "minimum_year": 2020,
+          "search_results_scanned": 33168,
+          "search_results_total": 33168,
+          "matching_venue_search_results_by_year": {
+            "2020": 22,
+            "2021": 43,
+            "2022": 24,
+            "2023": 39,
+            "2024": 67,
+            "2025": 73,
+            "2026": 0
+          },
+          "author_papers": 0,
+          "initial_only_candidates": [],
+          "direct_proceedings_verified": false,
+          "sources": [
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=%2A",
+              "captured_at": "2026-09-08T06:02:29.786272+00:00",
+              "sha256": "3506f5ae64bf30825088f30e520ea8a42ac26da1963bcc42e387824e25b3c653"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYwMDExOTY2MDAwMCwxMC4xMTA5JTJGaWNhcm00OTM4MS4yMDIwLjkxOTUzMzQ%3D",
+              "captured_at": "2026-09-08T06:02:32.389366+00:00",
+              "sha256": "48eb4243f31f755fcc374f1d9f62c618753106291cc0625de7680c70758deedd"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYwODkxNjc4MDAwMCwxMC4xMTA5JTJGaG9zdDQ1Njg5LjIwMjAuOTMwMDI3Mg%3D%3D",
+              "captured_at": "2026-09-08T06:02:34.909383+00:00",
+              "sha256": "c7b5e116a61832172d014f39311e8e82577bc45aee4d285b02fb19138d2cea1b"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYxNTQ5ODQ0MjAwMCwxMC4xMTA5JTJGaWVkbTEzNTUzLjIwMjAuOTM3MjAwMQ%3D%3D",
+              "captured_at": "2026-09-08T06:02:37.784827+00:00",
+              "sha256": "fa4cb559e243b1b1d6f15b5abd25128a5627bff63721154c4687efdec3ca2f10"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYyNDkwNDI2NjAwMCwxMC4xMTA5JTJGaTJtdGM1MDM2NC4yMDIxLjk0NjAwODA%3D",
+              "captured_at": "2026-09-08T06:02:40.519429+00:00",
+              "sha256": "cf1e66236c0b6a489fb7227f4cf27a5d76f46b429d2218d0eb85ffde480180c1"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYzNDM4MDcyNjAwMCwxMC4xMTA5JTJGcmZpdDUyOTA1LjIwMjEuOTU2NTIyOA%3D%3D",
+              "captured_at": "2026-09-08T06:02:43.769334+00:00",
+              "sha256": "13df466d804d307d36af92a292849ae4c5613df57a72f71e919127baf51e8bf5"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYzOTY2OTUzODAwMCwxMC4xMTA5JTJGaXJvczUxMTY4LjIwMjEuOTYzNjcwOA%3D%3D",
+              "captured_at": "2026-09-08T06:02:46.918607+00:00",
+              "sha256": "241ab5b1a88d953090e15498882441ae12989833bcc8dbe4573d514677bb0f8e"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY0NTYzMDcyMzAwMCwxMC4xMTA5JTJGd3NjNTIyNjYuMjAyMS45NzE1Mzky",
+              "captured_at": "2026-09-08T06:02:49.910941+00:00",
+              "sha256": "4fa73c60f9f1443bbad73ac6f6f88ca30708b0f43b9a08bdcb903d210ae9badc"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY1NjUzMTk4MDAwMCwxMC4xMTA5JTJGaXNxZWQ1NDY4OC4yMDIyLjk4MDYyNDc%3D",
+              "captured_at": "2026-09-08T06:02:52.712294+00:00",
+              "sha256": "3c173800f404475aa483eca0563663516d2819054cc01eccc226e534fe028ad5"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY2NDI5NDIwMTAwMCwxMC4xMTA5JTJGY3ZwcjUyNjg4LjIwMjIuMDAzNTI%3D",
+              "captured_at": "2026-09-08T06:02:55.238917+00:00",
+              "sha256": "f3bf48c8cc659239afac8745047b782de0cd56ad0f84678f325c570e1a0dd52f"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY3MDUyNDgyNTAwMCwxMC4xMTA5JTJGaWV0LWljZXRhNTY1NTMuMjAyMi45OTcxNjE4",
+              "captured_at": "2026-09-08T06:02:58.226309+00:00",
+              "sha256": "9b3f0b5744974c7b4b57ec74172077524dc260b231ccf72b502e685ba295cd5c"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY3NjQwMTYyNTAwMCwxMC4xMTA5JTJGY2NkYzU1MjU2LjIwMjIuMTAwMzM2MzI%3D",
+              "captured_at": "2026-09-08T06:03:01.444278+00:00",
+              "sha256": "679cf8dbcd1ef10e08da0079699b737411221f00dc7ae817a97610e16e9464ce"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY4MzMwNzcxMDAwMCwxMC4xMTA5JTJGaWNhc3NwNDkzNTcuMjAyMy4xMDA5NjU1NA%3D%3D",
+              "captured_at": "2026-09-08T06:03:05.123726+00:00",
+              "sha256": "46c9be480520d53ea5fafcdacff4827bddb96132eaca1e3875e0ca56ea3cb155"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY5MjAzNDg1NjAwMCwxMC4xMTA5JTJGY3Zwcnc1OTIyOC4yMDIzLjAwMjg2",
+              "captured_at": "2026-09-08T06:03:08.616405+00:00",
+              "sha256": "a7429e0b9b25ce39d8d382be9cb3b1ed21e0674e64e9f5c27a936b911c10565b"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY5NTkyMjM1NDAwMCwxMC4xMTA5JTJGcmV3NTc4MDkuMjAyMy4wMDA3NQ%3D%3D",
+              "captured_at": "2026-09-08T06:03:11.730821+00:00",
+              "sha256": "80101e7e215cd0261415ca58edfece19baacab25d2d627fc1f45dc7fff945c1b"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcwMjU2Mzc0MTAwMCwxMC4xMTA5JTJGaWNlbXM1OTY4Ni4yMDIzLjEwMzQ0Nzcz",
+              "captured_at": "2026-09-08T06:03:14.815620+00:00",
+              "sha256": "85dea65164b87b72eb8e38c63ad6ed3b727d7bfc819504ee241aadb6ad4cc4a0"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcwNjUzNTI2NzAwMCwxMC4xMTA5JTJGY2l5Y2VlNTk3ODkuMjAyMy4xMDQwMTU0Mg%3D%3D",
+              "captured_at": "2026-09-08T06:03:17.861843+00:00",
+              "sha256": "48393df7778c1bf51df2464b2af712d4b3b69ea089e60ccad18a6773066052a0"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcxMTM5MzQ3ODAwMCwxMC4xMTA5JTJGaWNwZWNhNjA2MTUuMjAyNC4xMDQ3MTA1Mg%3D%3D",
+              "captured_at": "2026-09-08T06:03:20.815673+00:00",
+              "sha256": "0e1471f1af3c506f823548b3973fded8b806d90cd24d630f67ad29eabf73c7c1"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcxOTk0MDk3MjAwMCwxMC4xMTA5JTJGaXNjYXM1ODc0NC4yMDI0LjEwNTU3ODc4",
+              "captured_at": "2026-09-08T06:03:23.525597+00:00",
+              "sha256": "a7ff186ac711751c2a9ab1d46b27298cd07a847111abdb3b00b8e106f2b12347"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcyNDM0ODk5NDAwMCwxMC4xMTA5JTJGaXNiaTU2NTcwLjIwMjQuMTA2MzU4OTA%3D",
+              "captured_at": "2026-09-08T06:03:26.499290+00:00",
+              "sha256": "eaaee00fb806125498e32b8e0628adc41b63181e6f069782e5aed4ecf314278f"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcyNzcxNzA1MjAwMCwxMC4xMTA5JTJGYXAtcyUyRmluYy11c25jLXVyc2k1MjA1NC4yMDI0LjEwNjg3MDIw",
+              "captured_at": "2026-09-08T06:03:29.305739+00:00",
+              "sha256": "02d102532918e34ab33dfb38f10111ec258e2ba5d36e6e1f5aabe9d6e168c07b"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTczNDQ0NDQ0MTAwMCwxMC4xMTA5JTJGZW1iYzUzMTA4LjIwMjQuMTA3ODI2NDc%3D",
+              "captured_at": "2026-09-08T06:03:31.835370+00:00",
+              "sha256": "5867678d35ec8b82e88b86e09324c15d8409bda46fd0210cd20ef468f353c6ea"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTczODAwMjk2OTAwMCwxMC4xMTA5JTJGY2l5Y2VlNjMwOTkuMjAyNC4xMDg0NTk2Mg%3D%3D",
+              "captured_at": "2026-09-08T06:03:34.515667+00:00",
+              "sha256": "8dfd956aab146062d4982b88eeafd39710e700d090d2e85eb107524ce94e6249"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc0MTc5OTcwMjAwMCwxMC4xMTA5JTJGaWNhc3NwNDk2NjAuMjAyNS4xMDg5MDY0NA%3D%3D",
+              "captured_at": "2026-09-08T06:03:36.965177+00:00",
+              "sha256": "e4c3c035f6d3d03bcfca4df7645f112c576797372d81f5d018cae39a42195408"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc0ODk3MjU0MTAwMCwxMC4xMTA5JTJGaXNjYWl0NjQ5MTYuMjAyNS4xMTAxMDc5Mg%3D%3D",
+              "captured_at": "2026-09-08T06:03:39.835418+00:00",
+              "sha256": "831e80458fa9972a67571aec5c85845bb81af6175c3b78351cfa2919e0604851"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc1NTEwNjAwMjAwMCwxMC4xMTA5JTJGY3ZwcjUyNzM0LjIwMjUuMDAzMDY%3D",
+              "captured_at": "2026-09-08T06:03:43.244845+00:00",
+              "sha256": "5b45bb601c5084d3f83b71c8894dfb9a1461b35a6893ad66a4c850cd4b64b37d"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc1ODA0Mzk0NzAwMCwxMC4xMTA5JTJGYW1sZHM2MzkxOC4yMDI1LjExMTU5NDAz",
+              "captured_at": "2026-09-08T06:03:46.417459+00:00",
+              "sha256": "3e9be864deb6298e1402755c722677b88941e61e7dccce3a885c0445f470bbed"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc2MjQ1NDkyNjAwMCwxMC4xMTA5JTJGaWVjb241ODIyMy4yMDI1LjExMjIxODIw",
+              "captured_at": "2026-09-08T06:03:49.870785+00:00",
+              "sha256": "a6e6b4fdd3baa9858cca8ed106e884b567152ecd7f6e7c7bc112b04f2c9a528f"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc2NjQyODc1NjAwMCwxMC4xMTA5JTJGaXBjNjU1MTAuMjAyNS4xMTI4MjE2Mw%3D%3D",
+              "captured_at": "2026-09-08T06:03:57.405758+00:00",
+              "sha256": "9617a9c8a3f743c0188d6a757a15d89d5d1a945e04113eee40745be4e98b5101"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc2OTcyMTU4MDAwMCwxMC4xMTA5JTJGYmlibTY2NDczLjIwMjUuMTEzNTYzNzA%3D",
+              "captured_at": "2026-09-08T06:04:03.011585+00:00",
+              "sha256": "012dafd8d667f8748859674c485ec3c24fc6032bec0af40ec5f93d0538952406"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc3MzI1Nzc4MjAwMCwxMC4xMTA5JTJGaWNwZWU2NzYwOC4yMDI1LjExNDIyMTgx",
+              "captured_at": "2026-09-08T06:04:08.136370+00:00",
+              "sha256": "02540c54ed2ad2d505532e004715849e3307e319a5e69166c4650825cc4e9fd8"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc3NzQ5MTk0OTAwMCwxMC4xMTA5JTJGaWNjdjUxNzAxLjIwMjUuMDI1ODM%3D",
+              "captured_at": "2026-09-08T06:04:13.069139+00:00",
+              "sha256": "7d9b8076befb94571b05bc0b850e81cd10e1bd2bb11d3d0dbfa493b8dbbf0931"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc4MzM2Njk2MDAwMCwxMC4xMTA5JTJGY3Njd2Q2ODczNC4yMDI2LjExNTgxNTQ3",
+              "captured_at": "2026-09-08T06:04:18.070556+00:00",
+              "sha256": "834ab2ef1f57ba1d74898b1a69cb6351fb503536bea687be83fbf844c8843d52"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Robotics+and+Automation&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc4NzY4NTQxOTAwMCwxMC4xMTA5JTJGaXZuYzY5NDIxLjIwMjYuMTE2NjA5Mjc%3D",
+              "captured_at": "2026-09-08T06:04:20.228823+00:00",
+              "sha256": "6d20584dc9e02b7691686cc2f380865ed8c759ef699d63467c7d349066da84f0"
+            }
+          ],
+          "limitation": "Search-index coverage, not a complete proceedings census. Zero matches do not prove absence. Initial-only names require review; byline order requires publisher/PDF verification."
+        }
+      ],
+      "errors": []
+    },
+    "iros": {
+      "papers": [
+        {
+          "title": "X-neuron: Interpreting, Locating and Editing of Neurons in Reinforcement Learning Policy",
+          "authors": [
+            "Yuhong Ge",
+            "Xun Zhao",
+            "Jiangmiao Pang",
+            "Mingguo Zhao",
+            "Dahua Lin"
+          ],
+          "year": 2024,
+          "doi": "10.1109/iros58592.2024.10801727",
+          "official_url": "https://doi.org/10.1109/iros58592.2024.10801727",
+          "conference": "2024 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)",
+          "source": {
+            "provider": "IEEE via Crossref",
+            "url": "https://api.crossref.org/works/10.1109/iros58592.2024.10801727"
+          },
+          "author_order_verified": false,
+          "publication_date": "2024-10-14",
+          "pages": "458-465"
+        }
+      ],
+      "coverage": [
+        {
+          "method": "IEEE publisher-deposited Crossref metadata",
+          "requested_years": [
+            2020,
+            2021,
+            2022,
+            2023,
+            2024,
+            2025,
+            2026
+          ],
+          "minimum_year": 2020,
+          "search_results_scanned": 35567,
+          "search_results_total": 35567,
+          "matching_venue_search_results_by_year": {
+            "2020": 28,
+            "2021": 20,
+            "2022": 25,
+            "2023": 45,
+            "2024": 53,
+            "2025": 89,
+            "2026": 0
+          },
+          "author_papers": 1,
+          "initial_only_candidates": [],
+          "direct_proceedings_verified": false,
+          "sources": [
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=%2A",
+              "captured_at": "2026-09-08T06:04:23.017520+00:00",
+              "sha256": "cc071a80533c926ce6aa7b4794094f4c4ee763ca22a9bbf1c7504af76b6652b1"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTU5NjY2MjQwNTAwMCwxMC4xMTA5JTJGY3ZwcjQyNjAwLjIwMjAuMDAwNjk%3D",
+              "captured_at": "2026-09-08T06:04:25.415142+00:00",
+              "sha256": "ecfd1ed5b44e87209e0440755e43669580ef5e67fb001ec5a3aa84b65b99129d"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYwNjE3NTQ2MDAwMCwxMC4xMTA5JTJGaWNjZS10YWl3YW40OTgzOC4yMDIwLjkyNTgxMTg%3D",
+              "captured_at": "2026-09-08T06:04:27.896820+00:00",
+              "sha256": "9d6edde4153ef993cb6c92c5095a5d24de03fb77b87df574928bf00de1bab308"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYxMzU5Mjk0NTAwMCwxMC4xMTA5JTJGZWkyNTAxNjcuMjAyMC45MzQ2OTM3",
+              "captured_at": "2026-09-08T06:04:30.725069+00:00",
+              "sha256": "19e086a531ba20cb1944bcc379dea8469d93d8a88794dd2de838a7b84f6a5219"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYyMDg0OTcyNzAwMCwxMC4xMTA5JTJGZWR0bTUwOTg4LjIwMjEuOTQyMDg4OA%3D%3D",
+              "captured_at": "2026-09-08T06:04:33.559005+00:00",
+              "sha256": "373f871ec8abbceb8080c3af0888647a5af2e698143ca4f33b315db8d2bb72f7"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYyOTQ5MjIyMzAwMCwxMC4xMTA5JTJGaWNkbDQ5OTg0LjIwMjEuOTUxNTY1OA%3D%3D",
+              "captured_at": "2026-09-08T06:04:36.205975+00:00",
+              "sha256": "634abdbe9d2d99d9c603aa270f9e432a2e7e440517b606fe6761bb2e2d81266b"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTYzNjQxNDIzNDAwMCwxMC4xMTA5JTJGZGFjMTgwNzQuMjAyMS45NTg2MTcz",
+              "captured_at": "2026-09-08T06:04:39.105130+00:00",
+              "sha256": "5846c38c1eb3a03b8bab9119ea482967b2bbed363a4ea6757ccd16cb1ee105df"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY0MTU4NzUyNDAwMCwxMC4xMTA5JTJGdG5ubHMuMjAyMS4zMTMzMzM3",
+              "captured_at": "2026-09-08T06:04:42.130813+00:00",
+              "sha256": "a582603cf15212fa05f0edc4a314e39cb149b4ad7a42e5d7adb06e18c73698f8"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY0NzAzMDQxNDAwMCwxMC4xMTA5JTJGbmV0Y2l0NTQxNDcuMjAyMS4wMDA0MA%3D%3D",
+              "captured_at": "2026-09-08T06:04:45.287200+00:00",
+              "sha256": "be9d4d827e4844c8bed34d94e2524ad1b70344ee2f2ec2b4f4ea3d472485a0fd"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY1ODM0NTg2NTAwMCwxMC4xMTA5JTJGaXN0NTU0NTQuMjAyMi45ODI3Njcx",
+              "captured_at": "2026-09-08T06:04:48.656100+00:00",
+              "sha256": "54a1c363397b8157efa0c8484768b19bab0d4a8c6e8d40480de9927b229811c1"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY2NDM4MTU0NDAwMCwxMC4xMTA5JTJGaWdhcnNzNDY4MzQuMjAyMi45ODgzNzU3",
+              "captured_at": "2026-09-08T06:04:51.905863+00:00",
+              "sha256": "92c60f65f200ce3fa9cb4bae73b37c52ae9ca8f60df110172dd5f2f4450cd2d0"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY3MDUyNDkxNTAwMCwxMC4xMTA5JTJGY3ZjaTU2NzY2LjIwMjIuOTk2NDkzNA%3D%3D",
+              "captured_at": "2026-09-08T06:04:54.737727+00:00",
+              "sha256": "6f157e4103c61f2fc7444de4dc6311b33fe159b7b23ba3de12f734082cd4178b"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY3NTg4MjQ1NjAwMCwxMC4xMTA5JTJGcmFkYXI1Mzg0Ny4yMDIxLjEwMDI4MTUy",
+              "captured_at": "2026-09-08T06:04:57.593513+00:00",
+              "sha256": "614446f279427aebc799d45a75ba5343107448f5ebc029796991645d4a6ff0f6"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY4MjcwNDUxMDAwMCwxMC4xMTA5JTJGaWNiYXI1ODE5OS4yMDIyLjAwMDIw",
+              "captured_at": "2026-09-08T06:05:00.524716+00:00",
+              "sha256": "b21144f85abc241e5bb17560c8c7deb59452037ae6ba9dc6a82ce1749fbe75ae"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY5MDM5NTcwMTAwMCwxMC4xMTA5JTJGZ3JlZW5zNTkzMjguMjAyMy4wMDAwOA%3D%3D",
+              "captured_at": "2026-09-08T06:05:03.900953+00:00",
+              "sha256": "de3b3c7b4bc39fc2f996e58d764e4559377074f60cd05fc1abb0585191beaf94"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTY5NDQ0MDcxMTAwMCwxMC4xMTA5JTJGaWNpcDQ5MzU5LjIwMjMuMTAyMjI4NzI%3D",
+              "captured_at": "2026-09-08T06:05:08.037877+00:00",
+              "sha256": "5dfba3e469cd6e68a5d0e0d20e6b14841ea66d1465ca26412ecf155f5c5572c5"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcwMDY3OTk4NzAwMCwxMC4xMTA5JTJGcHN0NTg3MDguMjAyMy4xMDMyMDE1OA%3D%3D",
+              "captured_at": "2026-09-08T06:05:10.583509+00:00",
+              "sha256": "1511faf346109e224dead8d622ed85b519da532c008b2683176e788612276474"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcwNTM1MjE1OTAwMCwxMC4xMTA5JTJGaWNjdjUxMDcwLjIwMjMuMDA0NzA%3D",
+              "captured_at": "2026-09-08T06:05:13.891701+00:00",
+              "sha256": "d87b123cee130e73a9b23a517aace8ad6926960ae12036f9200dabe6c249f51a"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcwODk1ODczNjAwMCwxMC4xMTA5JTJGZ2xvYmVjb201NDE0MC4yMDIzLjEwNDM3Njg2",
+              "captured_at": "2026-09-08T06:05:16.587598+00:00",
+              "sha256": "48d0b91e8f0c8d8a810c702fdde71a16f35dcc01ad3d665aae97fe73eb64dbb9"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcxNTI3NjY0NDAwMCwxMC4xMTA5JTJGbGNzeXMuMjAyNC4zMzk5MTAz",
+              "captured_at": "2026-09-08T06:05:19.582216+00:00",
+              "sha256": "0c1daf6424141fc956558505268c1e515925f42fa3a6d63b316f975e6a686374"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcyMTg0MzM4MzAwMCwxMC4xMTA5JTJGc21hcnRjb21wNjE0NDUuMjAyNC4wMDAzNA%3D%3D",
+              "captured_at": "2026-09-08T06:05:23.114105+00:00",
+              "sha256": "8b8cf9736cb70d718856eac49ca8b408305e686b8a070c36d68dfcde3fc471ae"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcyNjQ5MzY5MzAwMCwxMC4xMTA5JTJGY3ZwcjUyNzMzLjIwMjQuMDE4Mjk%3D",
+              "captured_at": "2026-09-08T06:05:26.175779+00:00",
+              "sha256": "b9b9f0ab7b9b9d88efa1ba599bbadb2cb7a2e243e718eb8eb5a00c894dbe5fe5"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTcyOTAxMjc3MjAwMCwxMC4xMTA5JTJGaWNpcGNhNjE1OTMuMjAyNC4xMDcwOTA3MQ%3D%3D",
+              "captured_at": "2026-09-08T06:05:31.741231+00:00",
+              "sha256": "5f7fd53ef1764650e244bb04e29a28af59acd8db772da8f3cacbd9d8202672ac"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTczNTE1NDI1OTAwMCwxMC4xMTA5JTJGaXJvczU4NTkyLjIwMjQuMTA4MDI2Njg%3D",
+              "captured_at": "2026-09-08T06:05:34.958015+00:00",
+              "sha256": "350d14b2d6f11c921976675dbd581840151e6c65ead0628017975da7012be2b6"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTczOTM2NjE4MjAwMCwxMC4xMTA5JTJGaWNzaWRwNjI2NzkuMjAyNC4xMDg2ODY4NQ%3D%3D",
+              "captured_at": "2026-09-08T06:05:38.133096+00:00",
+              "sha256": "ad0742a81e784f72bfc4cec657a642bb6c1ad007dee4b0fda9b273e99c3b69e6"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc0MjgzOTAwMjAwMCwxMC4xMTA5JTJGaWNjdGl0NjQ0MDQuMjAyNC4xMDkyODQzMw%3D%3D",
+              "captured_at": "2026-09-08T06:05:41.177871+00:00",
+              "sha256": "aaeb91b0a8545f6e3d2d7dc407f6f5fa4aa536c54876290579de4d39dcdec708"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc1MDEwMDQ5MjAwMCwxMC4xMTA5JTJGdG5zcmUuMjAyNS4zNTc5NzYz",
+              "captured_at": "2026-09-08T06:05:44.289554+00:00",
+              "sha256": "9d4b5b7e3a3805c4603e638b5b4ee13c28cce0b56c98e0f69bf3d1ae33486188"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc1NTEwNjAwMjAwMCwxMC4xMTA5JTJGY3ZwcjUyNzM0LjIwMjUuMDA1NTE%3D",
+              "captured_at": "2026-09-08T06:05:47.935433+00:00",
+              "sha256": "b9503ddf0717f72911331ab880ad2ee6aac3ebdb2ae1fad45433d8a9076d10a9"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc1Nzk1NzgxNzAwMCwxMC4xMTA5JTJGbGNuNjU2MTAuMjAyNS4xMTE0NjM1OA%3D%3D",
+              "captured_at": "2026-09-08T06:05:51.027081+00:00",
+              "sha256": "4efec7514f6edc697632f65909761503c91a1502f37afd04e9df3dab21bc58bf"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc2MTkzMDg0NDAwMCwxMC4xMTA5JTJGdGNzdnQuMjAyNS4zNjI3NjM0",
+              "captured_at": "2026-09-08T06:05:53.826217+00:00",
+              "sha256": "51358d1152d5883ecee2b9e3e53b5102503114d364ed735082443a8afc2494e0"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc2NTkwOTgwNjAwMCwxMC4xMTA5JTJGaW1wYWN0Njc2NDUuMjAyNS4xMTI4MTc5Ng%3D%3D",
+              "captured_at": "2026-09-08T06:05:56.977802+00:00",
+              "sha256": "e5c4d853cdf439d801f19db1456dc17a4f31469300c5d44767bddcd0f78a34bf"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc2OTYzMzc0NzAwMCwxMC4xMTA5JTJGYWNwNjY4NzEuMjAyNS4xMTM1MDAyNg%3D%3D",
+              "captured_at": "2026-09-08T06:06:00.341681+00:00",
+              "sha256": "0134283a67c3421e47b294d3bcf13477779ab05131ba813a8d3e478aba3b4ef4"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc3MjY1NzIyNzAwMCwxMC4xMTA5JTJGZXRmZzYxOTk5LjIwMjUuMTE0MDI1MTA%3D",
+              "captured_at": "2026-09-08T06:06:04.661610+00:00",
+              "sha256": "b1d56b25e42c7a6a79c8edd0cca58c22cfa5cc9731f84df135383ddc0e1a2ea9"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc3NjgwNjc1NzAwMCwxMC4xMTA5JTJGaWNhc3NwNTU5MTIuMjAyNi4xMTQ2NDUwMw%3D%3D",
+              "captured_at": "2026-09-08T06:06:08.247642+00:00",
+              "sha256": "01be8e2208210fe95249d0f7baddc49a34fe4836b7c49f44889e5d924ffb27c8"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc4MTgxMzU1NzAwMCwxMC4xMTA5JTJGdG5zcmUuMjAyNi4zNzA0OTE5",
+              "captured_at": "2026-09-08T06:06:11.626173+00:00",
+              "sha256": "0365bc29dc80dc69c6ff942b2fce2cf294f56b4f4891d432cf1914573cb52eb0"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Intelligent+Robots+and+Systems&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2020-01-01%2Cuntil-pub-date%3A2026-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTc4NjY0ODM0MzAwMCwxMC4xMTA5JTJGYWllYTcwNzQzLjIwMjYuMTE2MzI4NzY%3D",
+              "captured_at": "2026-09-08T06:06:13.936592+00:00",
+              "sha256": "46106bdcfce0ded35df8531bca2d621f52f15c4bc943ac34632f2d4f9a57e1b1"
+            }
+          ],
+          "limitation": "Search-index coverage, not a complete proceedings census. Zero matches do not prove absence. Initial-only names require review; byline order requires publisher/PDF verification."
+        }
+      ],
+      "errors": []
+    },
+    "rss": {
+      "papers": [
+        {
+          "title": "HOMIE: Humanoid Loco-Manipulation with Isomorphic Exoskeleton Cockpit",
+          "authors": [
+            "Qingwei Ben",
+            "Feiyu Jia",
+            "Jia Zeng",
+            "Junting Dong",
+            "Dahua Lin",
+            "Jiangmiao Pang"
+          ],
+          "year": 2025,
+          "official_url": "https://www.roboticsproceedings.org/rss21/p070.html",
+          "source": {
+            "url": "https://www.roboticsproceedings.org/rss21/p070.html",
+            "captured_at": "2026-09-08T06:02:24.940934+00:00",
+            "sha256": "1399c221ffe33d89c3ae1673a804f962e56a430b476748f3b29b616db38d9285"
+          },
+          "paper_url": "http://www.roboticsproceedings.org/rss21/p070.pdf",
+          "publication_date": "2025/06/21",
+          "conference": "Robotics: Science and Systems"
+        },
+        {
+          "title": "Novel Demonstration Generation with Gaussian Splatting Enables Robust One-Shot Manipulation",
+          "authors": [
+            "Sizhe Yang",
+            "Wenye Yu",
+            "Jia Zeng",
+            "Jun Lv",
+            "Kerui Ren",
+            "Cewu Lu",
+            "Dahua Lin",
+            "Jiangmiao Pang"
+          ],
+          "year": 2025,
+          "official_url": "https://www.roboticsproceedings.org/rss21/p146.html",
+          "source": {
+            "url": "https://www.roboticsproceedings.org/rss21/p146.html",
+            "captured_at": "2026-09-08T06:02:26.209945+00:00",
+            "sha256": "1123171a9a1b818afb6396e74e55da56aa228211ab86893ced537fb2b722e92a"
+          },
+          "paper_url": "http://www.roboticsproceedings.org/rss21/p146.pdf",
+          "publication_date": "2025/06/21",
+          "conference": "Robotics: Science and Systems"
+        },
+        {
+          "title": "Robo3R: Enhancing Robotic Manipulation with Accurate Feed-Forward 3D Reconstruction",
+          "authors": [
+            "Sizhe Yang",
+            "Linning Xu",
+            "Hao Li",
+            "Juncheng Mu",
+            "Jia Zeng",
+            "Dahua Lin",
+            "Jiangmiao Pang"
+          ],
+          "year": 2026,
+          "official_url": "https://www.roboticsproceedings.org/rss22/p056.html",
+          "source": {
+            "url": "https://www.roboticsproceedings.org/rss22/p056.html",
+            "captured_at": "2026-09-08T06:02:25.010753+00:00",
+            "sha256": "cc09a355dcdaec68958c7076ab1fb6d656f6c6dc4c49166d9aa7d686bd5bf548"
+          },
+          "paper_url": "http://www.roboticsproceedings.org/rss22/p056.pdf",
+          "publication_date": "2026/07/13",
+          "conference": "Robotics: Science and Systems"
+        }
+      ],
+      "coverage": [
+        {
+          "year": 2020,
+          "indexed_papers": 103,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss16/index.html",
+              "captured_at": "2026-09-08T06:02:22.193744+00:00",
+              "sha256": "a7b1b246a2d7114eaa3be966bd2319e96993d05580e27b421fc036909d7a46d1"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        },
+        {
+          "year": 2021,
+          "indexed_papers": 92,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss17/index.html",
+              "captured_at": "2026-09-08T06:02:22.142604+00:00",
+              "sha256": "96cf8517de397d69b1da2eb876598ad9d37de7ff0284a4173634286cbc19df5d"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        },
+        {
+          "year": 2022,
+          "indexed_papers": 74,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss18/index.html",
+              "captured_at": "2026-09-08T06:02:22.142912+00:00",
+              "sha256": "e91f6d9e521cc5a3e38f5caf1da862c367f6d106bb759e76753edc05d7c277bf"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        },
+        {
+          "year": 2023,
+          "indexed_papers": 112,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss19/index.html",
+              "captured_at": "2026-09-08T06:02:22.431210+00:00",
+              "sha256": "0b826e0406a5e8eb50bc2bb1d402c67d90ff88aabd08c3393ec2ed9d19f9b949"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        },
+        {
+          "year": 2024,
+          "indexed_papers": 134,
+          "author_papers": 0,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss20/index.html",
+              "captured_at": "2026-09-08T05:59:16.889371+00:00",
+              "sha256": "3cdbe134023fbc8b9b6ee0755afbf670f17052c56ba57e8394539258b911a954"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        },
+        {
+          "year": 2025,
+          "indexed_papers": 163,
+          "author_papers": 2,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss21/index.html",
+              "captured_at": "2026-09-08T06:02:23.673829+00:00",
+              "sha256": "5d8e530b5ce7184795c14a7dca615f9c1a8b0b189661e0e6e795167b68b8516d"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        },
+        {
+          "year": 2026,
+          "indexed_papers": 210,
+          "author_papers": 1,
+          "sources": [
+            {
+              "url": "https://www.roboticsproceedings.org/rss22/index.html",
+              "captured_at": "2026-09-08T06:02:23.740285+00:00",
+              "sha256": "3921d80928d7e9fafb62712991ed02fd1e9ad14e1fc5b8a805906eb8cdeca4b8"
+            },
+            {
+              "url": "https://www.roboticsproceedings.org/",
+              "captured_at": "2026-09-08T05:59:15.403923+00:00",
+              "sha256": "0d61c8fe136b5eeb2422b37cd44ed5f090907a8c7659b32b8a613a7478713feb"
+            }
+          ]
+        }
+      ],
+      "errors": []
+    }
+  }
+}

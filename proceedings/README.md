@@ -115,3 +115,33 @@ requested editions, observed counts, and separate author candidates. Interrupted
 repeated, changing or incomplete pagination is an error, never a successful empty
 scan. A historical-source error preserves modern results (and vice versa), while
 returning a nonzero CLI exit status. Cached runs work with `--offline`.
+
+### ACL, EMNLP, NAACL, ICRA, IROS and RSS (2020 onward)
+
+```sh
+python3 proceedings/scan.py --author "Dahua Lin" \
+  --conferences acl emnlp naacl findings icra iros rss \
+  --catalog /path/to/library --output local/six-conferences
+```
+
+ACL Anthology adapters discover published volumes from the venue and Findings
+indexes. Main/long/short papers, demonstrations and industry papers
+are labeled by track; student workshops, tutorials and unrelated workshops are
+excluded. The separate `findings` adapter scans Findings volumes hosted by ACL,
+EMNLP and NAACL, storing the host conference on each extracted paper. Findings
+uses its own catalog venue (short name `ACL Findings`), never the host main
+conference venue. They scan every paper byline in each eligible volume, excluding front
+matter, then verify exact full-name matches on paper detail pages. Only published
+volumes discovered in the index are covered (not future acceptance announcements).
+
+RSS discovers its official annual proceedings indexes, scans every listed
+byline, and retrieves matching paper pages. RSS XVI is the 2020 edition.
+
+ICRA/IROS use IEEE-deposited Crossref metadata because direct Xplore access is
+blocked. Queries cover 2020 through the current calendar year and are paginated
+to completion. Only recognized conference containers and proceedings articles
+are accepted: RA-L journal articles and workshops are excluded. Initial-only
+names remain separate review candidates. Coverage is limited by IEEE deposits
+and Crossref indexing; no match is not proof of absence, and publisher byline
+order still needs verification. The saved comparison is read-only; no publication
+or author identity is added automatically.

@@ -135,6 +135,7 @@ class ScanTests(unittest.TestCase):
         self.assertEqual(
             set(scan.SCANNERS),
             {
+                "acl", "emnlp", "naacl", "icra", "iros", "rss", "findings",
                 "cvpr",
                 "iccv",
                 "eccv",

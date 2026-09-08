@@ -75,7 +75,7 @@
       {
         "url": "https://proceedings.mlr.press/",
         "role": "proceedings",
-        "label": "PMLR proceedings directory \u2014 ICML"
+        "label": "PMLR proceedings directory — ICML"
       }
     ]
   },
@@ -95,7 +95,7 @@
       {
         "url": "https://openreview.net/group?id=ICLR.cc",
         "role": "proceedings",
-        "label": "OpenReview \u2014 select year and accepted papers"
+        "label": "OpenReview — select year and accepted papers"
       }
     ]
   },
@@ -160,7 +160,105 @@
       {
         "url": "https://proceedings.mlr.press/",
         "role": "proceedings",
-        "label": "PMLR proceedings directory \u2014 CoRL"
+        "label": "PMLR proceedings directory — CoRL"
+      }
+    ]
+  },
+  "emnlp": {
+    "name": "Empirical Methods in Natural Language Processing",
+    "urls": [
+      {
+        "url": "https://sigdat.org/events",
+        "role": "homepage",
+        "label": "Official EMNLP conference directory"
+      },
+      {
+        "url": "https://aclanthology.org/venues/emnlp/",
+        "role": "proceedings",
+        "label": "ACL Anthology"
+      }
+    ]
+  },
+  "icra": {
+    "name": "IEEE International Conference on Robotics and Automation",
+    "urls": [
+      {
+        "url": "https://www.ieee-ras.org/conferences-workshops/fully-sponsored/icra/",
+        "role": "homepage"
+      },
+      {
+        "url": "https://ieeexplore.ieee.org/xpl/conhome/1000639/all-proceedings",
+        "role": "proceedings",
+        "label": "IEEE Xplore — all proceedings"
+      }
+    ]
+  },
+  "iros": {
+    "name": "IEEE/RSJ International Conference on Intelligent Robots and Systems",
+    "urls": [
+      {
+        "url": "https://www.ieee-ras.org/conferences-workshops/financially-co-sponsored/iros/",
+        "role": "homepage",
+        "label": "Official IROS conference directory"
+      },
+      {
+        "url": "https://ieeexplore.ieee.org/xpl/conhome/1000393/all-proceedings",
+        "role": "proceedings",
+        "label": "IEEE Xplore — all proceedings"
+      }
+    ]
+  },
+  "naacl": {
+    "name": "North American Chapter of the Association for Computational Linguistics",
+    "urls": [
+      {
+        "url": "https://naacl.org/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://aclanthology.org/venues/naacl/",
+        "role": "proceedings",
+        "label": "ACL Anthology"
+      }
+    ]
+  },
+  "acl": {
+    "name": "Proceedings of the Annual Meeting of the Association for Computational Linguistics",
+    "urls": [
+      {
+        "url": "https://www.aclweb.org/portal/acl",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://aclanthology.org/venues/acl/",
+        "role": "proceedings",
+        "label": "ACL Anthology"
+      }
+    ]
+  },
+  "rss": {
+    "name": "Robotics: Science and Systems",
+    "urls": [
+      {
+        "url": "https://roboticsconference.org/",
+        "role": "homepage"
+      },
+      {
+        "url": "https://www.roboticsproceedings.org/",
+        "role": "proceedings",
+        "label": "RSS online proceedings"
+      }
+    ]
+  },
+  "findings": {
+    "name": "Findings of the Association for Computational Linguistics",
+    "urls": [
+      {
+        "url": "https://aclanthology.org/venues/findings/",
+        "role": "proceedings",
+        "label": "ACL Anthology Findings proceedings"
       }
     ]
   }
