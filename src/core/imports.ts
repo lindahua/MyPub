@@ -9,7 +9,7 @@ import { importNative } from "./native.js";
 
 type Imported = AddPublicationInput & { raw?: unknown };
 function authors(value = ""): Author[] { return value.split(/\s+and\s+|\s*;\s*/i).map(name => name.trim()).filter(Boolean).map(name => ({ name })); }
-function type(value = ""): PublicationType { const v = value.toLowerCase(); if (v.includes("article") || v.includes("journal")) return "journal"; if (v.includes("conference") || v.includes("inproceedings")) return "conference"; if (v.includes("workshop")) return "workshop"; if (v.includes("thesis")) return "thesis"; if (v.includes("arxiv")) return "arxiv"; return "other"; }
+function type(value = ""): PublicationType { const v = value.toLowerCase(); if (v.includes("article") || v.includes("journal")) return "journal"; if (v.includes("conference") || v.includes("inproceedings")) return "conference"; if (v.includes("workshop")) return "workshop"; if (v.includes("thesis")) return "thesis"; if (v.includes("arxiv") || v.includes("preprint")) return "preprint"; return "other"; }
 function parseCsv(contents: string): Imported[] {
   return parseCSV(contents).map((row, i) => {
     const title = row.title?.trim(); if (!title) throw new MyPubError(`CSV row ${i + 2} has no title`, "IMPORT_INVALID");
@@ -50,7 +50,7 @@ function proposalsFor(current: Publication, incoming: Imported, completeness: Co
     let proposed: unknown = incoming[field]; if (proposed === undefined) continue;
     if (field === "authors") {
       // Source spelling alone cannot move a confirmed identity to another credit.
-      if (incoming.type === "arxiv" && incoming.arxiv_versions?.length && completeness === "complete") {
+      if (incoming.type === "preprint" && incoming.arxiv_versions?.length && completeness === "complete") {
         const used = new Set<string>();
         proposed = incoming.authors.map(a => {
           const matches = current.authors.filter(old => normalizeText(old.name) === normalizeText(a.name));
@@ -81,7 +81,7 @@ export async function stageImport(c: Catalog, inputs: Imported[], provider: stri
     const r: Review = { schema_version: 2, id: uuid(), summary: `Import ${inputs.length} publication records from ${provider}`, kind: "import", state: "pending", targets: [], proposals: [], evidence: { provider, captured_at: time, ...(sourceReference ? { source_reference: sourceReference } : {}), payload, completeness, parser_version: "mypub/2", input_fingerprint: inputFingerprint }, created_at: time, updated_at: time };
     for (const input of inputs) {
       const { raw, ...fields } = input; const proposed = publicationFromInput(fields);
-      const candidates = s.publications.filter(p => (proposed.type !== "arxiv" || p.type === "arxiv") && (p.id === fields.id || (proposed.identifiers.doi && p.identifiers.doi === proposed.identifiers.doi) || (proposed.identifiers.arxiv && p.identifiers.arxiv === proposed.identifiers.arxiv) || (normalizeText(p.title) === normalizeText(proposed.title) && p.authors.some(a => proposed.authors.some(b => normalizeText(a.name) === normalizeText(b.name))))));
+      const candidates = s.publications.filter(p => (proposed.type !== "preprint" || p.type === "preprint") && (p.id === fields.id || (proposed.identifiers.doi && p.identifiers.doi === proposed.identifiers.doi) || (proposed.identifiers.arxiv && p.identifiers.arxiv === proposed.identifiers.arxiv) || (normalizeText(p.title) === normalizeText(proposed.title) && p.authors.some(a => proposed.authors.some(b => normalizeText(a.name) === normalizeText(b.name))))));
       if (candidates.length === 1) { const p = candidates[0]!; r.targets.push({ entity_type: "publication", entity_id: p.id }); r.proposals.push(...proposalsFor(p, input, completeness)); matched++; }
       else { r.targets.push({ entity_type: "publication", entity_id: proposed.id }); r.proposals.push({ id: uuid(), target: { entity_type: "publication", entity_id: proposed.id }, operation: "create", proposed, ...(candidates.length ? { candidate_ids: candidates.map(p => p.id) } : {}), state: "pending" }); created++; }
     }

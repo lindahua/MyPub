@@ -79,7 +79,7 @@ function filters(a: Args): SearchFilters {
   const year = a.take("--year"), venue = a.take("--venue"), author = a.take("--author"), role = a.take("--role"), type = a.take("--type"), tag = a.take("--tag");
   if (year && !/^\d{4}$/.test(year)) usage("year must be YYYY");
   if (role && !["first", "first_listed", "co_first", "co_last", "corresponding", "equal_contributor"].includes(role)) usage("invalid author role");
-  if (type && !["arxiv", "conference", "workshop", "journal", "book-chapter", "thesis", "other"].includes(type)) usage("invalid publication type");
+  if (type && !["preprint", "conference", "workshop", "journal", "book-chapter", "thesis", "other"].includes(type)) usage("invalid publication type");
   return { ...(year ? { year: Number(year) } : {}), ...(venue ? { venue } : {}), ...(author ? { author } : {}), ...(role ? { role: role as SearchFilters["role"] & string } : {}), ...(type ? { type: type as SearchFilters["type"] & string } : {}), ...(tag ? { tag } : {}), includeArchived: a.takeFlag("--include-archived") };
 }
 export async function main(argv = process.argv.slice(2)): Promise<number> {

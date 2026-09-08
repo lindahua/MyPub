@@ -91,7 +91,7 @@ function fixture(): ViewModel {
         }),
         paper("two", {
           title: "Older preprint",
-          type: "arxiv",
+          type: "preprint",
           submission_date: "2023",
           authors: [{ name: "Same Name", author_id: "alice" }],
           gscholar_entry_id: "s",

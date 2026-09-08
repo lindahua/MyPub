@@ -155,7 +155,7 @@ Generate missing citation, author, and venue keys deterministically once, with c
 | `authors.website` | Entirely null in this snapshot; preserve originals in evidence. Optional author URLs remain outside the current schema. There are no dedicated legacy ORCID or Scholar-author-ID columns |
 | `publications.uid`, `title` | Publication `id`, `title`; generate a stable `citation_key` |
 | `publications.venue_id` | Resolve to venue UUID and embed `venue: {name, venue_id}`. Use the stored venue name as initial bibliographic wording and preserve its abbreviation in evidence; the schema has no per-publication original venue spelling |
-| Venue type → publication type | Journal/conference/workshop map directly; classify preprints using actual source evidence, without turning every preprint into arXiv |
+| Venue type → publication type | Journal/conference/workshop map directly; use `preprint` for preprints and retain arXiv as separate identifier/venue metadata rather than a publication type |
 | `publications.year`, `pub_date` | Apply the date policy in section 2. Preserve both originals and flag disagreements; do not silently change a curated year to match Scholar |
 | `volume`, `issue`, `pages` | Copy corresponding strings. Do not reinterpret page-like values as article numbers without review |
 | `doi`, `eprint` | Normalize only after validation, preserving raw strings in evidence. Map `eprint` to `identifiers.arxiv` only when it is a valid arXiv identifier; preserve any revision suffix in evidence and write `arxiv_versions` only with supported submission dates. Admit duplicate arXiv IDs with audit errors. Review the 17 non-preprint eprints for related-preprint ownership; do not choose an arbitrary duplicate match |

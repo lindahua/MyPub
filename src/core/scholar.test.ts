@@ -28,7 +28,7 @@ test("Scholar capture preserves source details, requires explicit matching, and 
 });
 test("a publication accepts scalar or multiple Scholar links and aggregates current counts", async () => {
   const { root, c } = await fixture(); try {
-    const p = await c.add({ citation_key: "versions", type: "arxiv", title: "Versioned Paper", authors: [{ name: "Self" }], identifiers: { arxiv: "2601.00001" }, publication_date: "2026-01-01", submission_date: "2026-01-01", arxiv_versions: [{ version: 1, submission_date: "2026-01-01", title: "Versioned Paper", authors: ["Self"], abstract: "Abstract" }] });
+    const p = await c.add({ citation_key: "versions", type: "preprint", title: "Versioned Paper", authors: [{ name: "Self" }], identifiers: { arxiv: "2601.00001" }, publication_date: "2026-01-01", submission_date: "2026-01-01", arxiv_versions: [{ version: 1, submission_date: "2026-01-01", title: "Versioned Paper", authors: ["Self"], abstract: "Abstract" }] });
     await importScholarSnapshot(c, await snapshot(root, "2026-09-01T00:00:00Z", [{ scholar_id: "v1", title: "Versioned Paper", citation_count: 10 }, { scholar_id: "v2", title: "Versioned Paper", citation_count: 5 }]));
     const entries = (await c.read()).gscholar_entries; const v1 = entries.find(entry => entry.scholar_id.endsWith(":v1"))!; const v2 = entries.find(entry => entry.scholar_id.endsWith(":v2"))!;
     await linkScholar(c, p.id, v1!.id); assert.equal((await c.get(p.id)).gscholar_entry_id, v1!.id);

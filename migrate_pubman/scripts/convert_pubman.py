@@ -210,7 +210,7 @@ def convert(rows, snapshot_hash, captured_at, migration_time, owner_id, profile_
     for r in sorted(rows['publications'], key=lambda r: r['id']):
         v = venues[r['venue_id']]
         p = {**base(r['uid']), 'citation_key': sk[r['uid']],
-             'type': 'arxiv' if v['type'] == 'preprint' else v['type'], 'title': r['title'],
+             'type': 'preprint' if v['type'] == 'preprint' else v['type'], 'title': r['title'],
              'authors': [], 'venue': dict(name=v['name'], venue_id=v['uid']),
              'identifiers': {}, 'urls': [], 'tags': [], 'relations': [], 'attachments': []}
         ordered = sorted(links[r['id']], key=lambda x: x['author_order'])
@@ -242,7 +242,7 @@ def convert(rows, snapshot_hash, captured_at, migration_time, owner_id, profile_
             p['identifiers']['doi'] = re.sub(r'^(?:doi:\s*|https?://(?:dx\.)?doi.org/)', '', r['doi'].strip().lower())
         if r['eprint']:
             p['identifiers']['arxiv'] = re.sub(r'v\d+$', '', re.sub(r'^arxiv:\s*', '', r['eprint'].strip().lower()))
-            if p['type'] != 'arxiv':
+            if p['type'] != 'preprint':
                 report['audit_findings'].append(dict(kind='nonpreprint_arxiv_attribution', publication_ids=[p['id']], arxiv=p['identifiers']['arxiv']))
                 review('arxiv-attribution:' + p['id'], 'Review arXiv attribution for ' + p['title'], [target('publication', p['id'])], pending=True)
         for field in ('gs_page', 'pdf_url'):

@@ -484,7 +484,7 @@ export function fieldsFor(collection: Collection, model: ViewModel): Field[] {
       ),
       text("venue_text", "Printed venue"),
       choice("type", "Publication type", [
-        "arxiv",
+        "preprint",
         "conference",
         "workshop",
         "journal",

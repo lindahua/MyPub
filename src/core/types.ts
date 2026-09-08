@@ -1,5 +1,5 @@
 export const SCHEMA_VERSION = 2 as const;
-export type PublicationType = "arxiv" | "conference" | "workshop" | "journal" | "book-chapter" | "thesis" | "other";
+export type PublicationType = "preprint" | "conference" | "workshop" | "journal" | "book-chapter" | "thesis" | "other";
 export type RelationType = "published_version_of" | "extends" | "related_to";
 export type AttachmentRole = "paper" | "supplement" | "slides" | "video" | "other";
 export type AuthorRole = "co_first" | "corresponding" | "co_last" | "equal_contributor";

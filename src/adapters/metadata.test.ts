@@ -29,6 +29,7 @@ test("arXiv lookup retains each version's metadata and always dates the paper fr
   try {
     const result = await lookupArxiv("https://arxiv.org/abs/2602.00001v1", value => { evidence = value; });
     assert.equal(requests.length, 2); assert.match(requests[1]!, /2602.00001v1/);
+    assert.equal(result.type, "preprint");
     assert.equal(result.publication_date, "2026-02-03"); assert.equal(result.submission_date, "2026-02-03");
     assert.equal(result.official_url, "https://arxiv.org/abs/2602.00001"); assert.equal(result.paper_url, "https://arxiv.org/pdf/2602.00001"); assert.equal(result.title, "Revised Title"); assert.equal(result.abstract, "Abstract 2 < α"); assert.equal(result.authors.length, 2); assert.equal(result.identifiers?.doi, undefined);
     assert.deepEqual(result.arxiv_versions?.map(v => [v.version, v.title, v.authors.length, v.abstract, v.submission_date]), [[1, "First & Original", 1, "Abstract 1 < α", "2026-02-03"], [2, "Revised Title", 2, "Abstract 2 < α", "2026-03-04"]]);

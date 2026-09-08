@@ -506,7 +506,7 @@ function RecordDetails({
                     ? "issued date"
                     : pub.online_date
                       ? "online date"
-                      : pub.type === "arxiv" && pub.submission_date
+                      : pub.type === "preprint" && pub.submission_date
                         ? "original submission date"
                         : "no applicable date"}
               </p>

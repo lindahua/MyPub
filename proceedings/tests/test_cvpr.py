@@ -44,7 +44,7 @@ class ProceedingsTests(unittest.TestCase):
         preprint = {
             "id": "a",
             "title": "A Paper",
-            "type": "arxiv",
+            "type": "preprint",
             "authors": [{"name": "Dahua Lin"}],
             "venue": {"venue_id": "arxiv"},
             "_path": "/a",

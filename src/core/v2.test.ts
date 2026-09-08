@@ -16,6 +16,7 @@ import { run } from "../adapters/process.js";
 import { backup, restore } from "./backup.js";
 import { importScholarSnapshot, linkScholar } from "./scholar.js";
 import { assertRecord } from "./schemas.js";
+import { validateState } from "./validation.js";
 
 async function fixture() { const root = await mkdtemp(join(tmpdir(), "mypub-v2-")); const c = new Catalog({ root }); await c.initialize(); return { root, c }; }
 const input = { citation_key: "paper", type: "journal" as const, title: "A Paper", authors: [{ name: "Lin D." }, { name: "Lin D." }] };
@@ -73,6 +74,26 @@ test("review acceptance detects intervening edits and preserves immutable eviden
     const imported = await importFile(c, path); await c.update(p.id, { notes: "Manual correction" }); await assert.rejects(decideReview(c, imported.source_review_id, "accepted"), /target changed/); assert.equal((await c.get(p.id)).title, "A Paper");
     await decideReview(c, imported.source_review_id, "deferred"); await reopenReview(c, imported.source_review_id); await decideReview(c, imported.source_review_id, "accepted"); assert.equal((await c.get(p.id)).title, "New Title"); assert.equal((await c.get(p.id)).notes, "Manual correction");
     await assert.rejects(c.change(s => { s.reviews.find(r => r.id === imported.source_review_id)!.evidence!.payload = "changed"; }), /immutable/);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("terminal review snapshots retain the former arxiv type without weakening live records", async () => {
+  const { root, c } = await fixture(); try {
+    const publication = await c.add({ ...input, type: "preprint" });
+    const state = await c.read(); const time = now(); const proposedId = uuid();
+    state.reviews.push({
+      schema_version: 2, id: uuid(), summary: "Historical arXiv import", kind: "migration", state: "accepted",
+      targets: [{ entity_type: "publication", entity_id: proposedId }],
+      evidence: { provider: "pubman2", captured_at: time, payload: {}, completeness: "complete", parser_version: "test/1", input_fingerprint: fingerprint({}) },
+      proposals: [{ id: uuid(), target: { entity_type: "publication", entity_id: proposedId }, operation: "create", proposed: { ...publication, id: proposedId, citation_key: "historical", type: "arxiv" }, state: "accepted", decided_at: time }],
+      created_at: time, updated_at: time, decided_at: time,
+    });
+    assert.equal(validateState(state).valid, true);
+    assert.throws(() => assertRecord("publication", { ...publication, type: "arxiv" }));
+    state.reviews[0]!.proposals[0]!.state = "pending";
+    delete state.reviews[0]!.proposals[0]!.decided_at;
+    state.reviews[0]!.state = "pending";
+    delete state.reviews[0]!.decided_at;
+    assert.equal(validateState(state).valid, false);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 test("ready transactions recover before reads and failed staging never becomes visible", async () => {
