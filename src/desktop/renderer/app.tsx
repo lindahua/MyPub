@@ -763,6 +763,7 @@ function RecordDetails({
           <dl>
             {(
               [
+                "pub_type",
                 "venue",
                 "publication_date",
                 "volume",

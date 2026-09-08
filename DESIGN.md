@@ -563,6 +563,8 @@ Keep the ordered source `authors` array, optional literal `authors_text`, and re
 
 Optional source fields are `publication_date`, `volume`, `issue`, `pages`, `publisher`, `patent_office`, `application_number`, `description`, `scholar_url`, and `cited_by_url`. Keep them directly on the entry for readable JSON. The source date is literal text and may be incomplete or malformed; it does not automatically replace the entry's `year` or a curated publication date. Missing metadata in later captures does not erase retained values. Details are source metadata, so patents and other unmatched items can remain in the mirror without a new curated entity type.
 
+An entry may additionally store a locally reviewed `pub_type`: `journal`, `conference`, `preprint`, `workshop`, `patent`, `thesis`, or `supp_material`. `patent` covers both granted patents and patent applications. The value classifies the Scholar entry from its own metadata and must not be copied or inferred from a linked publication. Omit it when the entry is another kind or the available Scholar metadata is not sufficiently decisive. Scholar refresh preserves this field.
+
 A publication stores no association by omitting the field, exactly one as a UUID scalar, and two or more as an ordered unique UUID array. The scalar form preserves backward compatibility and keeps the common one-to-one case readable:
 
 ```json
@@ -584,6 +586,7 @@ The corresponding entry could look like this (fictional IDs and metadata; abbrev
   "authors": ["Jane Q. Doe", "Alex Chen", "Wei Wang", "Wei Wang"],
   "authors_text": "JQ Doe, A Chen, W Wang, W Wang",
   "authors_completeness": "complete",
+  "pub_type": "journal",
   "venue": "Journal of Example Research",
   "year": 2026,
   "publication_date": "2026/8/15",

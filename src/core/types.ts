@@ -4,6 +4,7 @@ export type RelationType = "published_version_of" | "extends" | "related_to";
 export type AttachmentRole = "paper" | "supplement" | "slides" | "video" | "other";
 export type AuthorRole = "co_first" | "corresponding" | "co_last" | "equal_contributor";
 export type Coverage = "complete" | "partial" | "unknown";
+export type ScholarPublicationType = "journal" | "conference" | "preprint" | "workshop" | "patent" | "thesis" | "supp_material";
 export type ProposalState = "pending" | "accepted" | "rejected" | "deferred";
 export type ReviewState = ProposalState | "partially_accepted";
 export interface RecordBase { schema_version: 2; id: string; created_at: string; updated_at: string; }
@@ -46,7 +47,7 @@ export interface AnnualCitations { observed_at: string; counts: Record<string, n
 export interface MatchingPolicy { policy: "eligible" | "excluded"; reason?: string; decision_review_id?: string; }
 export interface ScholarEntry extends RecordBase {
   profile_id: string; scholar_id: string; title: string; authors: string[]; authors_text?: string; authors_completeness: Coverage;
-  venue?: string; year?: number; publication_date?: string; volume?: string; issue?: string; pages?: string;
+  pub_type?: ScholarPublicationType; venue?: string; year?: number; publication_date?: string; volume?: string; issue?: string; pages?: string;
   publisher?: string; patent_office?: string; application_number?: string; description?: string; scholar_url?: string; cited_by_url?: string;
   matching: MatchingPolicy; first_seen_at: string; last_seen_at: string; presence: "present" | "missing"; missing_since?: string;
   source_review_id: string; citation_history: CitationSample[]; annual_citations?: AnnualCitations[];

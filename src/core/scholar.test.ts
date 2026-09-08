@@ -18,6 +18,10 @@ test("Scholar capture preserves source details, requires explicit matching, and 
     const result = await importScholarSnapshot(c, path); assert.equal(result.candidates[0]?.publication_ids.length, 2); assert.deepEqual(result.matched, []);
     assert.equal((await importScholarSnapshot(c, path)).source_review_id, result.source_review_id);
     const entry = (await c.read()).gscholar_entries[0]!; assert.equal(entry.publication_date, "2026/9/1"); assert.equal(entry.authors_text, "A, B, …");
+    await c.change((state) => { state.gscholar_entries[0]!.pub_type = "journal"; });
+    await importScholarSnapshot(c, await snapshot(root, "2026-09-01T12:00:00Z", [{ scholar_id: "entry", title: "Shared Paper" }]));
+    assert.equal((await c.read()).gscholar_entries[0]?.pub_type, "journal");
+    await assert.rejects(c.change((state) => { (state.gscholar_entries[0] as unknown as { pub_type: string }).pub_type = "article"; }));
     await linkScholar(c, first.id, entry.id); await linkScholar(c, second.id, entry.id);
     assert.equal((await c.details(first.id)).citation_count, 12); assert.equal((await reconcileScholar(c)).shared_counts[0]?.publication_ids.length, 2);
     await importScholarSnapshot(c, await snapshot(root, "2026-09-02T00:00:00Z", [{ scholar_id: "entry", title: "Shared Paper", citation_count: null }]));
