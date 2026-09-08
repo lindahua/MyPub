@@ -1107,21 +1107,21 @@ summary {
 .publication-chart-pair > section {
   min-width: 0;
 }
-.venue-kind-pie {
+.publication-type-pie {
   margin: 0;
 }
-.venue-kind-pie-disc {
+.publication-type-pie-disc {
   width: 210px;
   aspect-ratio: 1;
   border-radius: 50%;
   margin: 28px auto 16px;
 }
-.venue-kind-pie-total {
+.publication-type-pie-total {
   text-align: center;
   font-size: 12px;
   margin: 0 0 14px;
 }
-.venue-kind-pie-legend {
+.publication-type-pie-legend {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -1129,14 +1129,14 @@ summary {
   gap: 8px;
   font-size: 12px;
 }
-.venue-kind-pie-legend li {
+.publication-type-pie-legend li {
   display: grid;
   grid-template-columns: 10px 1fr auto 48px;
   align-items: center;
   gap: 8px;
 }
-.venue-kind-pie-legend b,
-.venue-kind-pie-legend .muted {
+.publication-type-pie-legend b,
+.publication-type-pie-legend .muted {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
@@ -1144,7 +1144,7 @@ summary {
   .publication-chart-pair {
     grid-template-columns: minmax(0, 1fr);
   }
-  .venue-kind-pie {
+  .publication-type-pie {
     max-width: 280px;
     margin: 0 auto;
   }

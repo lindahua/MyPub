@@ -30,7 +30,7 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
       await catalog.add({
         citation_key: `paper${i}`,
         title: `Visual learning paper ${String(i).padStart(2, "0")}`,
-        // Chart classification follows the linked venue, even when the record type differs.
+        // Both charts follow publication type, even when the linked venue kind differs.
         type: "workshop",
         publication_date: String(2026 - (i % 3)),
         venue: { name: "Vision Conference", venue_id: venue.id },
@@ -75,15 +75,21 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
       page.getByRole("heading", { name: "Most cited papers" }),
     ).toBeVisible();
     await expect(page.locator(".metrics strong").first()).toHaveText("12");
+    await expect(
+      page.getByRole("img", {
+        name: "Overall publication-type breakdown: Workshop: 12. Total: 12.",
+        exact: true,
+      }),
+    ).toBeVisible();
     const yearBar = page.getByRole("button", {
-      name: "2024: 4 publications; Conference: 4",
+      name: "2024: 4 publications; Workshop: 4",
       exact: true,
     });
     await yearBar.hover();
     const tooltip = page.getByRole("tooltip");
     await expect(tooltip).toBeVisible();
     await expect(tooltip).toContainText("2024");
-    await expect(tooltip.locator("li")).toHaveText(["Conference4"]);
+    await expect(tooltip.locator("li")).toHaveText(["Workshop4"]);
     await expect(tooltip.locator(".tooltip-total")).toHaveText("Total4");
     const labelBox = await yearBar.locator(".year-chart-total").boundingBox();
     const scrollBox = await page.locator(".year-chart-scroll").boundingBox();

@@ -21,11 +21,7 @@ import {
   yearOf,
 } from "../model.js";
 import type { Expression, Group, Row, Rule } from "../model.js";
-import type {
-  Publication,
-  ScholarEntry,
-  VenueIdentity,
-} from "../../core/types.js";
+import type { Publication, ScholarEntry } from "../../core/types.js";
 import { scholarEntryIds } from "../../core/scholar-links.js";
 import { DEFAULT_PAGE_SIZES, paginate } from "../pagination.js";
 import type { PageSizes } from "../pagination.js";
@@ -667,14 +663,24 @@ function RecordDetails({
           <h3>Google Scholar</h3>
           {scholarEntryIds(pub).length ? (
             <>
-              {scholarEntryIds(pub).length > 1 && <p className="muted">Combined citation totals may overlap across Scholar entries.</p>}
-              {scholarEntryIds(pub).map(entryId => {
+              {scholarEntryIds(pub).length > 1 && (
+                <p className="muted">
+                  Combined citation totals may overlap across Scholar entries.
+                </p>
+              )}
+              {scholarEntryIds(pub).map((entryId) => {
                 const scholarEntry = model.scholar.get(entryId)!;
-                return <React.Fragment key={entryId}>
-                  <CitationSummary entry={scholarEntry} />
-                  <p><EntityLink page="scholar" id={entryId}>View Scholar source and linked publications</EntityLink></p>
-                  <Comparison publication={pub} entry={scholarEntry} />
-                </React.Fragment>;
+                return (
+                  <React.Fragment key={entryId}>
+                    <CitationSummary entry={scholarEntry} />
+                    <p>
+                      <EntityLink page="scholar" id={entryId}>
+                        View Scholar source and linked publications
+                      </EntityLink>
+                    </p>
+                    <Comparison publication={pub} entry={scholarEntry} />
+                  </React.Fragment>
+                );
               })}
             </>
           ) : (
@@ -803,7 +809,9 @@ function RecordDetails({
                 r.id === entry.source_review_id ||
                 r.proposals.some(
                   (p) =>
-                    p.path === "/gscholar_entry_id" && (p.proposed === entry.id || p.candidate_ids?.includes(entry.id)),
+                    p.path === "/gscholar_entry_id" &&
+                    (p.proposed === entry.id ||
+                      p.candidate_ids?.includes(entry.id)),
                 ),
             )
             .map((r) => (
@@ -1332,29 +1340,16 @@ function DetailPane({
     </aside>
   );
 }
-type ChartVenueKind = VenueIdentity["kind"] | "unknown";
-const venueKindSeries: {
-  kind: ChartVenueKind;
-  label: string;
-  color: string;
-}[] = [
-  { kind: "journal", label: "Journal", color: "#3979ad" },
-  { kind: "conference", label: "Conference", color: "#42a399" },
-  { kind: "workshop", label: "Workshop", color: "#d39a38" },
-  { kind: "repository", label: "Repository", color: "#9270b5" },
-  { kind: "other", label: "Other", color: "#85909e" },
-  { kind: "unknown", label: "Unknown", color: "#b4bdc7" },
-];
-function VenueKindPie({
+function PublicationTypePie({
   groups,
 }: {
-  groups: Map<string, Map<ChartVenueKind, number>>;
+  groups: Map<string, Map<Publication["type"], number>>;
 }) {
-  const slices = venueKindSeries
+  const slices = publicationTypeSeries
     .map((series) => ({
       ...series,
       count: [...groups.values()].reduce(
-        (sum, counts) => sum + (counts.get(series.kind) ?? 0),
+        (sum, counts) => sum + (counts.get(series.type) ?? 0),
         0,
       ),
     }))
@@ -1368,20 +1363,20 @@ function VenueKindPie({
     return `${color} ${start}% ${position}%`;
   });
   return (
-    <figure className="venue-kind-pie">
+    <figure className="publication-type-pie">
       <div
-        className="venue-kind-pie-disc"
+        className="publication-type-pie-disc"
         role="img"
-        aria-label={`Overall venue-kind breakdown: ${slices.map(({ label, count }) => `${label}: ${count}`).join(", ")}. Total: ${total}.`}
+        aria-label={`Overall publication-type breakdown: ${slices.map(({ label, count }) => `${label}: ${count}`).join(", ")}. Total: ${total}.`}
         style={{ background: `conic-gradient(${stops.join(", ")})` }}
       />
       <figcaption>
-        <p className="venue-kind-pie-total">
+        <p className="publication-type-pie-total">
           {total.toLocaleString()} publications
         </p>
-        <ul className="venue-kind-pie-legend">
-          {slices.map(({ kind, label, color, count }) => (
-            <li key={kind}>
+        <ul className="publication-type-pie-legend">
+          {slices.map(({ type, label, color, count }) => (
+            <li key={type}>
               <span className="tooltip-swatch" style={{ background: color }} />
               <span>{label}</span>
               <b>{count.toLocaleString()}</b>
@@ -1395,11 +1390,24 @@ function VenueKindPie({
     </figure>
   );
 }
+const publicationTypeSeries: {
+  type: Publication["type"];
+  label: string;
+  color: string;
+}[] = [
+  { type: "journal", label: "Journal", color: "#3979ad" },
+  { type: "conference", label: "Conference", color: "#42a399" },
+  { type: "workshop", label: "Workshop", color: "#d39a38" },
+  { type: "preprint", label: "Preprint", color: "#9270b5" },
+  { type: "book-chapter", label: "Book chapter", color: "#cf7862" },
+  { type: "thesis", label: "Thesis", color: "#9b9250" },
+  { type: "other", label: "Other", color: "#85909e" },
+];
 function PublicationYearChart({
   groups,
   onSelect,
 }: {
-  groups: Map<string, Map<ChartVenueKind, number>>;
+  groups: Map<string, Map<Publication["type"], number>>;
   onSelect: (year: string) => void;
 }) {
   const [tooltip, setTooltip] = useState<{
@@ -1417,8 +1425,8 @@ function PublicationYearChart({
   const years = [...groups].sort(([a], [b]) =>
     a === "unknown" ? 1 : b === "unknown" ? -1 : Number(a) - Number(b),
   );
-  const series = venueKindSeries.filter(({ kind }) =>
-    years.some(([, counts]) => counts.has(kind)),
+  const series = publicationTypeSeries.filter(({ type }) =>
+    years.some(([, counts]) => counts.has(type)),
   );
   const maximum = Math.max(
     1,
@@ -1430,9 +1438,9 @@ function PublicationYearChart({
   const ceiling = step * 4;
   return (
     <div className="publication-year-chart">
-      <ul className="chart-legend" aria-label="Venue kinds">
-        {series.map(({ kind, label, color }) => (
-          <li key={kind}>
+      <ul className="chart-legend" aria-label="Publication types">
+        {series.map(({ type, label, color }) => (
+          <li key={type}>
             <span style={{ background: color }} />
             {label}
           </li>
@@ -1456,8 +1464,8 @@ function PublicationYearChart({
                 0,
               );
               const description = `${label}: ${total} publications; ${series
-                .filter(({ kind }) => counts.has(kind))
-                .map(({ kind, label }) => `${label}: ${counts.get(kind)}`)
+                .filter(({ type }) => counts.has(type))
+                .map(({ type, label }) => `${label}: ${counts.get(type)}`)
                 .join(", ")}`;
               return (
                 <button
@@ -1494,13 +1502,13 @@ function PublicationYearChart({
                       {total}
                     </span>
                     {series.map(
-                      ({ kind, color }) =>
-                        counts.has(kind) && (
+                      ({ type, color }) =>
+                        counts.has(type) && (
                           <span
-                            key={kind}
+                            key={type}
                             className="year-chart-segment"
                             style={{
-                              height: `${(counts.get(kind)! / ceiling) * 100}%`,
+                              height: `${(counts.get(type)! / ceiling) * 100}%`,
                               background: color,
                             }}
                           />
@@ -1527,14 +1535,14 @@ function PublicationYearChart({
               {tooltip.year === "unknown" ? "Unknown year" : tooltip.year}
             </strong>
             <ul>
-              {series.map(({ kind, label, color }) => (
-                <li key={kind}>
+              {series.map(({ type, label, color }) => (
+                <li key={type}>
                   <span
                     className="tooltip-swatch"
                     style={{ background: color }}
                   />
                   <span>{label}</span>
-                  <b>{groups.get(tooltip.year)!.get(kind) ?? 0}</b>
+                  <b>{groups.get(tooltip.year)!.get(type) ?? 0}</b>
                 </li>
               ))}
             </ul>
@@ -1582,7 +1590,10 @@ function Overview({
     linkedScholarEntries = scholarEntries.filter(
       (r) => r.fields.link === "linked",
     ).length;
-  const yearGroups = new Map<string, Map<ChartVenueKind, number>>(),
+  const publicationTypeGroups = new Map<
+      string,
+      Map<Publication["type"], number>
+    >(),
     venueGroups = new Map<string, number>(),
     coauthorGroups = new Map<string, number>();
   const selfAuthorId = resolved(
@@ -1593,11 +1604,11 @@ function Overview({
     const p = model.publications.get(row.id)!;
     const year = model.groupKey(p, "year"),
       venue = model.groupKey(p, "venue");
-    const counts = yearGroups.get(year) ?? new Map<ChartVenueKind, number>();
     const linkedVenue = resolved(model.venues, p.venue?.venue_id);
-    const kind = linkedVenue?.kind ?? "unknown";
-    counts.set(kind, (counts.get(kind) ?? 0) + 1);
-    yearGroups.set(year, counts);
+    const typeCounts =
+      publicationTypeGroups.get(year) ?? new Map<Publication["type"], number>();
+    typeCounts.set(p.type, (typeCounts.get(p.type) ?? 0) + 1);
+    publicationTypeGroups.set(year, typeCounts);
     const isArxivVenue = (
       linkedVenue
         ? [
@@ -1713,14 +1724,14 @@ function Overview({
       <div className="charts">
         <div className="publication-chart-pair">
           <section>
-            <h2>Publications by venue kind</h2>
-            <VenueKindPie groups={yearGroups} />
+            <h2>Publications by type</h2>
+            <PublicationTypePie groups={publicationTypeGroups} />
           </section>
           <section>
             <h2>Publications by year</h2>
             {rows.length ? (
               <PublicationYearChart
-                groups={yearGroups}
+                groups={publicationTypeGroups}
                 onSelect={(id) => browse("year", id)}
               />
             ) : (
