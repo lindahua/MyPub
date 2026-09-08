@@ -33,6 +33,9 @@ test("Electron loads SQLite, supports browsing/filters/inline expansion and refr
         publication_date: String(2026 - (i % 3)),
         venue: { name: "Vision Conference", venue_id: venue.id },
         authors: [{ name: "A. Example", author_id: author.id }],
+        official_url: "https://example.org/article",
+        paper_url: "https://example.org/paper.pdf",
+        extra_urls: ["https://example.org/code"],
         tags: [i % 2 ? "video" : "geometry"],
       }),
     );
@@ -77,6 +80,10 @@ test("Electron loads SQLite, supports browsing/filters/inline expansion and refr
     await expect(
       parent.getByRole("region", { name: "Record details" }),
     ).toBeVisible();
+    await expect(parent.getByRole("button", { name: "Official page ↗", exact: true })).toBeVisible();
+    await expect(parent.getByRole("button", { name: "Paper ↗", exact: true })).toBeVisible();
+    await expect(parent.getByRole("button", { name: "https://example.org/code ↗", exact: true })).toBeVisible();
+    expect(errors).toEqual([]);
     expect(
       await parent
         .locator(".detail")

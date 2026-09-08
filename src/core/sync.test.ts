@@ -241,3 +241,30 @@ test("unchanged sync fetches upstream but skips catalog and attachment validatio
     await rm(container, { recursive: true, force: true });
   }
 });
+
+
+test("sync accepts a validated fast-forward that updates historical publication fields", async () => {
+  const container = await mkdtemp(join(tmpdir(), "mypub-sync-schema-"));
+  try {
+    const { seed, other } = await remoteFixture(container);
+    const publication = await seed.add({ citation_key: "links", title: "Links", type: "other", authors: [], extra_urls: ["https://example.org/code"] });
+    const path = (await run("git", ["ls-files", "--others", "--exclude-standard", "catalog/publications"], seed.root)).stdout.trim();
+    const { extra_urls, ...fields } = publication;
+    await atomicWriteJson(join(seed.root, path), { ...fields, urls: extra_urls });
+    await run("git", ["add", "catalog"], seed.root); await run("git", ["commit", "-m", "Historical URLs"], seed.root); await run("git", ["push"], seed.root);
+    await run("git", ["pull", "--ff-only"], other.root);
+    await assert.rejects(other.read(), errorCode("SCHEMA_INVALID"));
+    const oldHead = (await run("git", ["rev-parse", "HEAD"], other.root)).stdout;
+    // An invalid incoming tree must still be rejected before changing HEAD.
+    await atomicWriteJson(join(seed.root, path), { ...publication, extra_urls: ["relative-url"] });
+    await run("git", ["add", "catalog"], seed.root); await run("git", ["commit", "-m", "Invalid incoming URLs"], seed.root); await run("git", ["push"], seed.root);
+    await assert.rejects(sync(other));
+    assert.equal((await run("git", ["rev-parse", "HEAD"], other.root)).stdout, oldHead);
+    await atomicWriteJson(join(seed.root, path), publication);
+    await run("git", ["add", "catalog"], seed.root); await run("git", ["commit", "-m", "Rename urls to extra_urls"], seed.root); await run("git", ["push"], seed.root);
+    assert.equal((await sync(other)).state, "pulled");
+    assert.deepEqual((await other.get(publication.id)).extra_urls, extra_urls);
+    assert.equal((await other.validate(false)).valid, true);
+    assert.equal((await run("git", ["rev-parse", "HEAD"], other.root)).stdout, (await run("git", ["rev-parse", "HEAD"], seed.root)).stdout);
+  } finally { await rm(container, { recursive: true, force: true }); }
+});

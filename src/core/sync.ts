@@ -196,10 +196,16 @@ export async function sync(c: Catalog, message = "mypub: merge synchronized cata
       return { state: "up-to-date", commit: ours, conflicts: [] };
     }
     onProgress?.({ phase: "validate", message: "Validating catalog and attachment references…" });
-    const loaded = await loadState(c.root); c.assertValid(loaded.state);
-    await validatePointers(c, loaded.state, "HEAD");
+    const fastForward = (await git(c, ["merge-base", "--is-ancestor", ours, theirs], true)).code === 0;
+    // A fast-forward may bring the catalog up to the current schema. Validate
+    // the incoming state; read historical records only to protect review evidence.
+    const loaded = fastForward ? { state: stateFromRecords(await revisionRecords(c, ours)) } : await loadState(c.root);
+    if (!fastForward) {
+      c.assertValid(loaded.state);
+      await validatePointers(c, loaded.state, "HEAD");
+    }
     let merged = false, pulled = false;
-    if (ours !== theirs && (await git(c, ["merge-base", "--is-ancestor", ours, theirs], true)).code === 0) {
+    if (fastForward) {
       const candidate = stateFromRecords(await revisionRecords(c, theirs)); c.assertValid(candidate);
       assertUnchangedEvidence(loaded.state, candidate); await validatePointers(c, candidate, theirs);
       onProgress?.({ phase: "integrate", message: "Applying remote commits…" });

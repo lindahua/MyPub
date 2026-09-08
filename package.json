@@ -20,12 +20,12 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig.renderer.json && node scripts/build-desktop.mjs",
     "check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.renderer.json",
     "coverage": "npm run build && node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-functions=80 dist/**/*.test.js",
     "test": "node --test dist/**/*.test.js",
     "prepack": "npm run build:desktop",
-    "build:desktop": "npm run build && tsc -p tsconfig.renderer.json && node scripts/build-desktop.mjs",
+    "build:desktop": "npm run build",
     "desktop": "npm run build:desktop && electron dist/desktop/main.js",
     "test:desktop": "npm run build:desktop && playwright test --config tests/desktop/playwright.config.ts",
     "format:desktop": "prettier --write src/desktop scripts/build-desktop.mjs tests/desktop tsconfig.renderer.json"
