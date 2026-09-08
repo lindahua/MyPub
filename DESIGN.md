@@ -481,6 +481,23 @@ Supply a DOI, arXiv URL, or BibTeX file to the CLI. The core retrieves available
 
 Search titles, authors, venues, identifiers, and tags. Filter by year, venue, publication type, tag, or catalog archive state. The CLI prints publication details and related publications, or returns JSON for scripts. Resolve attachment paths and optionally open files or URLs through an operating-system adapter. Export a citation, filtered bibliography, or publication list.
 
+### Audit proceedings
+
+The implemented read-only tools under `proceedings/` search official conference
+sources for an exact credited full name, independently of a catalog. Optional
+MyPub comparison reports existing conference records, other versions, possible
+title variants, duplicate candidates, and metadata differences without importing
+them. Adapters cover CVPR, ICCV, ECCV, NeurIPS, ICML, ICLR, AAAI, IJCAI,
+SIGGRAPH, ACM Multimedia, and CoRL. Source responses are cached with timestamps
+and hashes; reports explicitly enumerate scanned coverage and unsupported years.
+ICLR acceptance comes from published proceedings or official accepted-paper
+programs, never an unfiltered submission search. PMLR colocated workshops are
+excluded. ACM's publisher-deposited metadata fallback is labeled as such; SIGGRAPH
+Asia, posters, and unverified TOG journal candidates remain distinguishable.
+The CVPR-specific utility and rendered IEEE companion are retained for older
+proceedings. These tools are standalone audit utilities, not a new CLI ingestion
+workflow; their schema is an extraction artifact, not a canonical catalog format.
+
 ### Manage authors
 
 Create or find an identity by name, author key, or profile ID. Inspect all linked publications with their credited names, order, and roles. From a publication, link or unlink a credit, correct its displayed spelling, or edit its roles without changing the shared identity. From an author, edit the preferred name, add a known alias or profile ID, and preview merges or selected-credit reassignments. `config/author.json` holds `self_author_id`; your aliases and profiles live in that shared identity. Changing this setting does not automatically claim matching credits.

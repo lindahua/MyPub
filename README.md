@@ -98,6 +98,23 @@ Native `export --format json` includes referenced identities, Scholar entries, a
 
 ## Development
 
+### Proceedings author search
+
+Reusable parsers for CVPR, ICCV, ECCV, NeurIPS, ICML, ICLR, AAAI, IJCAI,
+SIGGRAPH, ACM Multimedia, and CoRL live in [proceedings/](proceedings/README.md).
+They search by author and optionally compare with a catalog, without modifying it.
+
+```sh
+python3 proceedings/scan.py --author "Dahua Lin" --conferences iccv eccv neurips \
+  --catalog /path/to/library --output local/proceedings-search
+python3 -B -m unittest discover -s proceedings/tests
+```
+
+See the proceedings README for dependencies, cached offline runs, source coverage,
+ACM access limitations, older IEEE snapshots, and the CVPR compatibility command.
+
+### Build and test
+
 `npm run build` rebuilds the core, CLI, and desktop bundles together so renderer assets stay consistent with the catalog schema. `npm run build:desktop` is an alias for that complete build. Restart an already-running viewer after rebuilding to load the updated renderer.
 
 ```sh

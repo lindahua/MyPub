@@ -1,0 +1,167 @@
+{
+  "cvpr": {
+    "name": "IEEE/CVF Conference on Computer Vision and Pattern Recognition",
+    "urls": [
+      {
+        "url": "https://cvpr.thecvf.com/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://www.computer.org/csdl/proceedings/1000147",
+        "role": "proceedings",
+        "label": "IEEE proceedings"
+      },
+      {
+        "url": "https://openaccess.thecvf.com/menu",
+        "role": "proceedings",
+        "label": "CVF Open Access"
+      }
+    ]
+  },
+  "iccv": {
+    "name": "International Conference on Computer Vision",
+    "urls": [
+      {
+        "url": "https://iccv.thecvf.com/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://openaccess.thecvf.com/menu",
+        "role": "proceedings",
+        "label": "CVF Open Access"
+      }
+    ]
+  },
+  "eccv": {
+    "name": "European Conference on Computer Vision",
+    "urls": [
+      {
+        "url": "https://eccv.ecva.net/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://www.ecva.net/papers.php",
+        "role": "proceedings",
+        "label": "ECVA paper archive"
+      }
+    ]
+  },
+  "neurips": {
+    "name": "Advances in Neural Information Processing Systems",
+    "urls": [
+      {
+        "url": "https://neurips.cc/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://proceedings.neurips.cc/",
+        "role": "proceedings",
+        "label": "Proceedings archive"
+      }
+    ]
+  },
+  "icml": {
+    "name": "International Conference on Machine Learning",
+    "urls": [
+      {
+        "url": "https://icml.cc/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://proceedings.mlr.press/",
+        "role": "proceedings",
+        "label": "PMLR proceedings directory \u2014 ICML"
+      }
+    ]
+  },
+  "iclr": {
+    "name": "International Conference on Learning Representations",
+    "urls": [
+      {
+        "url": "https://iclr.cc/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://proceedings.iclr.cc/",
+        "role": "proceedings",
+        "label": "Official published proceedings, 2024 onward"
+      },
+      {
+        "url": "https://openreview.net/group?id=ICLR.cc",
+        "role": "proceedings",
+        "label": "OpenReview \u2014 select year and accepted papers"
+      }
+    ]
+  },
+  "aaai": {
+    "name": "AAAI Conference on Artificial Intelligence",
+    "urls": [
+      {
+        "url": "https://aaai.org/conference/aaai/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://ojs.aaai.org/index.php/AAAI/issue/archive",
+        "role": "proceedings",
+        "label": "Proceedings archive"
+      }
+    ]
+  },
+  "ijcai": {
+    "name": "InternationalJoint Conference on Artificial Intelligence",
+    "urls": [
+      {
+        "url": "https://www.ijcai.org/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://www.ijcai.org/all_proceedings/",
+        "role": "proceedings",
+        "label": "Proceedings archive"
+      }
+    ]
+  },
+  "siggraph": {
+    "name": "ACM Special Interest Group on Computer Graphics",
+    "urls": [
+      {
+        "url": "https://www.siggraph.org/siggraph-events/conferences/",
+        "role": "homepage",
+        "label": "Official conference homepage and proceedings directory"
+      }
+    ]
+  },
+  "acm_mm": {
+    "name": "ACM International Conference on Multimedia",
+    "urls": [
+      {
+        "url": "https://www.acmmm.org/",
+        "role": "homepage",
+        "label": "Official homepage and past editions/proceedings directory"
+      }
+    ]
+  },
+  "corl": {
+    "name": "Conference on Robot Learning",
+    "urls": [
+      {
+        "url": "https://www.corl.org/",
+        "role": "homepage",
+        "label": "Official homepage"
+      },
+      {
+        "url": "https://proceedings.mlr.press/",
+        "role": "proceedings",
+        "label": "PMLR proceedings directory \u2014 CoRL"
+      }
+    ]
+  }
+}
