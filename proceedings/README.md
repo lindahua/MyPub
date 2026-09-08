@@ -32,8 +32,8 @@ causes exit status 1 even when other editions succeeded. Inspect `coverage` and
 
 | Conference | Source and supported discovery |
 | --- | --- |
-| CVPR / ICCV | CVF menu and yearly indexes; old hidden-author inputs, day indexes, and all-paper indexes. Index and detail bylines are checked. CVF starts in 2013. |
-| ECCV | ECVA archive, currently 2018–2024. Supports surname-first 2018 bylines and later full-name lists. Malformed source delimiters are flagged, not treated as authoritative author order. |
+| CVPR / ICCV | CVF menu and yearly indexes; old hidden-author inputs, day indexes, and all-paper indexes. Index and detail bylines are checked. CVF starts in 2013. ICCV additionally searches IEEE-deposited Crossref metadata for editions 2005, 2007, 2009 and 2011. |
+| ECCV | ECVA archive, currently 2018–2024, plus Springer-deposited Crossref metadata for 2004–2016 (even years). Supports surname-first 2018 bylines and later full-name lists. Malformed source delimiters are flagged, not treated as authoritative author order. |
 | NeurIPS | Proceedings archive, currently 1987–2025. Scans all discovered volumes/tracks; excludes workshop sites. |
 | ICML / CoRL | PMLR main-conference volumes, currently ICML 2013–2025 and CoRL 2017–2025. Colocated workshops such as TerraBytes/GRaM are excluded. Edition year is distinct from volume publication date. |
 | ICLR | Published proceedings for 2024–2026, accepted-paper programs for earlier years. Programs are currently available for 2020–2023; older missing endpoints are reported. Unaccepted submissions are excluded. |
@@ -93,3 +93,25 @@ classification, and conservative matching.
 The `results/` directory contains public bibliographic extraction snapshots;
 local catalog comparisons and raw caches belong under the gitignored `local/`
 directory. No private catalog UUIDs or local paths are included in public results.
+
+### Historical ICCV / ECCV coverage
+
+The normal `scan.py --conferences iccv eccv` command includes historical search
+from 2004 onward. ICCV's first edition in this interval is 2005. No earlier
+editions are searched. Modern CVF/ECVA extraction remains unchanged.
+
+`historical.py` exhausts a publisher-prefix, publication-date-bounded Crossref
+query for the author and conference container. It accepts only recognized main
+conference containers and publication types, excludes workshops, and checks the
+edition year independently. Exact credited full names enter the results;
+initial-only credits appear separately in JSON and Markdown for human review.
+This is publisher-deposited search metadata, not a complete IEEE/Springer table
+of contents: missing deposits, incomplete names and indexing gaps remain
+possible. Zero results for an edition do not establish that no papers exist.
+Byline order is marked unverified until checked against the publisher or PDF.
+
+Historical coverage records retain every query response hash and timestamp,
+requested editions, observed counts, and separate author candidates. Interrupted,
+repeated, changing or incomplete pagination is an error, never a successful empty
+scan. A historical-source error preserves modern results (and vice versa), while
+returning a nonzero CLI exit status. Cached runs work with `--offline`.

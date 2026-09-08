@@ -494,6 +494,7 @@ ICLR acceptance comes from published proceedings or official accepted-paper
 programs, never an unfiltered submission search. PMLR colocated workshops are
 excluded. ACM's publisher-deposited metadata fallback is labeled as such; SIGGRAPH
 Asia, posters, and unverified TOG journal candidates remain distinguishable.
+Historical ICCV (2005–2011) and ECCV (2004–2016) searches exhaust publisher-deposited Crossref queries with explicit coverage limits, main-conference filtering, and separate initial-only author candidates. No editions before 2004 are searched by this historical adapter.
 The CVPR-specific utility and rendered IEEE companion are retained for older
 proceedings. These tools are standalone audit utilities, not a new CLI ingestion
 workflow; their schema is an extraction artifact, not a canonical catalog format.

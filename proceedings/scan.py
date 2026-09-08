@@ -588,10 +588,13 @@ def scan_acm(f, source, author, key):
     )
 
 
+from historical import with_historical
+
+
 SCANNERS = {
     "cvpr": lambda f, s, a: scan_cvf(f, s, a, "CVPR"),
-    "iccv": lambda f, s, a: scan_cvf(f, s, a, "ICCV"),
-    "eccv": scan_eccv,
+    "iccv": lambda f, s, a: with_historical(f, s, a, "iccv", lambda f, s, a: scan_cvf(f, s, a, "ICCV")),
+    "eccv": lambda f, s, a: with_historical(f, s, a, "eccv", scan_eccv),
     "neurips": scan_neurips,
     "icml": lambda f, s, a: scan_pmlr(f, s, a, "ICML"),
     "corl": lambda f, s, a: scan_pmlr(f, s, a, "CoRL"),

@@ -2220,6 +2220,24 @@
     "iccv": {
       "papers": [
         {
+          "title": "Coupled space learning of image style transformation",
+          "authors": [
+            "Dahua Lin",
+            "Xiaoou Tang"
+          ],
+          "year": 2005,
+          "doi": "10.1109/iccv.2005.65",
+          "official_url": "https://doi.org/10.1109/iccv.2005.65",
+          "conference": "Tenth IEEE International Conference on Computer Vision (ICCV'05) Volume 1",
+          "source": {
+            "provider": "IEEE via Crossref",
+            "url": "https://api.crossref.org/works/10.1109/iccv.2005.65"
+          },
+          "author_order_verified": false,
+          "publication_date": "2005",
+          "pages": "1699-1706 Vol. 2"
+        },
+        {
           "title": "Characterizing Layouts of Outdoor Scenes Using Spatial Topic Processes",
           "authors": [
             "Dahua Lin",
@@ -3184,12 +3202,263 @@
               "sha256": "e684fe760c417a35c2f1e9a5acb3015a192fce10e566086e2d4bf7f78cbb97fe"
             }
           ]
+        },
+        {
+          "method": "historical publisher-deposited Crossref metadata",
+          "requested_years": [
+            2005,
+            2007,
+            2009,
+            2011
+          ],
+          "minimum_year": 2004,
+          "search_results_scanned": 21849,
+          "search_results_total": 21849,
+          "matching_venue_search_results_by_year": {
+            "2005": 6,
+            "2007": 11,
+            "2009": 8,
+            "2011": 5
+          },
+          "author_papers": 1,
+          "initial_only_candidates": [],
+          "direct_proceedings_verified": false,
+          "sources": [
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=%2A",
+              "captured_at": "2026-09-08T05:47:47.691848+00:00",
+              "sha256": "700cadc070470dba28b3bb1abfcfbfeca6fd778402fc821859e7091b30d35f49"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTE2NjYzMTEwNDAwMCwxMC4xMTA5JTJGZ2Njdy4yMDA2LjM2",
+              "captured_at": "2026-09-08T05:47:49.998350+00:00",
+              "sha256": "bf4a3d2516d7319ad921a8219d631017152aa93145e2d516db44a6ab185f2a8a"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTE4MTIzMTcwNDAwMCwxMC4xMTA5JTJGd2NuYy4yMDA3LjU4Mg%3D%3D",
+              "captured_at": "2026-09-08T05:47:52.457195+00:00",
+              "sha256": "44347d1946c70e3c6ac1aaab4522cf8e257f79c400787604ced13130b8f3faf9"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTE5MzE1Mjc4NTAwMCwxMC4xMTA5JTJGaWNlbWkuMjAwNy40MzUxMTQ2",
+              "captured_at": "2026-09-08T05:47:55.131174+00:00",
+              "sha256": "916522b4bacd28e875c0cb504530c8e366129ba96dd5bba5da6bc8c2a606188f"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTIwMjM3ODk0ODAwMCwxMC4xMTA5JTJGZGFjLjIwMDYuMjI5MjQ4",
+              "captured_at": "2026-09-08T05:47:57.667005+00:00",
+              "sha256": "02ccbbe3384a2c7c57800359c9a9bfacbe4b65869ce079f6dd1ab97e940da765"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTIxMzYzMzU3NzAwMCwxMC4xMTA5JTJGaXNjYXMuMjAwOC40NTQxNjE3",
+              "captured_at": "2026-09-08T05:48:00.717185+00:00",
+              "sha256": "df2863c82895d73042ebf7f76033d23d724dd235af3f5fe8011853d094c88208"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTIxOTE3MTkyMTAwMCwxMC4xMTA5JTJGcm9tYW4uMjAwOC40NjAwNzMy",
+              "captured_at": "2026-09-08T05:48:04.887507+00:00",
+              "sha256": "ba94aaaa84a5bb041eba7b2abf9631f240f17cf626e25ed618348b758cf09c12"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTIyODg0MjE0NzAwMCwxMC4xMTA5JTJGaXNkYS4yMDA4LjMzMA%3D%3D",
+              "captured_at": "2026-09-08T05:48:08.368720+00:00",
+              "sha256": "f757e314df4c381b0d5bbb7f34d37dca6be076e70f9f6f63f2aa1b5705b03f8f"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTIzNjYyNTUyODAwMCwxMC4xMTA5JTJGaWNjbXMuMjAwOS44Mg%3D%3D",
+              "captured_at": "2026-09-08T05:48:11.454264+00:00",
+              "sha256": "3d87811848430e184487a99e8c4c2bfd94a97e15851eef817e3b58ca28d547f0"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI0NzkwMTY1NzAwMCwxMC4xMTA5JTJGaWNiYmUuMjAwOS41MTYyOTQz",
+              "captured_at": "2026-09-08T05:48:13.950566+00:00",
+              "sha256": "c4e831f01815334e266c72766f5f9632567e58c62a72f05a2bd277e2911b1fb7"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI1NDMyMTMzNTAwMCwxMC4xMTA5JTJGY2NjbS4yMDA5LjUyNjc1NjY%3D",
+              "captured_at": "2026-09-08T05:48:16.372160+00:00",
+              "sha256": "6ff135e84fb2c24e9f405fad9e5a5046b062616e8fa9584faf90f63da55c503a"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI2Mjg2NTAzNjAwMCwxMC4xMTA5JTJGaWNjdGQuMjAwOS40Nw%3D%3D",
+              "captured_at": "2026-09-08T05:48:18.960961+00:00",
+              "sha256": "c8c49e94eac3c11d7784de2382c7304c0d24e3dea09604737eac22eb2530e530"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI2ODA0ODkzMTAwMCwxMC4xMTA5JTJGaW5lYy4yMDEwLjU0MjQ1ODU%3D",
+              "captured_at": "2026-09-08T05:48:21.469717+00:00",
+              "sha256": "d274a6a872f6198d7ddc1796ffb7f8af05181450c1900a037a138d50856162df"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI3ODQ0MDMzMTAwMCwxMC4xMTA5JTJGaWNmY2MuMjAxMC41NDk3NjI1",
+              "captured_at": "2026-09-08T05:48:24.287616+00:00",
+              "sha256": "b380494d57d500eeffe8fea012cf0108f6d50b9daa2f740bf1cce2b35b7de072"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI4NDU3MDkzOTAwMCwxMC4xMTA5JTJGaXYuMjAxMC4yMQ%3D%3D",
+              "captured_at": "2026-09-08T05:48:27.023033+00:00",
+              "sha256": "66d47131c24e3d73f1c9472f0689913009d1d6f746d3f0e14c6bdb2e9a902e3d"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI5MDE4NDMzNjAwMCwxMC4xMTA5JTJGcGFjY3MuMjAxMC41NjI3MDYx",
+              "captured_at": "2026-09-08T05:48:29.506309+00:00",
+              "sha256": "44d13d05f98bfa6f4ccc7c137903a4e4b679633125c17760d16ffa2489a750e1"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI5MjA3NTYwMTAwMCwxMC4xMTA5JTJGaWNpY2lzeXMuMjAxMC41NjU4MzIw",
+              "captured_at": "2026-09-08T05:48:32.070051+00:00",
+              "sha256": "15d9c835ea3a7d7fdcc3661f0ca7b50ad03c3b3178746904b04a8bcfc7edeece"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI5NTg4NTQwMTAwMCwxMC4xMTA5JTJGaWNkbWEuMjAxMC4zNTY%3D",
+              "captured_at": "2026-09-08T05:48:34.582876+00:00",
+              "sha256": "624c71b29948c8df4cab3667ad8aa7db0d6b59bad52b3480513add7c8c5f1ccd"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTMwODM1MDkyNDAwMCwxMC4xMTA5JTJGdnRzYS4yMDExLjU4NzIyMTY%3D",
+              "captured_at": "2026-09-08T05:48:37.079478+00:00",
+              "sha256": "a8a187cf2710e337095949149ed63d205d922c335eafb3ec2086ea633e2e5043"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTMxNDI4Nzc3MTAwMCwxMC4xMTA5JTJGbWFjZS4yMDExLjU5ODc0MjI%3D",
+              "captured_at": "2026-09-08T05:48:39.145094+00:00",
+              "sha256": "0cd2cf50757993212395996074cca9cdb6e81ef253bb39e54f5b6365f482fbc3"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTMxODUyMzc5MTAwMCwxMC4xMTA5JTJGaWNpZWVtLjIwMTEuNjAzNTUzNA%3D%3D",
+              "captured_at": "2026-09-08T05:48:41.695805+00:00",
+              "sha256": "51fd0dc892e24e86fefaa8916461009e948ccffae5ced244c4aa047297d4e0d2"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=International+Conference+on+Computer+Vision&filter=prefix%3A10.1109%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2011-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTMyNTg3ODY4NjAwMCwxMC4xMTA5JTJGaW1wYWN0LjIwMTEuNjExNzI2MQ%3D%3D",
+              "captured_at": "2026-09-08T05:48:44.039384+00:00",
+              "sha256": "c56293338ffecf221e466c059f44f936673fc6e807cffe705b1e3a8e388c0827"
+            }
+          ],
+          "limitation": "Search-index coverage, not a complete proceedings census. Zero matches do not prove absence. Initial-only names require review; byline order requires publisher/PDF verification."
         }
       ],
       "errors": []
     },
     "eccv": {
       "papers": [
+        {
+          "title": "Conditional Infomax Learning: An Integrated Framework for Feature Extraction and Fusion",
+          "authors": [
+            "Dahua Lin",
+            "Xiaoou Tang"
+          ],
+          "year": 2006,
+          "doi": "10.1007/11744023_6",
+          "official_url": "https://doi.org/10.1007/11744023_6",
+          "conference": "Lecture Notes in Computer Science / Computer Vision – ECCV 2006",
+          "source": {
+            "provider": "Springer via Crossref",
+            "url": "https://api.crossref.org/works/10.1007/11744023_6"
+          },
+          "author_order_verified": false,
+          "publication_date": "2006",
+          "pages": "68-82"
+        },
+        {
+          "title": "Inter-modality Face Recognition",
+          "authors": [
+            "Dahua Lin",
+            "Xiaoou Tang"
+          ],
+          "year": 2006,
+          "doi": "10.1007/11744085_2",
+          "official_url": "https://doi.org/10.1007/11744085_2",
+          "conference": "Lecture Notes in Computer Science / Computer Vision – ECCV 2006",
+          "source": {
+            "provider": "Springer via Crossref",
+            "url": "https://api.crossref.org/works/10.1007/11744085_2"
+          },
+          "author_order_verified": false,
+          "publication_date": "2006",
+          "pages": "13-26"
+        },
+        {
+          "title": "Joint People, Event, and Location Recognition in Personal Photo Collections Using Cross-Domain Context",
+          "authors": [
+            "Dahua Lin",
+            "Ashish Kapoor",
+            "Gang Hua",
+            "Simon Baker"
+          ],
+          "year": 2010,
+          "doi": "10.1007/978-3-642-15549-9_18",
+          "official_url": "https://doi.org/10.1007/978-3-642-15549-9_18",
+          "conference": "Lecture Notes in Computer Science / Computer Vision – ECCV 2010",
+          "source": {
+            "provider": "Springer via Crossref",
+            "url": "https://api.crossref.org/works/10.1007/978-3-642-15549-9_18"
+          },
+          "author_order_verified": false,
+          "publication_date": "2010",
+          "pages": "243-256"
+        },
+        {
+          "title": "Learning Deformations with Parallel Transport",
+          "authors": [
+            "Donglai Wei",
+            "Dahua Lin",
+            "John Fisher"
+          ],
+          "year": 2012,
+          "doi": "10.1007/978-3-642-33709-3_21",
+          "official_url": "https://doi.org/10.1007/978-3-642-33709-3_21",
+          "conference": "Lecture Notes in Computer Science / Computer Vision – ECCV 2012",
+          "source": {
+            "provider": "Springer via Crossref",
+            "url": "https://api.crossref.org/works/10.1007/978-3-642-33709-3_21"
+          },
+          "author_order_verified": false,
+          "publication_date": "2012",
+          "pages": "287-300"
+        },
+        {
+          "title": "Deep Markov Random Field for Image Modeling",
+          "authors": [
+            "Zhirong Wu",
+            "Dahua Lin",
+            "Xiaoou Tang"
+          ],
+          "year": 2016,
+          "doi": "10.1007/978-3-319-46484-8_18",
+          "official_url": "https://doi.org/10.1007/978-3-319-46484-8_18",
+          "conference": "Lecture Notes in Computer Science / Computer Vision – ECCV 2016",
+          "source": {
+            "provider": "Springer via Crossref",
+            "url": "https://api.crossref.org/works/10.1007/978-3-319-46484-8_18"
+          },
+          "author_order_verified": false,
+          "publication_date": "2016",
+          "pages": "295-312"
+        },
+        {
+          "title": "Temporal Segment Networks: Towards Good Practices for Deep Action Recognition",
+          "authors": [
+            "Limin Wang",
+            "Yuanjun Xiong",
+            "Zhe Wang",
+            "Yu Qiao",
+            "Dahua Lin",
+            "Xiaoou Tang",
+            "Luc Van Gool"
+          ],
+          "year": 2016,
+          "doi": "10.1007/978-3-319-46484-8_2",
+          "official_url": "https://doi.org/10.1007/978-3-319-46484-8_2",
+          "conference": "Lecture Notes in Computer Science / Computer Vision – ECCV 2016",
+          "source": {
+            "provider": "Springer via Crossref",
+            "url": "https://api.crossref.org/works/10.1007/978-3-319-46484-8_2"
+          },
+          "author_order_verified": false,
+          "publication_date": "2016",
+          "pages": "20-36"
+        },
         {
           "title": "Consensus-Driven Propagation in Massive Unlabeled Data for Face Recognition",
           "authors": [
@@ -3856,6 +4125,61 @@
               "sha256": "bd1d0d3897a5f57f767b43c1bfdb874028adb14be06fde09ad299866663c1406"
             }
           ]
+        },
+        {
+          "method": "historical publisher-deposited Crossref metadata",
+          "requested_years": [
+            2004,
+            2006,
+            2008,
+            2010,
+            2012,
+            2014,
+            2016
+          ],
+          "minimum_year": 2004,
+          "search_results_scanned": 4174,
+          "search_results_total": 4174,
+          "matching_venue_search_results_by_year": {
+            "2004": 2,
+            "2006": 9,
+            "2008": 4,
+            "2010": 8,
+            "2012": 10,
+            "2014": 9,
+            "2016": 16
+          },
+          "author_papers": 6,
+          "initial_only_candidates": [],
+          "direct_proceedings_verified": false,
+          "sources": [
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=Computer+Vision+ECCV&filter=prefix%3A10.1007%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2016-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=%2A",
+              "captured_at": "2026-09-08T05:48:46.565139+00:00",
+              "sha256": "973848719634c9a5615198c7bd1fdde86f1189bd0ef720c1bafe365e41033c59"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=Computer+Vision+ECCV&filter=prefix%3A10.1007%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2016-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTI1NzkzNTkyNjAwMCwxMC4xMDA3JTJGOTc4LTMtNjQyLTEwMzQ3LTZfOQ%3D%3D",
+              "captured_at": "2026-09-08T05:48:48.819335+00:00",
+              "sha256": "0e02991fd6d6b1b87e17dd22456dd22d231da161906cccf4c920893c12a34d63"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=Computer+Vision+ECCV&filter=prefix%3A10.1007%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2016-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTMxNjUyNTcwNDAwMCwxMC4xMDA3JTJGOTc4LTMtNjQyLTI0MTA2LTJfMjY%3D",
+              "captured_at": "2026-09-08T05:48:51.424413+00:00",
+              "sha256": "9047bed0716c9455d57bc76664d9be1a963f413c670b758a36aad71b13939a5c"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=Computer+Vision+ECCV&filter=prefix%3A10.1007%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2016-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTQwMDU3MTY5OTAwMCwxMC4xMDA3JTJGOTc4LTMtMzE5LTA2Nzk5LTVfMg%3D%3D",
+              "captured_at": "2026-09-08T05:48:54.032674+00:00",
+              "sha256": "f6bf87e15ce025092aad12be0676d1f0235a157df8de313b70ccc1e432a4e368"
+            },
+            {
+              "url": "https://api.crossref.org/works?query.author=Dahua+Lin&query.container-title=Computer+Vision+ECCV&filter=prefix%3A10.1007%2Cfrom-pub-date%3A2004-01-01%2Cuntil-pub-date%3A2016-12-31&rows=1000&select=DOI%2Ctitle%2Cauthor%2Cpublished%2Cevent%2Ccontainer-title%2Cabstract%2Cpage%2CURL%2Ctype%2Clink&cursor=MTQ3NDAyMzA0NzAwMCwxMC4xMDA3JTJGOTc4LTMtMzE5LTQ2NDg3LTlfMjM%3D",
+              "captured_at": "2026-09-08T05:48:56.265963+00:00",
+              "sha256": "587f244ba639697c46af7a72534c516e54ace16d50110eba5258943c4d15cc7a"
+            }
+          ],
+          "limitation": "Search-index coverage, not a complete proceedings census. Zero matches do not prove absence. Initial-only names require review; byline order requires publisher/PDF verification."
         }
       ],
       "errors": []

@@ -27,7 +27,10 @@ def write_report(result, path):
         lines.append(
             f'| {scope.get("year", scope.get("method", "unknown"))} | {scope.get("indexed_papers", scope.get("search_results_scanned", "?"))} | {scope["author_papers"]} | [index]({source}) |'
         )
-        if scope.get("direct_proceedings_verified") is False:
+        if scope.get("limitation"):
+            lines += ["", "**Historical coverage:** " + scope["limitation"], "",
+                      "Requested editions: " + ", ".join(map(str, scope["requested_years"])), ""]
+        elif scope.get("direct_proceedings_verified") is False:
             lines += [
                 "",
                 "**ACM limitation:** direct proceedings access was blocked. Results use publisher-deposited Crossref metadata. The author query was paginated to completion; publisher deposit gaps remain possible. SIGGRAPH Asia and poster records are labeled separately. Transactions on Graphics papers are candidates only, not automatically assigned to SIGGRAPH.",
@@ -86,6 +89,9 @@ def write_report(result, path):
                     f'  - Possible source title variant / duplicate: [{candidate["title"]}]({candidate["url"]})'
                 )
     for scope in result["coverage"]:
+        if scope.get("initial_only_candidates"):
+            lines += ["", "## Historical initial-only author candidates (not counted)", ""]
+            lines += [f'- {p["year"]}: [{p["title"]}]({p["official_url"]}) — {", ".join(p["authors"])}' for p in scope["initial_only_candidates"]]
         if scope.get("related_journal_candidates"):
             lines += ["", "## TOG papers requiring event verification", ""]
             lines += [
