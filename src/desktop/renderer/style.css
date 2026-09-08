@@ -291,7 +291,7 @@ small {
 }
 .charts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr);
   gap: 42px;
   margin: 32px 0;
 }
@@ -954,5 +954,216 @@ summary {
     min-width: 0;
     max-width: none;
     z-index: 5;
+  }
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 22px;
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+  font-size: 12px;
+}
+.chart-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.chart-legend li span {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+}
+.year-chart-scroll {
+  overflow-x: auto;
+  padding-top: 32px;
+}
+.year-chart {
+  display: flex;
+  padding: 0 0 2px;
+}
+.year-chart-scale {
+  width: 40px;
+  flex-shrink: 0;
+  height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: right;
+  padding-right: 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.year-chart-scale span {
+  line-height: 0;
+}
+.year-chart-columns {
+  flex: 1;
+  display: flex;
+  height: 272px;
+  background: repeating-linear-gradient(
+      to top,
+      var(--line) 0 1px,
+      transparent 1px 60px
+    )
+    left top / 100% 241px no-repeat;
+}
+.year-chart-column {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 11px;
+}
+.year-chart-column:hover:not(:disabled) {
+  background: transparent;
+}
+.year-chart-column:hover .year-chart-stack {
+  filter: brightness(1.08);
+}
+.year-chart-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column-reverse;
+  height: 240px;
+  width: 100%;
+  max-width: 64px;
+}
+.year-chart-segment {
+  display: block;
+  flex-shrink: 0;
+}
+.year-chart-total {
+  position: absolute;
+  width: 100%;
+  padding-bottom: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.year-chart-label {
+  padding-top: 10px;
+}
+.year-chart-caption {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+  margin: 12px 0 0;
+}
+
+.year-chart-tooltip {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  width: 220px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 4px 18px #182d4226;
+  font-size: 12px;
+}
+.year-chart-tooltip strong {
+  font-size: 14px;
+}
+.year-chart-tooltip ul {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: grid;
+  gap: 8px;
+}
+.year-chart-tooltip li {
+  display: grid;
+  grid-template-columns: 10px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.tooltip-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.tooltip-total {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+}
+.year-chart-tooltip b {
+  font-variant-numeric: tabular-nums;
+}
+
+.publication-chart-pair {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr);
+  gap: 32px;
+}
+.publication-chart-pair > section {
+  min-width: 0;
+}
+.venue-kind-pie {
+  margin: 0;
+}
+.venue-kind-pie-disc {
+  width: 210px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  margin: 28px auto 16px;
+}
+.venue-kind-pie-total {
+  text-align: center;
+  font-size: 12px;
+  margin: 0 0 14px;
+}
+.venue-kind-pie-legend {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+.venue-kind-pie-legend li {
+  display: grid;
+  grid-template-columns: 10px 1fr auto 48px;
+  align-items: center;
+  gap: 8px;
+}
+.venue-kind-pie-legend b,
+.venue-kind-pie-legend .muted {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 820px) {
+  .publication-chart-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .venue-kind-pie {
+    max-width: 280px;
+    margin: 0 auto;
+  }
+}
+
+.overview-rankings {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32px;
+}
+.overview-rankings > section {
+  min-width: 0;
+}
+.overview-rankings > section > .muted {
+  font-size: 12px;
+  margin-bottom: 18px;
+}
+@media (max-width: 820px) {
+  .overview-rankings {
+    grid-template-columns: minmax(0, 1fr);
   }
 }

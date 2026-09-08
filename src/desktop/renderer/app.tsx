@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import { createRoot } from "react-dom/client";
+import { createPortal } from "react-dom";
 import type { DesktopAPI, DesktopState, Collection, Page } from "../types.js";
 import {
   ViewModel,
@@ -20,7 +21,11 @@ import {
   yearOf,
 } from "../model.js";
 import type { Expression, Group, Row, Rule } from "../model.js";
-import type { Publication, ScholarEntry } from "../../core/types.js";
+import type {
+  Publication,
+  ScholarEntry,
+  VenueIdentity,
+} from "../../core/types.js";
 import { DEFAULT_PAGE_SIZES, paginate } from "../pagination.js";
 import type { PageSizes } from "../pagination.js";
 import "./style.css";
@@ -1327,6 +1332,230 @@ function DetailPane({
     </aside>
   );
 }
+type ChartVenueKind = VenueIdentity["kind"] | "unknown";
+const venueKindSeries: {
+  kind: ChartVenueKind;
+  label: string;
+  color: string;
+}[] = [
+  { kind: "journal", label: "Journal", color: "#3979ad" },
+  { kind: "conference", label: "Conference", color: "#42a399" },
+  { kind: "workshop", label: "Workshop", color: "#d39a38" },
+  { kind: "repository", label: "Repository", color: "#9270b5" },
+  { kind: "other", label: "Other", color: "#85909e" },
+  { kind: "unknown", label: "Unknown", color: "#b4bdc7" },
+];
+function VenueKindPie({
+  groups,
+}: {
+  groups: Map<string, Map<ChartVenueKind, number>>;
+}) {
+  const slices = venueKindSeries
+    .map((series) => ({
+      ...series,
+      count: [...groups.values()].reduce(
+        (sum, counts) => sum + (counts.get(series.kind) ?? 0),
+        0,
+      ),
+    }))
+    .filter(({ count }) => count > 0);
+  const total = slices.reduce((sum, slice) => sum + slice.count, 0);
+  if (!total) return <Empty>No publications in this scope.</Empty>;
+  let position = 0;
+  const stops = slices.map(({ count, color }) => {
+    const start = position;
+    position += (count / total) * 100;
+    return `${color} ${start}% ${position}%`;
+  });
+  return (
+    <figure className="venue-kind-pie">
+      <div
+        className="venue-kind-pie-disc"
+        role="img"
+        aria-label={`Overall venue-kind breakdown: ${slices.map(({ label, count }) => `${label}: ${count}`).join(", ")}. Total: ${total}.`}
+        style={{ background: `conic-gradient(${stops.join(", ")})` }}
+      />
+      <figcaption>
+        <p className="venue-kind-pie-total">
+          {total.toLocaleString()} publications
+        </p>
+        <ul className="venue-kind-pie-legend">
+          {slices.map(({ kind, label, color, count }) => (
+            <li key={kind}>
+              <span className="tooltip-swatch" style={{ background: color }} />
+              <span>{label}</span>
+              <b>{count.toLocaleString()}</b>
+              <span className="muted">
+                {((count / total) * 100).toFixed(1)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      </figcaption>
+    </figure>
+  );
+}
+function PublicationYearChart({
+  groups,
+  onSelect,
+}: {
+  groups: Map<string, Map<ChartVenueKind, number>>;
+  onSelect: (year: string) => void;
+}) {
+  const [tooltip, setTooltip] = useState<{
+    year: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  function showTooltip(year: string, x: number, y: number) {
+    setTooltip({
+      year,
+      x: Math.max(8, Math.min(x + 14, window.innerWidth - 228)),
+      y: Math.max(8, Math.min(y + 14, window.innerHeight - 290)),
+    });
+  }
+  const years = [...groups].sort(([a], [b]) =>
+    a === "unknown" ? 1 : b === "unknown" ? -1 : Number(a) - Number(b),
+  );
+  const series = venueKindSeries.filter(({ kind }) =>
+    years.some(([, counts]) => counts.has(kind)),
+  );
+  const maximum = Math.max(
+    1,
+    ...years.map(([, counts]) =>
+      [...counts.values()].reduce((sum, count) => sum + count, 0),
+    ),
+  );
+  const step = Math.max(1, Math.ceil(maximum / 4));
+  const ceiling = step * 4;
+  return (
+    <div className="publication-year-chart">
+      <ul className="chart-legend" aria-label="Venue kinds">
+        {series.map(({ kind, label, color }) => (
+          <li key={kind}>
+            <span style={{ background: color }} />
+            {label}
+          </li>
+        ))}
+      </ul>
+      <div className="year-chart-scroll" onScroll={() => setTooltip(null)}>
+        <div
+          className="year-chart"
+          style={{ minWidth: Math.max(280, years.length * 48 + 44) }}
+        >
+          <div className="year-chart-scale" aria-hidden="true">
+            {[4, 3, 2, 1, 0].map((tick) => (
+              <span key={tick}>{tick * step}</span>
+            ))}
+          </div>
+          <div className="year-chart-columns">
+            {years.map(([year, counts]) => {
+              const label = year === "unknown" ? "Unknown" : year;
+              const total = [...counts.values()].reduce(
+                (sum, count) => sum + count,
+                0,
+              );
+              const description = `${label}: ${total} publications; ${series
+                .filter(({ kind }) => counts.has(kind))
+                .map(({ kind, label }) => `${label}: ${counts.get(kind)}`)
+                .join(", ")}`;
+              return (
+                <button
+                  key={year}
+                  className="year-chart-column"
+                  aria-label={description}
+                  aria-describedby={
+                    tooltip?.year === year
+                      ? "publication-year-tooltip"
+                      : undefined
+                  }
+                  onPointerMove={(event) =>
+                    showTooltip(year, event.clientX, event.clientY)
+                  }
+                  onPointerLeave={() => setTooltip(null)}
+                  onFocus={(event) => {
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    showTooltip(year, rect.left + rect.width / 2, rect.top);
+                  }}
+                  onBlur={() => setTooltip(null)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setTooltip(null);
+                  }}
+                  onClick={() => {
+                    setTooltip(null);
+                    onSelect(year);
+                  }}
+                >
+                  <span className="year-chart-stack">
+                    <span
+                      className="year-chart-total"
+                      style={{ bottom: `${(total / ceiling) * 100}%` }}
+                    >
+                      {total}
+                    </span>
+                    {series.map(
+                      ({ kind, color }) =>
+                        counts.has(kind) && (
+                          <span
+                            key={kind}
+                            className="year-chart-segment"
+                            style={{
+                              height: `${(counts.get(kind)! / ceiling) * 100}%`,
+                              background: color,
+                            }}
+                          />
+                        ),
+                    )}
+                  </span>
+                  <span className="year-chart-label">{label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      {tooltip &&
+        groups.has(tooltip.year) &&
+        createPortal(
+          <div
+            id="publication-year-tooltip"
+            role="tooltip"
+            className="year-chart-tooltip"
+            style={{ left: tooltip.x, top: tooltip.y }}
+          >
+            <strong>
+              {tooltip.year === "unknown" ? "Unknown year" : tooltip.year}
+            </strong>
+            <ul>
+              {series.map(({ kind, label, color }) => (
+                <li key={kind}>
+                  <span
+                    className="tooltip-swatch"
+                    style={{ background: color }}
+                  />
+                  <span>{label}</span>
+                  <b>{groups.get(tooltip.year)!.get(kind) ?? 0}</b>
+                </li>
+              ))}
+            </ul>
+            <div className="tooltip-total">
+              <span>Total</span>
+              <b>
+                {[...groups.get(tooltip.year)!.values()].reduce(
+                  (sum, count) => sum + count,
+                  0,
+                )}
+              </b>
+            </div>
+          </div>,
+          document.body,
+        )}
+      <p className="year-chart-caption">
+        Publication year · Select a bar to browse publications
+      </p>
+    </div>
+  );
+}
 function Overview({
   view,
   update,
@@ -1350,14 +1579,42 @@ function Overview({
   const authors = new Set(rows.flatMap((r) => r.fields.author as string[])),
     venues = new Set(rows.map((r) => r.fields.venue).filter(Boolean)),
     linked = rows.filter((r) => r.fields.link === "linked").length;
-  const yearGroups = new Map<string, number>(),
-    venueGroups = new Map<string, number>();
+  const yearGroups = new Map<string, Map<ChartVenueKind, number>>(),
+    venueGroups = new Map<string, number>(),
+    coauthorGroups = new Map<string, number>();
+  const selfAuthorId = resolved(
+    model.authors,
+    model.snapshot.state.owner.self_author_id,
+  )?.id;
   for (const row of rows) {
     const p = model.publications.get(row.id)!;
     const year = model.groupKey(p, "year"),
       venue = model.groupKey(p, "venue");
-    yearGroups.set(year, (yearGroups.get(year) ?? 0) + 1);
-    venueGroups.set(venue, (venueGroups.get(venue) ?? 0) + 1);
+    const counts = yearGroups.get(year) ?? new Map<ChartVenueKind, number>();
+    const linkedVenue = resolved(model.venues, p.venue?.venue_id);
+    const kind = linkedVenue?.kind ?? "unknown";
+    counts.set(kind, (counts.get(kind) ?? 0) + 1);
+    yearGroups.set(year, counts);
+    const isArxivVenue = (
+      linkedVenue
+        ? [
+            linkedVenue.venue_key,
+            linkedVenue.preferred_name,
+            linkedVenue.abbreviation,
+            ...linkedVenue.aliases,
+          ]
+        : [p.venue?.name]
+    ).some(
+      (name) =>
+        name != null &&
+        /^arxiv(?:$|[\s.:/-])/i.test(name.normalize("NFKC").trim()),
+    );
+    if (venue !== "unknown" && !isArxivVenue)
+      venueGroups.set(venue, (venueGroups.get(venue) ?? 0) + 1);
+    for (const id of new Set(row.fields.author as string[])) {
+      if (id !== selfAuthorId)
+        coauthorGroups.set(id, (coauthorGroups.get(id) ?? 0) + 1);
+    }
   }
   function browse(field?: string, val?: string) {
     const expr = emptyGroup();
@@ -1449,47 +1706,74 @@ function Overview({
         </button>
       </div>
       <div className="charts">
-        <section>
-          <h2>Publications by year</h2>
-          {rows.length ? (
-            <Bars
-              rows={[...yearGroups]
-                .sort(([a], [b]) => (Number(b) || 0) - (Number(a) || 0))
-                .map(([id, count]) => ({
-                  id,
-                  label: model.groupLabel(id, "year"),
-                  count,
-                }))}
-              onSelect={(id) => browse("year", id)}
-            />
-          ) : (
-            <Empty>No publications in this scope.</Empty>
-          )}
-        </section>
-        <section>
-          <h2>Where you publish</h2>
-          <Bars
-            rows={[...venueGroups]
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 8)
-              .map(([id, count]) => ({
-                id,
-                label: model.groupLabel(id, "venue"),
-                count,
-              }))}
-            onSelect={(id) => browse("venue", id)}
-          />
-          {venueGroups.size > 8 && (
-            <button className="link" onClick={() => browse()}>
-              Other venues ·{" "}
-              {[...venueGroups]
-                .sort((a, b) => b[1] - a[1])
-                .slice(8)
-                .reduce((n, [, c]) => n + c, 0)}{" "}
-              publications
-            </button>
-          )}
-        </section>
+        <div className="publication-chart-pair">
+          <section>
+            <h2>Publications by venue kind</h2>
+            <VenueKindPie groups={yearGroups} />
+          </section>
+          <section>
+            <h2>Publications by year</h2>
+            {rows.length ? (
+              <PublicationYearChart
+                groups={yearGroups}
+                onSelect={(id) => browse("year", id)}
+              />
+            ) : (
+              <Empty>No publications in this scope.</Empty>
+            )}
+          </section>
+        </div>
+        <div className="overview-rankings">
+          <section>
+            <h2>Top 10 venues</h2>
+            <p className="muted">
+              Ranked by publication count · excluding arXiv
+            </p>
+            {venueGroups.size ? (
+              <Bars
+                rows={[...venueGroups]
+                  .map(([id, count]) => ({
+                    id,
+                    label: model.groupLabel(id, "venue"),
+                    count,
+                  }))
+                  .sort(
+                    (a, b) =>
+                      b.count - a.count || a.label.localeCompare(b.label),
+                  )
+                  .slice(0, 10)}
+                onSelect={(id) => browse("venue", id)}
+              />
+            ) : (
+              <Empty>No venues in this scope.</Empty>
+            )}
+          </section>
+          <section>
+            <h2>Top 10 co-authors</h2>
+            <p className="muted">
+              Linked authors by publication count
+              {selfAuthorId ? " · excluding you" : ""}
+            </p>
+            {coauthorGroups.size ? (
+              <Bars
+                rows={[...coauthorGroups]
+                  .map(([id, count]) => ({
+                    id,
+                    label: model.authors.get(id)!.preferred_name,
+                    count,
+                  }))
+                  .sort(
+                    (a, b) =>
+                      b.count - a.count || a.label.localeCompare(b.label),
+                  )
+                  .slice(0, 10)}
+                onSelect={(id) => browse("author", id)}
+              />
+            ) : (
+              <Empty>No linked co-authors in this scope.</Empty>
+            )}
+          </section>
+        </div>
       </div>
       <section>
         <h2>Most cited papers</h2>
