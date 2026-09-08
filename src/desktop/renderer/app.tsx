@@ -1645,8 +1645,6 @@ function Overview({
     rows.filter((r) => typeof r.fields.citations === "number"),
     "citations:desc",
   ).slice(0, 5);
-  const profile = model.snapshot.state.gscholar_profile,
-    capture = profile?.captures.at(-1);
   return (
     <>
       <div className="page-heading">
@@ -1795,49 +1793,52 @@ function Overview({
           <Empty>No citation observations available.</Empty>
         )}
       </section>
-      <section className="snapshot-card">
-        <h2>Google Scholar · local snapshot</h2>
-        {profile ? (
-          <>
-            <p>
-              Profile {profile.profile_id} · {model.rows.scholar.length} entries
-              ·{" "}
-              {model.rows.scholar.filter((g) => g.publicationIds.length).length}{" "}
-              linked entries
-            </p>
-            <p className="muted">
-              {capture
-                ? `Captured ${formatTime(capture.captured_at)} · ${capture.coverage} coverage`
-                : "No captures recorded"}{" "}
-              · whole-profile scope
-            </p>
-            <div className="profile-totals">
-              {(
-                [
-                  ["citations", "Citations"],
-                  ["h_index", "h-index"],
-                  ["i10_index", "i10-index"],
-                ] as const
-              ).map(([key, label]) => (
-                <span key={key}>
-                  {label}:{" "}
-                  <strong>
-                    {capture?.totals && Object.hasOwn(capture.totals, key)
-                      ? (capture.totals[key]?.toLocaleString() ?? "Unavailable")
-                      : "Not captured"}
-                  </strong>
-                </span>
-              ))}
-            </div>
-            <button className="link" onClick={() => visit("scholar")}>
-              Browse Scholar entries →
-            </button>
-          </>
-        ) : (
-          <p>No Scholar profile has been mirrored in this catalog.</p>
-        )}
-      </section>
     </>
+  );
+}
+function ScholarSnapshot() {
+  const { model } = useUI();
+  const profile = model.snapshot.state.gscholar_profile,
+    capture = profile?.captures.at(-1);
+  return (
+    <section className="snapshot-card">
+      <h2>Google Scholar · local snapshot</h2>
+      {profile ? (
+        <>
+          <p>
+            Profile {profile.profile_id} · {model.rows.scholar.length} entries ·{" "}
+            {model.rows.scholar.filter((g) => g.publicationIds.length).length}{" "}
+            linked entries
+          </p>
+          <p className="muted">
+            {capture
+              ? `Captured ${formatTime(capture.captured_at)} · ${capture.coverage} coverage`
+              : "No captures recorded"}{" "}
+            · whole-profile scope
+          </p>
+          <div className="profile-totals">
+            {(
+              [
+                ["citations", "Citations"],
+                ["h_index", "h-index"],
+                ["i10_index", "i10-index"],
+              ] as const
+            ).map(([key, label]) => (
+              <span key={key}>
+                {label}:{" "}
+                <strong>
+                  {capture?.totals && Object.hasOwn(capture.totals, key)
+                    ? (capture.totals[key]?.toLocaleString() ?? "Unavailable")
+                    : "Not captured"}
+                </strong>
+              </span>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p>No Scholar profile has been mirrored in this catalog.</p>
+      )}
+    </section>
   );
 }
 function CollectionView({
@@ -1931,15 +1932,17 @@ function CollectionView({
   return (
     <>
       <h1>{names[collection]}</h1>
-      <p className="muted">
-        {collection === "publications"
-          ? "Browse your bibliography, one connection at a time."
-          : collection === "authors"
-            ? "People, credited names and linked publications."
-            : collection === "venues"
-              ? "Journals and conference series, across every year."
-              : `Local mirror · ${model.snapshot.state.gscholar_profile?.profile_id ?? "No profile configured"} · ${formatTime(model.snapshot.state.gscholar_profile?.captures.at(-1)?.captured_at)} · ${model.snapshot.state.gscholar_profile?.captures.at(-1)?.coverage ?? "unknown"} coverage`}
-      </p>
+      {collection === "scholar" ? (
+        <ScholarSnapshot />
+      ) : (
+        <p className="muted">
+          {collection === "publications"
+            ? "Browse your bibliography, one connection at a time."
+            : collection === "authors"
+              ? "People, credited names and linked publications."
+              : "Journals and conference series, across every year."}
+        </p>
+      )}
       <div className="toolbar">
         <input
           className="search"
