@@ -145,3 +145,43 @@ names remain separate review candidates. Coverage is limited by IEEE deposits
 and Crossref indexing; no match is not proof of absence, and publisher byline
 order still needs verification. The saved comparison is read-only; no publication
 or author identity is added automatically.
+
+### Journal issues: TPAMI, TIP, TMM, IJCV and TOG
+
+```sh
+python3 proceedings/journals.py --author "Dahua Lin" \
+  --journals tpami tip tmm ijcv tog --catalog /path/to/library \
+  --output local/journal-comparison
+# Inspect a particular volume and issue, reusing the same cache:
+python3 proceedings/journals.py --author "Dahua Lin" --journals tpami \
+  --volume 41 --issue 11 --output local/journal-comparison --offline
+```
+
+The journal adapter verifies each ISSN against Crossref's journal registry and
+pages through its entire publisher-deposited journal-article catalog. It groups
+all entries by volume/issue and matches exact full author credits locally; it
+does not rely on a fuzzy author query. Initial-only candidates are reported
+separately. Matched articles get full DOI metadata, including issue metadata
+that cannot be selected in the list API. Journal articles, conference versions
+and arXiv versions are compared as different record types. In particular, TOG
+articles are not automatically merged with SIGGRAPH conference records.
+
+All years are scanned by default. Optional `--since`, `--until`, `--volume` and
+`--issue` narrow the selected records (the full index remains cached). Year
+filters use issue publication date when available, then online or generic source
+date for unassigned articles. Missing issue numbers are retained as unspecified;
+continuous-publication volumes are not given invented monthly issues.
+
+`publication_date` is populated only from an explicit issue print date or an
+article print date with volume assignment. `online_date` remains separate, and a
+generic source date never silently replaces an unknown issue date. Review
+publisher metadata before applying date differences. Abstracts, DOI, author
+credits, volume, issue, pages, article number and explicit PDF links are retained
+when deposited. Citation/title differences and missing metadata are suggestions,
+not automatic edits. A failed/partial index is an error, not a successful zero.
+
+These scans use publisher-deposited Crossref metadata, not direct IEEE, Springer
+or ACM table-of-contents crawls. Missing/unregistered articles, incomplete author
+names, source dates and author ordering are limitations. Reports include the
+complete observed issue inventory and hashed source captures for reproduction.
+No catalog mutations occur.

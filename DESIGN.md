@@ -499,6 +499,15 @@ The CVPR-specific utility and rendered IEEE companion are retained for older
 proceedings. These tools are standalone audit utilities, not a new CLI ingestion
 workflow; their schema is an extraction artifact, not a canonical catalog format.
 
+The standalone journal scanner in `proceedings/journals.py` covers TPAMI, TIP,
+TMM, IJCV and TOG via complete ISSN-scoped Crossref article catalogs, grouped by
+volume and issue. It supports author, year, volume and issue selection; compares
+journal records separately from conference/arXiv versions; and preserves online
+and issue publication dates separately. Only explicit issue/print dates with
+volume assignment populate the proposed bibliographic date. Publisher metadata
+coverage and initial-only author candidates remain explicit, and no catalog
+records are changed by the scan.
+
 ### Manage authors
 
 Create or find an identity by name, author key, or profile ID. Inspect all linked publications with their credited names, order, and roles. From a publication, link or unlink a credit, correct its displayed spelling, or edit its roles without changing the shared identity. From an author, edit the preferred name, add a known alias or profile ID, and preview merges or selected-credit reassignments. `config/author.json` holds `self_author_id`; your aliases and profiles live in that shared identity. Changing this setting does not automatically claim matching credits.
