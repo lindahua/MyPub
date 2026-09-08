@@ -2,6 +2,7 @@ import { test, expect, _electron as electron } from "@playwright/test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { importScholarSnapshot } from "../../dist/core/scholar.js";
 import { Catalog, publicationFromInput } from "../../dist/core/catalog.js";
 import {
   addAuthor,
@@ -9,7 +10,7 @@ import {
   configureOwner,
 } from "../../dist/core/identities.js";
 
-test("Electron loads SQLite, supports browsing/filters/inline expansion and refresh recovery", async () => {
+test("Electron loads SQLite, supports browsing/filters/right detail pane and refresh recovery", async () => {
   const root = await mkdtemp(join(tmpdir(), "mypub-electron-"));
   const catalog = new Catalog({ root });
   await catalog.initialize("UI verification library");
@@ -39,6 +40,26 @@ test("Electron loads SQLite, supports browsing/filters/inline expansion and refr
         tags: [i % 2 ? "video" : "geometry"],
       }),
     );
+  await configureOwner(catalog, author.id, "profile");
+  const capture = join(root, "capture.json");
+  await writeFile(
+    capture,
+    JSON.stringify({
+      profile_id: "profile",
+      captured_at: "2026-09-08T00:00:00Z",
+      coverage: "partial",
+      entries: [
+        {
+          scholar_id: "entry",
+          title: "Scholar example paper",
+          authors: ["Alice Example"],
+          year: 2026,
+          citation_count: 4,
+        },
+      ],
+    }),
+  );
+  await importScholarSnapshot(catalog, capture);
   const app = await electron.launch({
     args: [resolve("dist/desktop/main.js"), "--root", root],
   });
@@ -76,27 +97,45 @@ test("Electron loads SQLite, supports browsing/filters/inline expansion and refr
     });
     await title.click();
     await expect(title).toHaveAttribute("aria-expanded", "true");
-    const parent = title.locator("..");
+    const parent = page.getByRole("complementary", { name: "Detail pane" });
+    await expect(page.locator("article.entry .detail")).toHaveCount(0);
     await expect(
       parent.getByRole("region", { name: "Record details" }),
     ).toBeVisible();
-    await expect(parent.getByRole("button", { name: "Official page ↗", exact: true })).toBeVisible();
-    await expect(parent.getByRole("button", { name: "Paper ↗", exact: true })).toBeVisible();
-    await expect(parent.getByRole("button", { name: "https://example.org/code ↗", exact: true })).toBeVisible();
+    await expect(
+      parent.getByRole("button", { name: "Official page ↗", exact: true }),
+    ).toBeVisible();
+    await expect(
+      parent.getByRole("button", { name: "Paper ↗", exact: true }),
+    ).toBeVisible();
+    await expect(
+      parent.getByRole("button", {
+        name: "https://example.org/code ↗",
+        exact: true,
+      }),
+    ).toBeVisible();
     expect(errors).toEqual([]);
-    expect(
-      await parent
-        .locator(".detail")
-        .evaluate((el) => el.getBoundingClientRect().top),
-    ).toBeGreaterThan(
-      await title.evaluate((el) => el.getBoundingClientRect().bottom),
+    const paneBounds = await parent.boundingBox();
+    const mainBounds = await page.locator("main").boundingBox();
+    expect(paneBounds!.x).toBeGreaterThanOrEqual(
+      mainBounds!.x + mainBounds!.width - 1,
     );
     const other = page.getByRole("button", {
       name: "Visual learning paper 01",
       exact: false,
     });
     await other.click();
-    await expect(title).toHaveAttribute("aria-expanded", "true");
+    await expect(title).toHaveAttribute("aria-expanded", "false");
+    await expect(
+      parent.getByRole("heading", {
+        name: "Visual learning paper 01",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(parent).toHaveCount(0);
+    await expect(other).toBeFocused();
+    await other.click();
     await page.getByRole("button", { name: "Filter", exact: true }).click();
     await page
       .getByRole("button", { name: "+ Condition", exact: true })
@@ -141,6 +180,35 @@ test("Electron loads SQLite, supports browsing/filters/inline expansion and refr
     await expect(
       page.getByRole("heading", {
         name: "Linked bibliography · 12 active publications",
+      }),
+    ).toBeVisible();
+    await expect(parent).toBeVisible();
+    await parent.getByRole("button", { name: "Close detail pane" }).click();
+    await expect(parent).toHaveCount(0);
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("button", { name: "Venues", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: "Vision Conference", exact: false })
+      .click();
+    await expect(parent).toBeVisible();
+    await expect(
+      parent.getByRole("heading", { name: "Vision Conference", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("navigation", { name: "Main navigation" })
+      .getByRole("button", { name: "Google Scholar", exact: true })
+      .click();
+    await expect(parent).toHaveCount(0);
+    await page
+      .getByRole("button", { name: "Scholar example paper", exact: false })
+      .click();
+    await expect(parent).toBeVisible();
+    await expect(
+      parent.getByRole("heading", {
+        name: "Scholar example paper",
+        exact: true,
       }),
     ).toBeVisible();
     await page

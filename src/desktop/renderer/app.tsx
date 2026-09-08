@@ -437,7 +437,7 @@ function RecordDetails({
   collection: Collection;
   id: string;
 }) {
-  const { model, perform, toggle } = useUI();
+  const { model, perform } = useUI();
   const s = model.snapshot.state;
   const pub =
     collection === "publications" ? model.publications.get(id) : undefined;
@@ -449,17 +449,6 @@ function RecordDetails({
   if (!record) return <Empty>This record is no longer available.</Empty>;
   return (
     <section className="detail" aria-label="Record details">
-      <button
-        className="quiet"
-        onClick={() => {
-          toggle(id);
-          document
-            .getElementById(`entry-${id}`)
-            ?.focus({ preventScroll: true });
-        }}
-      >
-        ↑ Hide details
-      </button>
       {pub && (
         <>
           <div className="detail-heading">
@@ -527,13 +516,19 @@ function RecordDetails({
                 </EntityLink>
               )}
               <div className="actions">
-                {pub.official_url && <LinkButton url={pub.official_url}>Official page</LinkButton>}
-                {pub.paper_url && <LinkButton url={pub.paper_url}>Paper</LinkButton>}
-                {pub.identifiers.doi && pub.official_url !== `https://doi.org/${pub.identifiers.doi}` && (
-                  <LinkButton url={`https://doi.org/${pub.identifiers.doi}`}>
-                    DOI: {pub.identifiers.doi}
-                  </LinkButton>
+                {pub.official_url && (
+                  <LinkButton url={pub.official_url}>Official page</LinkButton>
                 )}
+                {pub.paper_url && (
+                  <LinkButton url={pub.paper_url}>Paper</LinkButton>
+                )}
+                {pub.identifiers.doi &&
+                  pub.official_url !==
+                    `https://doi.org/${pub.identifiers.doi}` && (
+                    <LinkButton url={`https://doi.org/${pub.identifiers.doi}`}>
+                      DOI: {pub.identifiers.doi}
+                    </LinkButton>
+                  )}
                 {pub.identifiers.arxiv && (
                   <LinkButton
                     url={`https://arxiv.org/abs/${pub.identifiers.arxiv}`}
@@ -541,11 +536,15 @@ function RecordDetails({
                     arXiv: {pub.identifiers.arxiv}
                   </LinkButton>
                 )}
-                {pub.extra_urls.filter(url => url !== pub.official_url && url !== pub.paper_url).map((url) => (
-                  <LinkButton key={url} url={url}>
-                    {url}
-                  </LinkButton>
-                ))}
+                {pub.extra_urls
+                  .filter(
+                    (url) => url !== pub.official_url && url !== pub.paper_url,
+                  )
+                  .map((url) => (
+                    <LinkButton key={url} url={url}>
+                      {url}
+                    </LinkButton>
+                  ))}
               </div>
             </section>
             <section>
@@ -721,7 +720,13 @@ function RecordDetails({
             )}
             {venue?.urls.map((link) => (
               <LinkButton key={link.url} url={link.url}>
-                {link.label ?? { homepage: "Venue homepage", proceedings: "Proceedings", submission: "Submission", other: "Venue resource" }[link.role]}
+                {link.label ??
+                  {
+                    homepage: "Venue homepage",
+                    proceedings: "Proceedings",
+                    submission: "Submission",
+                    other: "Venue resource",
+                  }[link.role]}
               </LinkButton>
             ))}
           </div>
@@ -1184,11 +1189,11 @@ function Entry({ row, collection }: { row: Row; collection: Collection }) {
         id={`entry-${row.id}`}
         className="entry-title"
         aria-expanded={open}
-        aria-controls={`detail-${row.id}`}
+        aria-controls={open ? `detail-${row.id}` : undefined}
         onClick={() => toggle(row.id)}
       >
         <span className="chevron" aria-hidden="true">
-          {open ? "⌄" : "›"}
+          {open ? "→" : "›"}
         </span>
         {row.label}
       </button>
@@ -1277,10 +1282,49 @@ function Entry({ row, collection }: { row: Row; collection: Collection }) {
           </p>
         )}
       </div>
-      <div id={`detail-${row.id}`} hidden={!open}>
-        {open && <RecordDetails collection={collection} id={row.id} />}
-      </div>
     </article>
+  );
+}
+function DetailPane({
+  collection,
+  id,
+}: {
+  collection: Collection;
+  id: string;
+}) {
+  const { toggle } = useUI();
+  const closeButton = useRef<HTMLButtonElement>(null);
+  function close() {
+    toggle(id);
+    document.getElementById(`entry-${id}`)?.focus({ preventScroll: true });
+  }
+  useEffect(() => {
+    closeButton.current?.focus({ preventScroll: true });
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
+        close();
+      }
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [id]);
+  return (
+    <aside className="detail-pane" id={`detail-${id}`} aria-label="Detail pane">
+      <header className="detail-pane-header">
+        <span>{names[collection]} · Details</span>
+        <button
+          ref={closeButton}
+          aria-label="Close detail pane"
+          onClick={close}
+        >
+          ×
+        </button>
+      </header>
+      <div className="detail-pane-content">
+        <RecordDetails collection={collection} id={id} />
+      </div>
+    </aside>
   );
 }
 function Overview({
@@ -1798,7 +1842,7 @@ function CollectionView({
       )}
       {absent.length > 0 && (
         <div className="notice">
-          {absent.length} expanded{" "}
+          {absent.length} selected{" "}
           {absent.length === 1 ? "record is" : "records are"} no longer in these
           results.{" "}
           <button
@@ -1996,7 +2040,7 @@ function App() {
             ...v,
             expanded: v.expanded.includes(id)
               ? v.expanded.filter((x) => x !== id)
-              : [...v.expanded, id],
+              : [id],
           })),
       }
     : null;
@@ -2108,71 +2152,94 @@ function App() {
             </button>
           </div>
         )}
-        <main className="main" ref={main}>
-          {context ? (
-            <UI.Provider value={context}>
-              {view.global ? (
-                <>
-                  <h1>Search your library</h1>
-                  <p className="muted">
-                    Matches across all active collections for “{view.global}”
-                  </p>
-                  {collectionPages.map((page) => {
-                    const rows = model!.query(page, view.global, emptyGroup());
-                    return (
-                      <section key={page} className="global-section">
-                        <h2>
-                          {names[page]} · {rows.length}
-                        </h2>
-                        {rows.slice(0, 5).map((row) => (
-                          <div className="bibliography-row" key={row.id}>
-                            <EntityLink page={page} id={row.id}>
-                              {row.label}
-                            </EntityLink>
-                            <small>{row.sub}</small>
-                          </div>
-                        ))}
-                        {rows.length > 5 && (
-                          <button
-                            className="link"
-                            onClick={() => visit(page, { query: view.global })}
-                          >
-                            See all {rows.length} →
-                          </button>
-                        )}
-                      </section>
-                    );
-                  })}
-                </>
-              ) : view.page === "overview" ? (
-                <Overview view={view} update={update} />
-              ) : (
-                <CollectionView view={view} update={update} />
-              )}
-            </UI.Provider>
-          ) : (
-            <div className="welcome">
-              <div className="brand">
-                mypub<span>.</span>
+        <div
+          className={`content-workspace ${context && view.expanded.length ? "has-detail-pane" : ""}`}
+        >
+          <main className="main" ref={main}>
+            {context ? (
+              <UI.Provider value={context}>
+                {view.global ? (
+                  <>
+                    <h1>Search your library</h1>
+                    <p className="muted">
+                      Matches across all active collections for “{view.global}”
+                    </p>
+                    {collectionPages.map((page) => {
+                      const rows = model!.query(
+                        page,
+                        view.global,
+                        emptyGroup(),
+                      );
+                      return (
+                        <section key={page} className="global-section">
+                          <h2>
+                            {names[page]} · {rows.length}
+                          </h2>
+                          {rows.slice(0, 5).map((row) => (
+                            <div className="bibliography-row" key={row.id}>
+                              <EntityLink page={page} id={row.id}>
+                                {row.label}
+                              </EntityLink>
+                              <small>{row.sub}</small>
+                            </div>
+                          ))}
+                          {rows.length > 5 && (
+                            <button
+                              className="link"
+                              onClick={() =>
+                                visit(page, { query: view.global })
+                              }
+                            >
+                              See all {rows.length} →
+                            </button>
+                          )}
+                        </section>
+                      );
+                    })}
+                  </>
+                ) : view.page === "overview" ? (
+                  <Overview view={view} update={update} />
+                ) : (
+                  <CollectionView view={view} update={update} />
+                )}
+              </UI.Provider>
+            ) : (
+              <div className="welcome">
+                <div className="brand">
+                  mypub<span>.</span>
+                </div>
+                <h1>Your publications, connected.</h1>
+                <p>
+                  Open an existing MyPub catalog to browse papers, authors,
+                  venues and your Google Scholar mirror.
+                </p>
+                {desktop.root && <p className="muted">{desktop.root}</p>}
+                <button
+                  className="primary"
+                  onClick={() =>
+                    void perform(() => window.mypub.chooseLibrary())
+                  }
+                >
+                  Choose library folder…
+                </button>
+                {desktop.status === "loading" && (
+                  <p className="muted">Loading the local catalog…</p>
+                )}
               </div>
-              <h1>Your publications, connected.</h1>
-              <p>
-                Open an existing MyPub catalog to browse papers, authors, venues
-                and your Google Scholar mirror.
-              </p>
-              {desktop.root && <p className="muted">{desktop.root}</p>}
-              <button
-                className="primary"
-                onClick={() => void perform(() => window.mypub.chooseLibrary())}
-              >
-                Choose library folder…
-              </button>
-              {desktop.status === "loading" && (
-                <p className="muted">Loading the local catalog…</p>
-              )}
-            </div>
+            )}
+          </main>
+          {context && view.expanded[0] && (
+            <UI.Provider value={context}>
+              <DetailPane
+                key={view.expanded[0]}
+                collection={
+                  view.page === "overview" ? "publications" : view.page
+                }
+                id={view.expanded[0]}
+              />
+            </UI.Provider>
           )}
-        </main>
+        </div>
         <footer className="app-footer">
           {desktop.root ?? "Choose an existing catalog folder"}
           <span>MyPub · Viewer</span>

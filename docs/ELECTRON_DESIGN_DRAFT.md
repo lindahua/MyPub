@@ -1,3 +1,5 @@
+> Update, 8 September 2026: the user replaced inline expansion with a single right-side detail pane for all four record collections. See DESIGN.md for current behavior; this document retains the original design review.
+
 # MyPub desktop — design draft
 
 7 September 2026 · Approved design; viewer implementation added after review.

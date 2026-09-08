@@ -872,3 +872,87 @@ summary {
 .bibliography-row .byline {
   margin: 5px 0;
 }
+
+/* Keep browsing and record details in independently scrolling columns. */
+.content-workspace {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+.content-workspace > .main {
+  min-width: 0;
+}
+.detail-pane {
+  flex: 0 0 46%;
+  width: 46%;
+  min-width: 380px;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+  box-shadow: -4px 0 18px #152b4510;
+}
+.detail-pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+}
+.detail-pane-header button {
+  font-size: 22px;
+  line-height: 1;
+}
+.detail-pane-content {
+  overflow: auto;
+  min-height: 0;
+  flex: 1;
+}
+.detail-pane .detail {
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  padding: 22px;
+}
+.detail-pane .detail-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+}
+.detail-pane .detail-heading {
+  flex-wrap: wrap;
+  margin-top: 0;
+}
+.entry.expanded {
+  background: var(--panel);
+  box-shadow: inset 3px 0 var(--accent);
+}
+.has-detail-pane .main {
+  padding: 24px;
+}
+.has-detail-pane .browse.has-groups {
+  grid-template-columns: 100px minmax(0, 1fr);
+  gap: 16px;
+}
+.has-detail-pane .charts {
+  grid-template-columns: minmax(0, 1fr);
+}
+.has-detail-pane .metrics {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 1050px) {
+  .detail-pane {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(520px, 86%);
+    min-width: 0;
+    max-width: none;
+    z-index: 5;
+  }
+}
