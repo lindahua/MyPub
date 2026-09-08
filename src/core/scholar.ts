@@ -39,13 +39,22 @@ export async function importScholarSnapshot(c: Catalog, path: string, coverage: 
   const contents = await readFile(path, "utf8"); let payload: unknown; let rows: Record<string, unknown>[]; let profileId: string | undefined; let captured = observedAt; let totals: unknown;
   if (extname(path).toLowerCase() === ".csv") { rows = parseCsv(contents); payload = rows; }
   else { payload = JSON.parse(contents) as unknown; if (!isObject(payload) || !Array.isArray(payload.entries) || !payload.entries.every(isObject)) throw new MyPubError("Scholar JSON requires an entries array", "IMPORT_INVALID"); rows = payload.entries; profileId = typeof payload.profile_id === "string" ? payload.profile_id : undefined; captured = typeof payload.captured_at === "string" ? payload.captured_at : observedAt; totals = payload.totals; if (payload.coverage !== undefined) { if (!["complete", "partial", "unknown"].includes(String(payload.coverage))) throw new MyPubError("Invalid capture coverage", "IMPORT_INVALID"); coverage = payload.coverage as Coverage; } }
+  return applyScholarSnapshot(c, { rows, payload, profileId, captured, totals, coverage, sourceReference: basename(path) });
+}
+export interface ScholarSnapshotInput {
+  rows: Record<string, unknown>[]; payload: unknown; profileId: string | undefined;
+  captured: string; totals?: unknown; coverage: Coverage; sourceReference: string;
+  parserVersion?: string;
+}
+export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInput): Promise<ScholarReconciliation> {
+  const { rows, payload, profileId, captured, totals, coverage } = input;
   if (!validTimestamp(captured)) throw new MyPubError("Capture time must be a UTC timestamp", "IMPORT_INVALID");
   const inputFingerprint = fingerprint({ provider: "google_scholar", payload, captured_at: captured, coverage });
   return c.change((s) => {
     const profile = s.gscholar_profile; if (!profile) throw new MyPubError("Configure the owner and Scholar profile before importing", "PROFILE_NOT_CONFIGURED");
     if (profileId && profileId !== profile.profile_id) throw new MyPubError("Snapshot belongs to another profile", "PROFILE_MEMBERSHIP");
     const previous = s.reviews.find((r) => r.evidence?.input_fingerprint === inputFingerprint); if (previous) return { ...reconcileState(s), source_review_id: previous.id };
-    const time = now(); const source: Review = { schema_version: 2, id: uuid(), summary: `Import Google Scholar ${captured}`, kind: "import", state: "accepted", targets: [], evidence: { provider: "google_scholar", captured_at: captured, source_reference: basename(path), payload, completeness: coverage, parser_version: "mypub-scholar/2", input_fingerprint: inputFingerprint }, proposals: [], created_at: time, updated_at: time, decided_at: time };
+    const time = now(); const source: Review = { schema_version: 2, id: uuid(), summary: `Import Google Scholar ${captured}`, kind: "import", state: "accepted", targets: [], evidence: { provider: "google_scholar", captured_at: captured, source_reference: input.sourceReference, payload, completeness: coverage, parser_version: input.parserVersion ?? "mypub-scholar/2", input_fingerprint: inputFingerprint }, proposals: [], created_at: time, updated_at: time, decided_at: time };
     s.reviews.push(source); const observed: string[] = []; const seen = new Set<string>(); let unidentified = false;
     for (const row of rows) {
       const sourceProfile = row.profile_id ?? row.profile_user_id; if (sourceProfile && sourceProfile !== profile.profile_id) throw new MyPubError("Mixed Scholar profiles are not supported", "PROFILE_MEMBERSHIP");

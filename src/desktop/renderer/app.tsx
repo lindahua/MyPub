@@ -1578,7 +1578,10 @@ function Overview({
   );
   const authors = new Set(rows.flatMap((r) => r.fields.author as string[])),
     venues = new Set(rows.map((r) => r.fields.venue).filter(Boolean)),
-    linked = rows.filter((r) => r.fields.link === "linked").length;
+    scholarEntries = model.rows.scholar,
+    linkedScholarEntries = scholarEntries.filter(
+      (r) => r.fields.link === "linked",
+    ).length;
   const yearGroups = new Map<string, Map<ChartVenueKind, number>>(),
     venueGroups = new Map<string, number>(),
     coauthorGroups = new Map<string, number>();
@@ -1695,13 +1698,17 @@ function Overview({
           <strong>{venues.size.toLocaleString()}</strong>
           <small>Linked series in scope</small>
         </button>
-        <button onClick={() => browse("link", "linked")}>
-          <span>Scholar coverage</span>
-          <strong>
-            {rows.length ? Math.round((linked / rows.length) * 100) + "%" : "—"}
-          </strong>
+        <button
+          onClick={() => visit("scholar")}
+          title="All Scholar entries in the catalog; each entry is counted once"
+        >
+          <span>Google Scholar entries</span>
+          <strong>{scholarEntries.length.toLocaleString()}</strong>
           <small>
-            {linked} of {rows.length} publications linked
+            {scholarEntries.length
+              ? Math.round((linkedScholarEntries / scholarEntries.length) * 100)
+              : 0}
+            % linked to publication records
           </small>
         </button>
       </div>

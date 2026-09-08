@@ -436,6 +436,8 @@ Path: `catalog/gscholar/profile.json`.
 
 A capture contains required `captured_at`, `coverage`, `source_review_id`, and `observed_entry_ids`. `coverage` is `complete`, `partial`, or `unknown`. Entry UUIDs are unique in a capture and resolve to entries for this profile. Optional `totals` has any of `citations`, `h_index`, and `i10_index`; each present value is a non-negative integer or `null`. `null` means the metric was part of the capture but unavailable. Omission means it was not captured. Captures are ordered by `captured_at`; equal times are allowed only when their source reviews differ and evidence is non-conflicting.
 
+Live `gscholar update` captures use these existing version-2 records and `mypub-scholar-web/1` evidence containing the profile ID, capture time, coverage, parsed entries, and fetched pages (requested URL and HTML). No new schema fields are required. A failed live update writes no capture. Discarding disappeared source entries retains their record as `missing`, with a null citation sample; curated publication records and links are preserved.
+
 Only a newer successful `complete` capture can establish that a prior entry is missing. A profile switch is a migration, not an edit of `profile_id` in place.
 
 ### 7.2 Entry record

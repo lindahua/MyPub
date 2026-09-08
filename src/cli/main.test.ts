@@ -48,3 +48,44 @@ test("unsupported CLI flags cannot cause writes before the usage error", async (
     const { Catalog } = await import("../core/catalog.js"); assert.equal((await new Catalog({ root }).list()).length, 0);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
+
+test("gscholar update dispatches, rejects unknown options, and scholar is not an alias", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mypub-cli-scholar-"));
+  try {
+    await invoke(["--root", root, "init"]);
+    await assert.rejects(main(["--root", root, "scholar", "update"]), (error: unknown) => error instanceof MyPubError && error.code === "USAGE");
+    for (const command of ["gscholar"]) {
+      await assert.rejects(main(["--root", root, command, "update"]), (error: unknown) => error instanceof MyPubError && error.code === "PROFILE_NOT_CONFIGURED");
+      await assert.rejects(main(["--root", root, command, "update", "--unexpected"]), (error: unknown) => error instanceof MyPubError && error.code === "USAGE");
+    }
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
+test("gscholar update prints progress and a readable summary, keeping JSON stdout clean", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mypub-cli-progress-"));
+  const originalFetch = globalThis.fetch, originalStderr = process.stderr.write;
+  let stderr = "";
+  try {
+    const { Catalog } = await import("../core/catalog.js");
+    const { addAuthor, configureOwner } = await import("../core/identities.js");
+    const { importScholarSnapshot } = await import("../core/scholar.js");
+    const c = new Catalog({ root }); await c.initialize();
+    const author = await addAuthor(c, { author_key: "self", preferred_name: "Self" }); await configureOwner(c, author.id, "profile");
+    const path = join(root, "capture.json");
+    await writeFile(path, JSON.stringify({ profile_id: "profile", captured_at: "2020-01-01T00:00:00Z", entries: [{ scholar_id: "existing", title: "Existing", citation_count: 2 }, { scholar_id: "gone", title: "Gone", citation_count: 3 }] }));
+    await importScholarSnapshot(c, path);
+    process.stderr.write = ((chunk: string | Uint8Array) => { stderr += chunk.toString(); return true; }) as typeof process.stderr.write;
+    globalThis.fetch = async url => {
+      assert.equal(new URL(String(url)).searchParams.has("view_op"), false, "existing entries need no detail request");
+      return new Response('<div id="gsc_prf_in">Self</div><table><tbody id="gsc_a_b"><tr class="gsc_a_tr"><td><a class="gsc_a_at" href="/citations?citation_for_view=profile:existing">Existing</a></td><td><a class="gsc_a_ac">7</a></td></tr></tbody></table><button id="gsc_bpf_more" disabled>Show more</button>');
+    };
+    const readable = await invoke(["--root", root, "gscholar", "update"]);
+    assert.equal(readable.stdout, "Google Scholar update complete.\nEntries observed: 1\nNew entries added: 0\nExisting entries refreshed: 1\nCitation counts checked: 1\nNewly missing: 1\nRestored: 0\nTotal missing: 1\n");
+    assert.match(stderr, /Fetching Scholar profile page 1/); assert.match(stderr, /Read 1 entries on page 1 \(1 total\)/); assert.match(stderr, /Saving 1 Scholar entries/);
+    stderr = "";
+    const structured = JSON.parse((await invoke(["--root", root, "--json", "gscholar", "update"])).stdout);
+    assert.equal(structured.updated, 1); assert.equal(structured.newly_missing, 0); assert.equal(structured.missing.length, 1); assert.match(stderr, /Fetching Scholar profile page 1/);
+    globalThis.fetch = async () => new Response("Blocked", { status: 429 });
+    await assert.rejects(invoke(["--root", root, "gscholar", "update"]), /blocked/);
+  } finally { globalThis.fetch = originalFetch; process.stderr.write = originalStderr; await rm(root, { recursive: true, force: true }); }
+});

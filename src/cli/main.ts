@@ -15,6 +15,7 @@ import { commit, initializeGit, listConflicts, resolveConflict, status, sync } f
 import { lookupArxiv, lookupDoi } from "../adapters/metadata.js";
 import { run } from "../adapters/process.js";
 import { rebuildSearchIndex } from "../adapters/search.js";
+import { updateScholar } from "../core/scholar-update.js";
 import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar } from "../core/scholar.js";
 import { addAuthor, addVenue, updateIdentity, archiveIdentity, identityDetails, updateCredit, unlinkCredit, linkVenue, mergeIdentity, configureOwner } from "../core/identities.js";
 import { history } from "../core/history.js";
@@ -45,6 +46,7 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   attachment list ID | fetch ID | open ID [ATTACHMENT_ID]
   review list [--state STATE] | show ID | accept|reject|defer ID [--proposal ID]
   review reopen ID [--proposal ID]
+  gscholar update
   gscholar import FILE [--coverage complete|partial|unknown] [--observed-at TIME]
   gscholar reconcile | link PUBLICATION ENTRY | unlink PUBLICATION
   gscholar exclude ENTRY --reason TEXT [--unlink-publications] [--preview]
@@ -120,8 +122,16 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
       else usage("invalid attachment action"); break;
     }
     case "review": { const sub = a.shift("action"); if (sub === "list") { const state = a.take("--state") as ReviewState | undefined; action = () => listReviews(c, state); } else { const id = a.shift("review ID")!; if (sub === "show") action = () => getReview(c, id); else if (sub === "reopen") { const proposal = a.take("--proposal"); action = () => reopenReview(c, id, proposal); } else if (["accept", "reject", "defer"].includes(sub ?? "")) { const note = a.take("--note"), proposal = a.take("--proposal"); action = () => decideReview(c, id, sub === "accept" ? "accepted" : sub === "reject" ? "rejected" : "deferred", note, proposal ? [proposal] : undefined); } else usage("invalid review action"); } break; }
-    case "gscholar": case "scholar": { const sub = a.shift("action");
+    case "gscholar": { const sub = a.shift("action");
       if (sub === "import") { const file = a.shift("file")!, partial = a.takeFlag("--partial"), coverage = a.take("--coverage") ?? (partial ? "partial" : "unknown"), time = a.take("--observed-at"); if (!["complete", "partial", "unknown"].includes(coverage)) usage("invalid coverage"); action = () => importScholarSnapshot(c, file, coverage as Coverage, time); }
+      else if (sub === "update") action = async () => {
+        const result = await updateScholar(c, { onProgress: message => process.stderr.write(`${message}\n`) });
+        return json ? result : ["Google Scholar update complete.",
+          `Entries observed: ${result.observed}`, `New entries added: ${result.added}`,
+          `Existing entries refreshed: ${result.updated}`, `Citation counts checked: ${result.citation_checks}`,
+          `Newly missing: ${result.newly_missing}`, `Restored: ${result.restored}`,
+          `Total missing: ${result.missing.length}`].join("\n");
+      };
       else if (sub === "reconcile") action = () => reconcileScholar(c);
       else if (sub === "link" || sub === "unlink") { const pub = a.shift("publication")!, entry = sub === "link" ? a.shift("entry")! : undefined; action = () => linkScholar(c, pub, entry); }
       else if (sub === "exclude" || sub === "include") { const id = a.shift("entry")!, reason = a.take("--reason"), unlink = a.takeFlag("--unlink-publications"), preview = a.takeFlag("--preview"); action = () => matchingPolicy(c, id, sub === "exclude", reason, unlink, preview); }

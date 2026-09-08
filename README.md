@@ -80,6 +80,7 @@ Publication bylines retain their printed names and roles beside optional shared 
 mypub author add --json-file author.json
 mypub venue add --json-file venue.json
 mypub owner set AUTHOR_KEY --profile-id SCHOLAR_PROFILE_ID
+mypub gscholar update
 mypub gscholar import snapshot.json
 mypub gscholar reconcile
 mypub gscholar link PUBLICATION_KEY ENTRY_UUID
@@ -87,6 +88,8 @@ mypub gscholar exclude ENTRY_UUID --reason "Not my publication" --unlink-publica
 mypub audit
 mypub history RECORD_UUID
 ```
+
+`mypub gscholar update` fetches the configured owner’s Google Scholar profile, follows pagination, adds new mirror entries with detail-page metadata, and appends dated citation counts. Disappeared entries are marked missing, retaining their history and publication links. Curated publications remain unchanged; proposed matches are reviewed separately. Requests are spaced 3–8 seconds apart and time out after 30 seconds. A blocked, incomplete, or failed profile/detail fetch leaves the catalog unchanged; retry later if Scholar blocks access. Page and new-entry detail progress is printed to stderr, including with `--json`. On success, the console summary reports entries observed, added and refreshed, citation counts checked, newly missing entries, restored entries, and total missing entries. `--json` returns the structured result on stdout. Use only the `gscholar` command family; `scholar` is not an alias. Set the profile first with `mypub owner set AUTHOR --profile-id ID`.
 
 Scholar JSON captures have `profile_id`, `captured_at`, `coverage` (`complete`, `partial`, or `unknown`), and an `entries` array. Entries require `scholar_id` and a title on first capture. Optional `citation_count` records a number or null; omitting it records no citation check. CSV supports the same row fields, with `--observed-at` and `--coverage` supplying capture context. Coverage defaults to unknown. Reimporting the same payload at the same capture time is idempotent. Only newer complete captures establish missing entries. Imports generate match proposals; links are explicit decisions.
 
