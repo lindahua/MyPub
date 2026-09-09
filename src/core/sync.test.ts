@@ -16,7 +16,7 @@ test("status distinguishes non-Git catalogs and local commits without upstreams"
   const root = await mkdtemp(join(tmpdir(), "mypub-status-"));
   try {
     const catalog = new Catalog({ root }); await catalog.initialize(); const before = await status(catalog); assert.equal(before.git, false); assert.equal(before.catalog, "ready"); assert.deepEqual(await listConflicts(catalog), []);
-    await initializeGit(catalog); await configureGit(root); const result = await commit(catalog, "initial catalog"); assert.equal(result.state, "committed"); const after = await status(catalog); assert.equal(after.git, true); assert.equal(after.pending_upload, true); assert.equal(after.dirty, false);
+    await initializeGit(catalog); await configureGit(root); const result = await commit(catalog, "initial catalog"); assert.equal(result.state, "committed"); const after = await status(catalog); assert.equal(after.git, true); assert.equal(after.commit, result.commit); assert.equal(after.pending_upload, true); assert.equal(after.dirty, false);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 

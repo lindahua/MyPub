@@ -3,6 +3,17 @@ import type { StatusResult } from "../core/types.js";
 
 const line = (text: string): string => text.replace(/[\x00-\x1f\x7f-\x9f]/g, " ");
 const count = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
+const pad = (value: number): string => String(value).padStart(2, "0");
+function localTimestamp(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return line(value);
+  const offset = -date.getTimezoneOffset();
+  const sign = offset >= 0 ? "+" : "-";
+  const offsetHours = pad(Math.floor(Math.abs(offset) / 60));
+  const offsetMinutes = pad(Math.abs(offset) % 60);
+  const local = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())} UTC${sign}${offsetHours}:${offsetMinutes}`;
+  return `${local} [${line(value)}]`;
+}
 
 export function formatStatus(s: StatusResult, root: string, details = false, color = false): string {
   // Use the terminal theme’s ANSI palette rather than fixed RGB colors.
@@ -11,11 +22,12 @@ export function formatStatus(s: StatusResult, root: string, details = false, col
   const changes = s.changes ?? [];
   if (s.git) {
     lines.push(`Branch:    ${s.branch ? line(s.branch) : emphasize("detached HEAD")}${s.upstream ? ` → ${line(s.upstream)}` : emphasize(" (no upstream)")}`);
+    lines.push(`Commit:    ${s.commit ? line(s.commit) : "no commits"}`);
     lines.push(`Local:     ${s.dirty ? emphasize(changes.length ? count(changes.length, "uncommitted file") : "uncommitted changes") : "clean"}`);
     const commits = (n: number, direction: string): string => n > 0 ? emphasize(`${n} to ${direction}`) : `${n} to ${direction}`;
     lines.push(`Commits:   ${s.upstream && s.ahead !== undefined && s.behind !== undefined ? `${commits(s.ahead, "upload")}, ${commits(s.behind, "download")} (last fetched)` : emphasize("remote comparison unavailable")}`);
   } else lines.push(`Git:       ${emphasize("not initialized")}`);
-  lines.push(`Last sync: ${s.last_successful_sync ? line(s.last_successful_sync) : "not recorded"}`);
+  lines.push(`Last sync: ${s.last_successful_sync ? localTimestamp(s.last_successful_sync) : "not recorded"}`);
 
   const issues: string[] = [];
   if (s.catalog === "missing") issues.push("catalog missing");
