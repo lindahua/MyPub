@@ -20,6 +20,7 @@ import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar, u
 import { addAuthor, addVenue, updateIdentity, archiveIdentity, identityDetails, updateCredit, unlinkCredit, linkVenue, mergeIdentity, configureOwner } from "../core/identities.js";
 import { history } from "../core/history.js";
 import { formatStatus } from "./status.js";
+import { formatAudit } from "./audit.js";
 import { publicationDate } from "../core/paths.js";
 import type { AttachmentRole, Coverage, RelationType, ReviewState, SearchFilters } from "../core/types.js";
 
@@ -55,7 +56,7 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   sync [--message TEXT] | status [--details] | history [RECORD_UUID]
   conflicts [ID --choice ours|theirs [--file FILE]]
   export --format bibtex|csv|json [--output FILE] [filters]
-  validate [--skip-attachments] | audit | recover | repair-paths
+  validate [--skip-attachments] | audit [--details] | recover | repair-paths
   backup DESTINATION [--files-only] | restore SOURCE | index rebuild
 
 Commit saves all managed edits locally without network access. Sync requires a clean tree and a remote upstream; its --message applies only to merge commits.
@@ -144,7 +145,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     case "conflicts": { const id = a.shift(); if (!id) action = () => listConflicts(c); else { const choice = a.take("--choice"), file = a.take("--file"); if (choice !== "ours" && choice !== "theirs") usage("choice must be ours or theirs"); action = () => resolveConflict(c, id, choice as "ours" | "theirs", file); } break; }
     case "export": { const format = a.take("--format") ?? "bibtex", dest = a.take("--output"), f = filters(a); if (!["bibtex", "csv", "json"].includes(format)) usage("format must be bibtex, csv, or json"); raw = !dest; action = async () => { const records = await c.list(f); const content = format === "bibtex" ? toBibtex(records) : format === "csv" ? toCsv(records) : `${JSON.stringify(nativeExport(await c.read(), records.map(p => p.id)), null, 2)}\n`; if (!dest) return content; await mkdir(dirname(resolve(dest)), { recursive: true }); await writeFile(resolve(dest), content); return { output: resolve(dest), count: records.length }; }; break; }
     case "validate": { const verify = !a.takeFlag("--skip-attachments"); action = async () => { const result = await c.validate(verify); exitCode = result.valid ? 0 : 4; return result; }; break; }
-    case "audit": action = async () => { const findings = await c.audit(); exitCode = findings.length ? 4 : 0; return findings; }; break;
+    case "audit": { const details = a.takeFlag("--details"); action = async () => { const result = await c.audit(); exitCode = !result.complete ? 1 : result.errors ? 4 : 0; return json ? result : formatAudit(result, details); }; break; }
     case "recover": action = () => c.recover(); break;
     case "repair-paths": action = () => c.repairPaths(); break;
     case "backup": { const dest = a.shift("destination")!, filesOnly = a.takeFlag("--files-only"); action = () => backup(c, dest, filesOnly); break; }

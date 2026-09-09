@@ -87,8 +87,12 @@ mypub gscholar link PUBLICATION_KEY ENTRY_UUID
 mypub gscholar unlink PUBLICATION_KEY [ENTRY_UUID]
 mypub gscholar exclude ENTRY_UUID --reason "Not my publication" --unlink-publications
 mypub audit
+mypub audit --details
+mypub audit --json
 mypub history RECORD_UUID
 ```
+
+`mypub audit` checks record integrity, bibliographic completeness, linked metadata, and one-publication-per-Scholar cardinality. It reads canonical files offline without modifying records or refreshing the index, and continues past malformed records. `--details` adds comparison values and coverage statistics; `--json` returns the full report. Exit codes: 0 (no errors; warnings allowed), 4 (audit errors), 1 (incomplete audit), 2 (usage). Audit-only errors do not block otherwise valid writes or synchronization. See [AUDITING.md](AUDITING.md) for the rules.
 
 `mypub gscholar update` fetches the configured owner’s Google Scholar profile, follows pagination, adds new mirror entries with detail-page metadata, and appends dated citation counts. Disappeared entries are marked missing, retaining their history and publication links. Curated publications remain unchanged; proposed matches are reviewed separately. Requests are spaced 3–8 seconds apart and time out after 30 seconds. A blocked, incomplete, or failed profile/detail fetch leaves the catalog unchanged; retry later if Scholar blocks access. Page and new-entry detail progress is printed to stderr, including with `--json`. On success, the console summary reports entries observed, added and refreshed, citation counts checked, newly missing entries, restored entries, and total missing entries. `--json` returns the structured result on stdout. Use only the `gscholar` command family; `scholar` is not an alias. Set the profile first with `mypub owner set AUTHOR --profile-id ID`.
 

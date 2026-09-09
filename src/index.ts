@@ -1,4 +1,5 @@
 export * from "./core/types.js";
+export * from "./core/audit.js";
 export * from "./core/errors.js";
 export * from "./core/catalog.js";
 export * from "./core/imports.js";

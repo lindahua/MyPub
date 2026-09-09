@@ -8,7 +8,8 @@ import { fileExists, fingerprint, normalizeArxiv, normalizeDoi, now, safePath, s
 import { scholarEntryIds } from "./scholar-links.js";
 import { catalogFiles } from "./paths.js";
 import { loadState, recoverTransactions, refreshStoredDatabase, writeState } from "./storage.js";
-import { assertUnchangedEvidence, auditState, resolveIdentity, validateState } from "./validation.js";
+import { assertUnchangedEvidence, resolveIdentity, validateState } from "./validation.js";
+import { auditRepository } from "./audit.js";
 import { MyPubError } from "./errors.js";
 import { databasePath, listDatabase, readDatabaseState } from "../adapters/database.js";
 
@@ -148,6 +149,6 @@ export class Catalog {
       result.valid = !result.issues.some((i) => i.severity === "error"); return result;
     } catch (e) { return { valid: false, publication_count: 0, issues: [{ severity: "error", code: e instanceof MyPubError ? e.code : "INVALID_JSON", message: String(e) }] }; }
   }
-  async audit(): Promise<ReturnType<typeof auditState>> { return auditState(await this.read()); }
+  async audit(): Promise<Awaited<ReturnType<typeof auditRepository>>> { return auditRepository(this.root); }
   async repairPaths(): Promise<void> { await this.change(() => null); }
 }

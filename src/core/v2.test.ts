@@ -61,7 +61,7 @@ test("readable filenames extend colliding UUID prefixes and move with corrected 
 test("duplicate arXiv IDs are admitted and audited; status and invalid dates remain blocking", async () => {
   const { root, c } = await fixture(); try {
     const a = await c.add({ ...input, identifiers: { arxiv: "2601.00001v2" } }); const b = await c.add({ ...input, citation_key: "other", identifiers: { arxiv: "2601.00001" } });
-    assert.equal((await c.validate(false)).valid, true); assert.deepEqual((await c.audit())[0]?.publication_ids, [a.id, b.id].sort()); await assert.rejects(c.get("2601.00001"));
+    assert.equal((await c.validate(false)).valid, true); assert.deepEqual((await c.audit()).findings.find(f => f.code === "duplicate_arxiv_id")?.record_ids, [a.id, b.id].sort()); await assert.rejects(c.get("2601.00001"));
     for (const patch of [{ status: "published" }, { dates: { issued: "2026" } }, { publication_date: "2025-02-29" }, { created_by: "local-user" }]) await assert.rejects(c.update(a.id, patch as never));
     await c.update(a.id, { publication_date: "2024-02-29", acceptance_date: "2024-01" });
     const valid = await c.get(a.id); assert.throws(() => assertRecord("publication", { ...valid, schema_version: 1 })); assert.throws(() => assertRecord("publication", { ...valid, updated_at: "2026-09-07T25:00:00Z" }));
