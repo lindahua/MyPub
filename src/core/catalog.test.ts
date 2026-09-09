@@ -33,6 +33,20 @@ test("imports are idempotent and accepted through durable review", async () => {
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+test("an explicit publication ID takes precedence over same-title import candidates", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mypub-import-id-test-"));
+  try {
+    const catalog = new Catalog({ root }); await catalog.initialize();
+    const first = await catalog.add({ citation_key: "first", type: "conference", title: "Shared Title", authors: [{ name: "Ada" }] });
+    await catalog.add({ citation_key: "second", type: "journal", title: "Shared Title", authors: [{ name: "Ada" }] });
+    const path = join(root, "enrichment.json");
+    await writeFile(path, JSON.stringify({ id: first.id, citation_key: first.citation_key, type: first.type, title: first.title, authors: first.authors, identifiers: { doi: "10.1000/first" }, official_url: "https://doi.org/10.1000/first" }), "utf8");
+    const result = await importFile(catalog, path); const review = (await listReviews(catalog, "pending"))[0]!;
+    assert.equal(result.matched, 1); assert.equal(result.created, 0); assert.equal(review.proposals.some(proposal => proposal.operation === "create"), false);
+    await decideReview(catalog, review.id, "accepted"); assert.equal((await catalog.get(first.id)).identifiers.doi, "10.1000/first");
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+
 test("attachments are copied, deduplicated, hashed, and validated", async () => {
   const root = await mkdtemp(join(tmpdir(), "mypub-attachment-test-"));
   try {
