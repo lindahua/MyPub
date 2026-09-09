@@ -86,15 +86,15 @@ test("reviewed Scholar corrections preserve raw evidence and survive refresh", a
   const { root, c } = await fixture(); try {
     const first = await importScholarSnapshot(c, await snapshot(root, "2026-09-01T00:00:00Z", [{ scholar_id: "entry", title: "others. 2024a. Paper", publication_date: "1" }]));
     const entry = (await c.read()).gscholar_entries[0]!;
-    const review = await correctScholarEntry(c, entry.id, { title: "Paper", publication_date: "2024/3/29", year: 2024 }, "Correct malformed source metadata using the version of record.");
+    const review = await correctScholarEntry(c, entry.id, { title: "Paper", authors: ["Correct Author"], publication_date: "2024/3/29", year: 2024 }, "Correct malformed source metadata using the version of record.");
     let state = await c.read(); let corrected = state.gscholar_entries[0]!;
-    assert.equal(corrected.title, "Paper"); assert.equal(corrected.publication_date, "2024/3/29"); assert.equal(corrected.year, 2024);
-    assert.deepEqual(corrected.reviewed_corrections, { title: review.id, publication_date: review.id, year: review.id });
-    assert.equal(review.source_review_id, first.source_review_id); assert.equal(review.proposals.filter(proposal => proposal.path !== "/reviewed_corrections").length, 3);
+    assert.equal(corrected.title, "Paper"); assert.deepEqual(corrected.authors, ["Correct Author"]); assert.equal(corrected.publication_date, "2024/3/29"); assert.equal(corrected.year, 2024);
+    assert.deepEqual(corrected.reviewed_corrections, { title: review.id, authors: review.id, publication_date: review.id, year: review.id });
+    assert.equal(review.source_review_id, first.source_review_id); assert.equal(review.proposals.filter(proposal => proposal.path !== "/reviewed_corrections").length, 4);
     assert.equal((state.reviews.find(item => item.id === first.source_review_id)?.evidence?.payload as any).entries[0].title, "others. 2024a. Paper");
-    await importScholarSnapshot(c, await snapshot(root, "2026-09-02T00:00:00Z", [{ scholar_id: "entry", title: "others. 2024a. Paper", publication_date: "1", year: 2025, citation_count: 9 }]));
+    await importScholarSnapshot(c, await snapshot(root, "2026-09-02T00:00:00Z", [{ scholar_id: "entry", title: "others. 2024a. Paper", authors: ["Wrong Author"], authors_text: "Wrong Author", publication_date: "1", year: 2025, citation_count: 9 }]));
     corrected = (await c.read()).gscholar_entries[0]!;
-    assert.equal(corrected.title, "Paper"); assert.equal(corrected.publication_date, "2024/3/29"); assert.equal(corrected.year, 2024); assert.equal(corrected.citation_history.at(-1)?.count, 9);
+    assert.equal(corrected.title, "Paper"); assert.deepEqual(corrected.authors, ["Correct Author"]); assert.equal(corrected.publication_date, "2024/3/29"); assert.equal(corrected.year, 2024); assert.equal(corrected.citation_history.at(-1)?.count, 9);
     await releaseScholarCorrection(c, entry.id, "title", "The source now supplies a corrected title.");
     await importScholarSnapshot(c, await snapshot(root, "2026-09-03T00:00:00Z", [{ scholar_id: "entry", title: "Source Paper", publication_date: "1", year: 2025 }]));
     corrected = (await c.read()).gscholar_entries[0]!; assert.equal(corrected.title, "Source Paper"); assert.equal(corrected.publication_date, "2024/3/29"); assert.equal(corrected.year, 2024); assert.equal(corrected.reviewed_corrections?.title, undefined);

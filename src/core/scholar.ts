@@ -11,7 +11,7 @@ import { parseCsv } from "./csv.js";
 import { reviewState } from "./validation.js";
 
 const detailFields = ["publication_date", "volume", "issue", "pages", "publisher", "patent_office", "application_number", "description", "scholar_url", "cited_by_url", "venue", "authors_text"] as const;
-export const scholarCorrectionFields = ["title", "year", ...detailFields] as const satisfies readonly ScholarCorrectableField[];
+export const scholarCorrectionFields = ["title", "authors", "year", ...detailFields] as const satisfies readonly ScholarCorrectableField[];
 const externalId = (profile: string, value: string): string => value.startsWith(`${profile}:`) ? value : `${profile}:${value}`;
 function findEntry(s: CatalogState, ref: string): ScholarEntry { const matches = s.gscholar_entries.filter((g) => g.id === ref || g.scholar_id === ref || externalId(g.profile_id, ref) === externalId(g.profile_id, g.scholar_id)); if (matches.length !== 1) throw new MyPubError("Scholar entry not found or ambiguous", "NOT_FOUND"); return matches[0]!; }
 export function reconcileState(s: CatalogState): ScholarReconciliation {
@@ -76,10 +76,10 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
         if (!protectedField("scholar_url") && typeof url === "string" && url.trim()) g.scholar_url = url;
         if (!protectedField("year") && row.year !== undefined && row.year !== null && row.year !== "") { const year = Number(row.year); if (!Number.isInteger(year) || year < 1000 || year > 9999) throw new MyPubError("Invalid Scholar year", "IMPORT_INVALID"); g.year = year; }
         let names: unknown = row.author_names ?? row.authors;
-        if (typeof names === "string") { if (names.trim().startsWith("[")) names = JSON.parse(names); else { g.authors_text = names; names = undefined; } }
+        if (typeof names === "string") { if (names.trim().startsWith("[")) names = JSON.parse(names); else { if (!protectedField("authors_text")) g.authors_text = names; names = undefined; } }
         const completeness = row.authors_completeness ?? "unknown";
         if (!["complete", "partial", "unknown"].includes(String(completeness))) throw new MyPubError("Invalid authors completeness", "IMPORT_INVALID");
-        if (names !== undefined) { if (!Array.isArray(names) || !names.every((n) => typeof n === "string" && !!n.trim() && !["...", "…"].includes(n.trim()))) throw new MyPubError("Invalid source author array", "IMPORT_INVALID"); if (g.authors_completeness !== "complete" || completeness === "complete") { g.authors = names as string[]; g.authors_completeness = completeness as Coverage; } }
+        if (names !== undefined) { if (!Array.isArray(names) || !names.every((n) => typeof n === "string" && !!n.trim() && !["...", "…"].includes(n.trim()))) throw new MyPubError("Invalid source author array", "IMPORT_INVALID"); if (!protectedField("authors") && (g.authors_completeness !== "complete" || completeness === "complete")) { g.authors = names as string[]; g.authors_completeness = completeness as Coverage; } }
         if (g.presence !== "absent" || !g.absent_since || Date.parse(captured) >= Date.parse(g.absent_since)) { g.presence = "present"; delete g.absent_since; }
         g.last_seen_at = captured; g.source_review_id = source.id;
       }
@@ -128,7 +128,7 @@ export async function correctScholarEntry(c: Catalog, entry: string, patch: Reco
   if (!isObject(patch) || !Object.keys(patch).length) throw new MyPubError("Scholar correction requires a non-empty JSON object", "USAGE");
   const allowed = new Set<string>(scholarCorrectionFields);
   for (const field of Object.keys(patch)) if (!allowed.has(field)) throw new MyPubError(`Unsupported Scholar correction field: ${field}`, "SCHEMA_INVALID");
-  if (patch.title === null) throw new MyPubError("Scholar title cannot be removed", "SCHEMA_INVALID");
+  if (patch.title === null || patch.authors === null) throw new MyPubError("Required Scholar fields cannot be removed", "SCHEMA_INVALID");
   return c.change((s) => {
     const g = findEntry(s, entry); const expected = fingerprint(g); const target = { entity_type: "gscholar_entry" as const, entity_id: g.id }; const time = now(); const reviewId = uuid();
     const proposals: Proposal[] = []; const corrections = { ...(g.reviewed_corrections ?? {}) };
