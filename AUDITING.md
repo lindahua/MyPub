@@ -21,6 +21,7 @@ publications to reference one Scholar entry, but auditing reports it as an error
 mypub audit
 mypub audit --details
 mypub audit --json
+mypub audit acknowledge FINDING_FINGERPRINT --reason "Reviewed source discrepancy"
 ```
 
 - Audit the current working catalog, including uncommitted changes.
@@ -38,6 +39,11 @@ mypub audit --json
 
 Present, eligible, linked, and archived remain separate concepts. An absent
 Scholar entry can retain a valid link; an excluded entry cannot.
+
+The first three forms above are read-only. `audit acknowledge` is a separate,
+explicit mutation. It accepts only a current warning fingerprint and creates an
+accepted evidence-only review under `catalog/reviews/`; it never changes the
+publication, identity, venue, or Scholar record that produced the warning.
 
 ## 2. Severity and relationship to validation
 
@@ -223,6 +229,7 @@ details is allowed. Scholar captures can legitimately be sparse.
 | Excluded entry lacks its required reason and accepted decision | Error |
 | `pub_type: incomplete` is not excluded from matching | Error |
 | Source or decision review does not resolve | Error |
+| Reviewed correction is empty, unresolved, non-accepted, or lacks a matching accepted proposal | Error |
 | Citation count is negative, fractional, or neither an integer nor `null` | Error |
 | Citation samples violate ordering, uniqueness, or same-time consistency rules | Error |
 | Citation evidence does not originate from Scholar | Error |
@@ -230,8 +237,9 @@ details is allowed. Scholar captures can legitimately be sparse.
 | An unambiguously parseable source publication date disagrees with `year` | Warning |
 | `authors_completeness: complete` accompanies an empty or visibly truncated author list | Warning |
 
-Preserve literal Scholar dates. Unparseable source date text is allowed and is not
-automatically an error.
+Preserve literal Scholar dates unless an accepted reviewed correction protects a
+replacement or removal. Unparseable uncorrected source date text is allowed and is
+not automatically an error.
 
 Citation decreases are valid. Annual citation totals need not equal the current
 total. Neither condition produces a finding.
@@ -347,6 +355,32 @@ The result includes:
   publication–Scholar association once.
 - Error and warning totals by rule and aspect.
 - Whether the audit completed and which checks were skipped.
+- A stable semantic fingerprint for every finding, the active warning count,
+  the acknowledged-warning count, and the acknowledging review ID when present.
+
+### 10.1 Acknowledged warnings
+
+Some warnings describe intentional or temporarily unavoidable states: a source
+typo, a publisher/preprint metadata disagreement, or a journal article awaiting
+formal issue assignment. Record a reviewed decision with:
+
+```sh
+mypub audit --details
+mypub audit acknowledge FINGERPRINT --reason "Why no correction is appropriate"
+```
+
+The command stores a normal accepted review with immutable `mypub-audit`
+evidence. Its semantic fingerprint uses the rule code, severity, aspect, sorted
+record UUIDs, field, and compared values. It does not use filenames or display
+wording, so path repairs and harmless message changes do not discard a decision.
+When compared values change, the new warning has a new fingerprint and becomes
+actionable again. A warning that disappears leaves its review as historical
+evidence. Errors cannot be acknowledged.
+
+Default text output omits acknowledged warnings from the actionable finding
+list and reports their count separately. `--details` and `--json` retain the
+finding with `acknowledged_by` set to its review UUID. Active warning totals and
+the `by_rule`/`by_aspect` totals exclude acknowledged warnings.
 
 Statistics must state when invalid or ambiguous records prevent complete counts.
 Do not silently drop problematic records and present the remaining population as

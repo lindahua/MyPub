@@ -6,10 +6,12 @@ import type { CatalogState, Publication, ScholarEntry } from "./types.js";
 import { auditState, resolveIdentity, validateState } from "./validation.js";
 import { catalogFiles, publicationYear } from "./paths.js";
 import { scholarEntryIds } from "./scholar-links.js";
+import { fingerprint } from "./utils.js";
 
 export interface RepoAuditFinding {
   code: string; severity: "error" | "warning"; aspect: string; message: string;
   paths: string[]; record_ids: string[]; field?: string; values?: unknown; blocks_write?: false;
+  fingerprint: string; acknowledged_by?: string;
 }
 export interface AuditResult {
   complete: boolean; counts_complete: boolean;
@@ -17,7 +19,7 @@ export interface AuditResult {
   records: Record<string, number>; skipped: Array<{ path: string; check: string; reason: string }>;
   statistics: Record<string, number>;
   cross_tab: Array<{ publication_type: string; scholar_pub_type: string; count: number }>;
-  errors: number; warnings: number;
+  errors: number; warnings: number; acknowledged_warnings: number;
   by_rule: Record<string, { errors: number; warnings: number }>;
   by_aspect: Record<string, { errors: number; warnings: number }>;
   findings: RepoAuditFinding[];
@@ -69,11 +71,14 @@ export function duplicateJsonKeys(source: string): string[] {
 
 /** Read-only, tolerant inspection: never uses Catalog.read or its writable index. */
 export async function auditRepository(root: string): Promise<AuditResult> {
-  const result: AuditResult = { complete: true, counts_complete: true, files: { discovered: 0, parsed: 0, unreadable: 0 }, records: {}, skipped: [], statistics: {}, cross_tab: [], errors: 0, warnings: 0, by_rule: {}, by_aspect: {}, findings: [] };
+  const result: AuditResult = { complete: true, counts_complete: true, files: { discovered: 0, parsed: 0, unreadable: 0 }, records: {}, skipped: [], statistics: {}, cross_tab: [], errors: 0, warnings: 0, acknowledged_warnings: 0, by_rule: {}, by_aspect: {}, findings: [] };
   const rows: Row[] = []; const sources = new Map<string, string>();
   const directories = new Map<string, string>();
   const add = (code: string, severity: "error" | "warning", message: string, owners: Row[] = [], field?: string, values?: unknown, aspect?: string): void => {
-    result.findings.push({ code, severity, message, paths: owners.map(r => r.path).sort(), record_ids: [...new Set(owners.flatMap(r => typeof r.value.id === "string" ? [r.value.id] : []))].sort(), aspect: aspect ?? owners[0]?.kind ?? "repository", ...(field ? { field } : {}), ...(values !== undefined ? { values } : {}) });
+    const record_ids = [...new Set(owners.flatMap(r => typeof r.value.id === "string" ? [r.value.id] : []))].sort();
+    const findingAspect = aspect ?? owners[0]?.kind ?? "repository";
+    const identity = { code, severity, aspect: findingAspect, record_ids, ...(field ? { field } : {}), ...(values !== undefined ? { values } : {}) };
+    result.findings.push({ code, severity, message, paths: owners.map(r => r.path).sort(), record_ids, aspect: findingAspect, ...(field ? { field } : {}), ...(values !== undefined ? { values } : {}), fingerprint: fingerprint(identity) });
   };
   const failure = (path: string, error: unknown): void => {
     result.complete = false; result.counts_complete = false; result.files.unreadable++;
@@ -247,6 +252,18 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     catch (e) { failure(path, e); }
   }
   result.findings = [...new Map(result.findings.map(f => [JSON.stringify(f), f])).values()].sort((a, b) => a.severity.localeCompare(b.severity) || a.code.localeCompare(b.code) || a.paths.join().localeCompare(b.paths.join()));
-  for (const f of result.findings) { const key = f.severity === "error" ? "errors" : "warnings"; result[key]++; for (const [map, name] of [[result.by_rule, f.code], [result.by_aspect, f.aspect]] as const) { map[name] ??= { errors: 0, warnings: 0 }; map[name][key]++; } }
+  const acknowledgements = new Map<string, string>();
+  for (const review of state.reviews) {
+    if (review.state !== "accepted" || review.evidence?.provider !== "mypub-audit" || typeof review.evidence.payload !== "object" || review.evidence.payload === null) continue;
+    const payload = review.evidence.payload as Record<string, unknown>;
+    if (payload.action === "acknowledge_warning" && typeof payload.finding_fingerprint === "string") acknowledgements.set(payload.finding_fingerprint, review.id);
+  }
+  for (const f of result.findings) {
+    const acknowledgedBy = f.severity === "warning" ? acknowledgements.get(f.fingerprint) : undefined;
+    if (acknowledgedBy) f.acknowledged_by = acknowledgedBy;
+    if (f.acknowledged_by) { result.acknowledged_warnings++; continue; }
+    const key = f.severity === "error" ? "errors" : "warnings"; result[key]++;
+    for (const [map, name] of [[result.by_rule, f.code], [result.by_aspect, f.aspect]] as const) { map[name] ??= { errors: 0, warnings: 0 }; map[name][key]++; }
+  }
   return result;
 }

@@ -1,6 +1,6 @@
 import type { CatalogState, Proposal, ProposalState, Review, ReviewState, ReviewTarget } from "./types.js";
 import { Catalog, clean, touch } from "./catalog.js";
-import { fingerprint, now } from "./utils.js";
+import { fingerprint, now, uuid } from "./utils.js";
 import { MyPubError } from "./errors.js";
 import { applyNative } from "./native.js";
 import { reviewState } from "./validation.js";
@@ -69,6 +69,35 @@ export function applyProposals(s: CatalogState, proposals: Proposal[]): void {
 }
 export async function listReviews(c: Catalog, state?: ReviewState): Promise<Review[]> { return (await c.read()).reviews.filter((r) => !state || r.state === state).sort((a, b) => b.created_at.localeCompare(a.created_at)); }
 export async function getReview(c: Catalog, id: string): Promise<Review> { const r = (await c.read()).reviews.find((r) => r.id === id); if (!r) throw new MyPubError("Review not found", "NOT_FOUND"); return r; }
+export async function acknowledgeAuditWarning(c: Catalog, findingFingerprint: string, reason: string): Promise<Review> {
+  if (!reason.trim()) throw new MyPubError("Audit acknowledgement requires a reason", "USAGE");
+  const audit = await c.audit();
+  const finding = audit.findings.find((item) => item.fingerprint === findingFingerprint);
+  if (!finding) throw new MyPubError("Audit finding not found; rerun mypub audit --details", "NOT_FOUND");
+  if (finding.severity !== "warning") throw new MyPubError("Only audit warnings can be acknowledged", "AUDIT_ACKNOWLEDGEMENT");
+  if (finding.acknowledged_by) throw new MyPubError(`Audit warning is already acknowledged by ${finding.acknowledged_by}`, "REVIEW_DECIDED");
+  return c.change((s) => {
+    const target = (id: string): ReviewTarget | undefined => {
+      if (s.publications.some((r) => r.id === id)) return { entity_type: "publication", entity_id: id };
+      if (s.authors.some((r) => r.id === id)) return { entity_type: "author", entity_id: id };
+      if (s.venues.some((r) => r.id === id)) return { entity_type: "venue", entity_id: id };
+      if (s.gscholar_entries.some((r) => r.id === id)) return { entity_type: "gscholar_entry", entity_id: id };
+      return undefined;
+    };
+    const time = now();
+    const review: Review = {
+      schema_version: 2, id: uuid(), summary: `Acknowledge audit warning ${finding.code}`,
+      kind: "change", state: "accepted", targets: finding.record_ids.map(target).filter((item): item is ReviewTarget => !!item),
+      evidence: {
+        provider: "mypub-audit", captured_at: time,
+        payload: { action: "acknowledge_warning", finding_fingerprint: finding.fingerprint, finding: clean(finding) },
+        completeness: "complete", parser_version: "mypub-audit/1", input_fingerprint: finding.fingerprint,
+      },
+      proposals: [], decision_note: reason.trim(), decided_at: time, created_at: time, updated_at: time,
+    };
+    s.reviews.push(review); return review;
+  });
+}
 export async function decideReview(c: Catalog, id: string, state: Exclude<ProposalState, "pending">, note?: string, proposalIds?: string[]): Promise<Review> {
   return c.change((s) => {
     const r = s.reviews.find((r) => r.id === id); if (!r) throw new MyPubError("Review not found", "NOT_FOUND");

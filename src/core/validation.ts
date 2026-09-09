@@ -100,6 +100,16 @@ export function validateState(s: CatalogState): ValidationResult {
   for (const g of s.gscholar_entries) {
     if (g.profile_id !== s.gscholar_profile?.profile_id) issue("PROFILE_MEMBERSHIP", "Entry does not belong to selected profile", g.id);
     reference(g.source_review_id, "review", g.id); reference(g.matching.decision_review_id, "review", g.id);
+    if (g.reviewed_corrections && !Object.keys(g.reviewed_corrections).length) issue("SCHOLAR_CORRECTION", "reviewed_corrections cannot be empty", g.id);
+    for (const [field, reviewId] of Object.entries(g.reviewed_corrections ?? {})) {
+      reference(reviewId, "review", g.id); const decision = reviews.get(reviewId);
+      const accepted = decision?.state === "accepted" && decision.targets.some((target) => target.entity_type === "gscholar_entry" && target.entity_id === g.id) && decision.proposals.some((proposal) => {
+        if (proposal.state !== "accepted" || proposal.target.entity_type !== "gscholar_entry" || proposal.target.entity_id !== g.id || proposal.path !== `/${field}`) return false;
+        const value = (g as unknown as Record<string, unknown>)[field];
+        return value === undefined ? proposal.operation === "remove" : Object.hasOwn(proposal, "proposed") && fingerprint(proposal.proposed) === fingerprint(value);
+      });
+      if (!accepted) issue("SCHOLAR_CORRECTION", `Reviewed correction for ${field} needs a matching accepted decision`, g.id);
+    }
     if (Date.parse(g.last_seen_at) < Date.parse(g.first_seen_at)) issue("PRESENCE_TIME", "last_seen precedes first_seen", g.id);
     if ((g.presence === "absent") !== !!g.absent_since) issue("PRESENCE_STATE", "absent_since must accompany absent presence only", g.id);
     if (g.presence === "absent" && !s.gscholar_profile?.captures.some((c) => c.coverage === "complete" && c.captured_at === g.absent_since && Date.parse(c.captured_at) > Date.parse(g.last_seen_at) && !c.observed_entry_ids.includes(g.id))) issue("PRESENCE_EVIDENCE", "Absent state needs a newer complete capture", g.id);

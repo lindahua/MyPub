@@ -9,6 +9,7 @@ import { addAuthor, configureOwner } from "./identities.js";
 import { importScholarSnapshot, linkScholar } from "./scholar.js";
 import { catalogFiles } from "./paths.js";
 import { spawnSync } from "node:child_process";
+import { acknowledgeAuditWarning } from "./reviews.js";
 
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "mypub-audit-")); const c = new Catalog({ root }); await c.initialize();
@@ -42,6 +43,21 @@ test("audit recognizes title history and partial initials and leaves all files u
     for (let i = 0; i < paths.length; i++) assert.deepEqual(await readFile(join(f.root, paths[i]!)), before[i]);
     const out = cli(f.root, "--json"); assert.equal(out.status, 0, out.stderr); assert.equal(JSON.parse(out.stdout).errors, 0);
     assert.match(cli(f.root, "--details").stdout, /Coverage:|SCHOLAR_PARTIAL_AUTHORS/);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("accepted review records acknowledge an exact audit warning", async () => {
+  const f = await fixture(); try {
+    const before = await f.c.audit();
+    const finding = before.findings.find(x => x.code === "SCHOLAR_PARTIAL_AUTHORS")!;
+    const review = await acknowledgeAuditWarning(f.c, finding.fingerprint, "Scholar exposes a truncated byline; no correction is available.");
+    assert.equal(review.state, "accepted"); assert.equal(review.evidence?.provider, "mypub-audit");
+    const after = await f.c.audit();
+    assert.equal(after.warnings, before.warnings - 1); assert.equal(after.acknowledged_warnings, 1);
+    assert.equal(after.findings.find(x => x.fingerprint === finding.fingerprint)?.acknowledged_by, review.id);
+    const normal = cli(f.root); assert.doesNotMatch(normal.stdout, /WARNING SCHOLAR_PARTIAL_AUTHORS/);
+    const details = cli(f.root, "--details"); assert.match(details.stdout, new RegExp(`Acknowledged by: ${review.id}`));
+    const repeated = cli(f.root, "acknowledge", finding.fingerprint, "--reason", "again"); assert.notEqual(repeated.status, 0);
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 

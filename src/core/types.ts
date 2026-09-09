@@ -45,11 +45,13 @@ export interface OwnerConfig { schema_version: 2; self_author_id?: string; }
 export interface CitationSample { observed_at: string; count: number | null; estimated?: boolean; source_review_id: string; }
 export interface AnnualCitations { observed_at: string; counts: Record<string, number | null>; source_review_id: string; }
 export interface MatchingPolicy { policy: "eligible" | "excluded"; reason?: string; decision_review_id?: string; }
+export type ScholarCorrectableField = "title" | "venue" | "year" | "publication_date" | "volume" | "issue" | "pages" | "publisher" | "patent_office" | "application_number" | "description" | "scholar_url" | "cited_by_url" | "authors_text";
 export interface ScholarEntry extends RecordBase {
   profile_id: string; scholar_id: string; title: string; authors: string[]; authors_text?: string; authors_completeness: Coverage;
   pub_type?: ScholarPublicationType; venue?: string; year?: number; publication_date?: string; volume?: string; issue?: string; pages?: string;
   publisher?: string; patent_office?: string; application_number?: string; description?: string; scholar_url?: string; cited_by_url?: string;
   matching: MatchingPolicy; first_seen_at: string; last_seen_at: string; presence: "present" | "absent"; absent_since?: string;
+  reviewed_corrections?: Partial<Record<ScholarCorrectableField, string>>;
   source_review_id: string; citation_history: CitationSample[]; annual_citations?: AnnualCitations[];
 }
 export interface ScholarCapture {

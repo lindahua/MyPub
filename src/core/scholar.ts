@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { basename, extname } from "node:path";
 import { Catalog, clean, findPublication, manualReview, pairRejected, touch } from "./catalog.js";
-import type { CatalogState, Coverage, Proposal, Review, ScholarEntry, ScholarReconciliation } from "./types.js";
+import type { CatalogState, Coverage, Proposal, Review, ScholarCorrectableField, ScholarEntry, ScholarReconciliation } from "./types.js";
 import { fingerprint, normalizeText, now, uuid } from "./utils.js";
 import { scholarEntryIds, scholarLinkValue } from "./scholar-links.js";
 import { publicationYear } from "./paths.js";
@@ -11,6 +11,7 @@ import { parseCsv } from "./csv.js";
 import { reviewState } from "./validation.js";
 
 const detailFields = ["publication_date", "volume", "issue", "pages", "publisher", "patent_office", "application_number", "description", "scholar_url", "cited_by_url", "venue", "authors_text"] as const;
+export const scholarCorrectionFields = ["title", "year", ...detailFields] as const satisfies readonly ScholarCorrectableField[];
 const externalId = (profile: string, value: string): string => value.startsWith(`${profile}:`) ? value : `${profile}:${value}`;
 function findEntry(s: CatalogState, ref: string): ScholarEntry { const matches = s.gscholar_entries.filter((g) => g.id === ref || g.scholar_id === ref || externalId(g.profile_id, ref) === externalId(g.profile_id, g.scholar_id)); if (matches.length !== 1) throw new MyPubError("Scholar entry not found or ambiguous", "NOT_FOUND"); return matches[0]!; }
 export function reconcileState(s: CatalogState): ScholarReconciliation {
@@ -69,10 +70,11 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
       if (!g) { if (typeof row.title !== "string" || !row.title.trim()) throw new MyPubError("New Scholar entries require a title", "IMPORT_INVALID"); g = { schema_version: 2, id: uuid(), profile_id: profile.profile_id, scholar_id: scholarId, title: row.title, authors: [], authors_completeness: "unknown", matching: { policy: "eligible" }, first_seen_at: captured, last_seen_at: captured, presence: "present", source_review_id: source.id, citation_history: [], created_at: time, updated_at: time }; s.gscholar_entries.push(g); }
       observed.push(g.id); source.targets.push({ entity_type: "gscholar_entry", entity_id: g.id });
       if (isNew || Date.parse(captured) >= Date.parse(g.last_seen_at)) {
-        if (typeof row.title === "string" && row.title.trim()) g.title = row.title;
-        for (const field of detailFields) { const value = row[field]; if (typeof value === "string" && value.trim()) g[field] = value; }
-        if (typeof url === "string" && url.trim()) g.scholar_url = url;
-        if (row.year !== undefined && row.year !== null && row.year !== "") { const year = Number(row.year); if (!Number.isInteger(year) || year < 1000 || year > 9999) throw new MyPubError("Invalid Scholar year", "IMPORT_INVALID"); g.year = year; }
+        const protectedField = (field: ScholarCorrectableField): boolean => Object.hasOwn(g.reviewed_corrections ?? {}, field);
+        if (!protectedField("title") && typeof row.title === "string" && row.title.trim()) g.title = row.title;
+        for (const field of detailFields) { const value = row[field]; if (!protectedField(field) && typeof value === "string" && value.trim()) g[field] = value; }
+        if (!protectedField("scholar_url") && typeof url === "string" && url.trim()) g.scholar_url = url;
+        if (!protectedField("year") && row.year !== undefined && row.year !== null && row.year !== "") { const year = Number(row.year); if (!Number.isInteger(year) || year < 1000 || year > 9999) throw new MyPubError("Invalid Scholar year", "IMPORT_INVALID"); g.year = year; }
         let names: unknown = row.author_names ?? row.authors;
         if (typeof names === "string") { if (names.trim().startsWith("[")) names = JSON.parse(names); else { g.authors_text = names; names = undefined; } }
         const completeness = row.authors_completeness ?? "unknown";
@@ -119,6 +121,52 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
     }));
     if (proposals.length) s.reviews.push({ schema_version: 2, id: uuid(), summary: `Match Google Scholar ${captured}`, kind: "change", state: "pending", targets: [], source_review_id: source.id, proposals, created_at: time, updated_at: time });
     return { ...result, source_review_id: source.id };
+  });
+}
+export async function correctScholarEntry(c: Catalog, entry: string, patch: Record<string, unknown>, reason: string): Promise<Review> {
+  if (!reason.trim()) throw new MyPubError("Scholar correction requires a reason", "USAGE");
+  if (!isObject(patch) || !Object.keys(patch).length) throw new MyPubError("Scholar correction requires a non-empty JSON object", "USAGE");
+  const allowed = new Set<string>(scholarCorrectionFields);
+  for (const field of Object.keys(patch)) if (!allowed.has(field)) throw new MyPubError(`Unsupported Scholar correction field: ${field}`, "SCHEMA_INVALID");
+  if (patch.title === null) throw new MyPubError("Scholar title cannot be removed", "SCHEMA_INVALID");
+  return c.change((s) => {
+    const g = findEntry(s, entry); const expected = fingerprint(g); const target = { entity_type: "gscholar_entry" as const, entity_id: g.id }; const time = now(); const reviewId = uuid();
+    const proposals: Proposal[] = []; const corrections = { ...(g.reviewed_corrections ?? {}) };
+    for (const field of Object.keys(patch) as ScholarCorrectableField[]) {
+      const value = patch[field]; const current = g[field];
+      if (value === null) {
+        if (current === undefined) throw new MyPubError(`Scholar field is already absent: ${field}`, "SCHEMA_INVALID");
+        proposals.push({ id: uuid(), target, operation: "remove", path: `/${field}`, expected_revision: expected, current: clean(current), state: "accepted", decided_at: time });
+        delete g[field];
+      } else {
+        if (value === undefined) throw new MyPubError(`Scholar correction value is missing: ${field}`, "SCHEMA_INVALID");
+        if (current !== undefined && fingerprint(current) === fingerprint(value)) throw new MyPubError(`Scholar field already has the proposed value: ${field}`, "SCHEMA_INVALID");
+        proposals.push({ id: uuid(), target, operation: "replace", path: `/${field}`, expected_revision: expected, ...(current !== undefined ? { current: clean(current) } : {}), proposed: clean(value), state: "accepted", decided_at: time });
+        (g as unknown as Record<string, unknown>)[field] = clean(value);
+      }
+      corrections[field] = reviewId;
+    }
+    const oldCorrections = g.reviewed_corrections; g.reviewed_corrections = corrections;
+    proposals.push({ id: uuid(), target, operation: "replace", path: "/reviewed_corrections", expected_revision: expected, ...(oldCorrections ? { current: clean(oldCorrections) } : {}), proposed: clean(corrections), state: "accepted", decided_at: time });
+    touch(g);
+    const review: Review = { schema_version: 2, id: reviewId, summary: `Correct Scholar ${g.title}`, kind: "change", state: "accepted", targets: [target], source_review_id: g.source_review_id, proposals, decision_note: reason.trim(), decided_at: time, created_at: time, updated_at: time };
+    s.reviews.push(review); return review;
+  });
+}
+export async function releaseScholarCorrection(c: Catalog, entry: string, field: string, reason: string): Promise<Review> {
+  if (!reason.trim()) throw new MyPubError("Releasing a Scholar correction requires a reason", "USAGE");
+  if (!(scholarCorrectionFields as readonly string[]).includes(field)) throw new MyPubError(`Unsupported Scholar correction field: ${field}`, "SCHEMA_INVALID");
+  return c.change((s) => {
+    const g = findEntry(s, entry); const correctionField = field as ScholarCorrectableField; const priorReview = g.reviewed_corrections?.[correctionField];
+    if (!priorReview) throw new MyPubError(`Scholar field is not protected by a reviewed correction: ${field}`, "SCHEMA_INVALID");
+    const expected = fingerprint(g); const current = clean(g.reviewed_corrections!); const corrections = { ...g.reviewed_corrections }; delete corrections[correctionField];
+    const target = { entity_type: "gscholar_entry" as const, entity_id: g.id }; const time = now();
+    const proposal: Proposal = Object.keys(corrections).length
+      ? { id: uuid(), target, operation: "replace", path: "/reviewed_corrections", expected_revision: expected, current, proposed: corrections, state: "accepted", decided_at: time }
+      : { id: uuid(), target, operation: "remove", path: "/reviewed_corrections", expected_revision: expected, current, state: "accepted", decided_at: time };
+    if (Object.keys(corrections).length) g.reviewed_corrections = corrections; else delete g.reviewed_corrections; touch(g);
+    const review: Review = { schema_version: 2, id: uuid(), summary: `Release Scholar ${field} correction for ${g.title}`, kind: "change", state: "accepted", targets: [target], source_review_id: priorReview, proposals: [proposal], decision_note: reason.trim(), decided_at: time, created_at: time, updated_at: time };
+    s.reviews.push(review); return review;
   });
 }
 export async function linkScholar(c: Catalog, publication: string, entry?: string): Promise<void> {

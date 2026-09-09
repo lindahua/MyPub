@@ -7,7 +7,7 @@ import { configPath, readUserConfig, resolveRepoRoot } from "../adapters/config.
 import { Catalog } from "../core/catalog.js";
 import { MyPubError } from "../core/errors.js";
 import { importFile, stageImport } from "../core/imports.js";
-import { decideReview, getReview, listReviews, reopenReview } from "../core/reviews.js";
+import { acknowledgeAuditWarning, decideReview, getReview, listReviews, reopenReview } from "../core/reviews.js";
 import { toBibtex, toCsv } from "../core/exports.js";
 import { nativeExport } from "../core/native.js";
 import { backup, restore } from "../core/backup.js";
@@ -16,7 +16,7 @@ import { lookupArxiv, lookupDoi } from "../adapters/metadata.js";
 import { run } from "../adapters/process.js";
 import { rebuildSearchIndex } from "../adapters/search.js";
 import { updateScholar } from "../core/scholar-update.js";
-import { importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar, unlinkScholar } from "../core/scholar.js";
+import { correctScholarEntry, importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar, releaseScholarCorrection, unlinkScholar } from "../core/scholar.js";
 import { addAuthor, addVenue, updateIdentity, archiveIdentity, identityDetails, updateCredit, unlinkCredit, linkVenue, mergeIdentity, configureOwner } from "../core/identities.js";
 import { history } from "../core/history.js";
 import { formatStatus } from "./status.js";
@@ -50,13 +50,16 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   gscholar update
   gscholar import FILE [--coverage complete|partial|unknown] [--observed-at TIME]
   gscholar reconcile | link PUBLICATION ENTRY | unlink PUBLICATION [ENTRY]
+  gscholar correct ENTRY --json-file FILE --reason TEXT
+  gscholar correction release ENTRY FIELD --reason TEXT
   gscholar exclude ENTRY --reason TEXT [--unlink-publications] [--preview]
   gscholar include ENTRY [--reason TEXT] [--preview]
   commit [--message TEXT]
   sync [--message TEXT] | status [--details] | history [RECORD_UUID]
   conflicts [ID --choice ours|theirs [--file FILE]]
   export --format bibtex|csv|json [--output FILE] [filters]
-  validate [--skip-attachments] | audit [--details] | recover | repair-paths
+  validate [--skip-attachments] | audit [--details] | audit acknowledge FINGERPRINT --reason TEXT
+  recover | repair-paths
   backup DESTINATION [--files-only] | restore SOURCE | index rebuild
 
 Commit saves all managed edits locally without network access. Sync requires a clean tree and a remote upstream; its --message applies only to merge commits.
@@ -134,6 +137,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           `Total absent: ${result.absent.length}`].join("\n");
       };
       else if (sub === "reconcile") action = () => reconcileScholar(c);
+      else if (sub === "correct") { const id = a.shift("entry")!, file = a.take("--json-file") ?? usage("gscholar correct requires --json-file"), reason = a.take("--reason") ?? usage("gscholar correct requires --reason"); action = async () => correctScholarEntry(c, id, await jsonFile(file), reason); }
+      else if (sub === "correction") { if (a.shift("correction action") !== "release") usage("gscholar correction action must be release"); const id = a.shift("entry")!, field = a.shift("field")!, reason = a.take("--reason") ?? usage("gscholar correction release requires --reason"); action = () => releaseScholarCorrection(c, id, field, reason); }
       else if (sub === "link" || sub === "unlink") { const pub = a.shift("publication")!, entry = a.shift(sub === "link" ? "entry" : undefined); action = () => sub === "link" ? linkScholar(c, pub, entry!) : unlinkScholar(c, pub, entry); }
       else if (sub === "exclude" || sub === "include") { const id = a.shift("entry")!, reason = a.take("--reason"), unlink = a.takeFlag("--unlink-publications"), preview = a.takeFlag("--preview"); action = () => matchingPolicy(c, id, sub === "exclude", reason, unlink, preview); }
       else usage("invalid gscholar action"); break;
@@ -145,7 +150,12 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     case "conflicts": { const id = a.shift(); if (!id) action = () => listConflicts(c); else { const choice = a.take("--choice"), file = a.take("--file"); if (choice !== "ours" && choice !== "theirs") usage("choice must be ours or theirs"); action = () => resolveConflict(c, id, choice as "ours" | "theirs", file); } break; }
     case "export": { const format = a.take("--format") ?? "bibtex", dest = a.take("--output"), f = filters(a); if (!["bibtex", "csv", "json"].includes(format)) usage("format must be bibtex, csv, or json"); raw = !dest; action = async () => { const records = await c.list(f); const content = format === "bibtex" ? toBibtex(records) : format === "csv" ? toCsv(records) : `${JSON.stringify(nativeExport(await c.read(), records.map(p => p.id)), null, 2)}\n`; if (!dest) return content; await mkdir(dirname(resolve(dest)), { recursive: true }); await writeFile(resolve(dest), content); return { output: resolve(dest), count: records.length }; }; break; }
     case "validate": { const verify = !a.takeFlag("--skip-attachments"); action = async () => { const result = await c.validate(verify); exitCode = result.valid ? 0 : 4; return result; }; break; }
-    case "audit": { const details = a.takeFlag("--details"); action = async () => { const result = await c.audit(); exitCode = !result.complete ? 1 : result.errors ? 4 : 0; return json ? result : formatAudit(result, details); }; break; }
+    case "audit": {
+      const sub = a.values[0] === "acknowledge" ? a.shift() : undefined;
+      if (sub) { const finding = a.shift("finding fingerprint")!, reason = a.take("--reason") ?? usage("audit acknowledge requires --reason"); action = () => acknowledgeAuditWarning(c, finding, reason); }
+      else { const details = a.takeFlag("--details"); action = async () => { const result = await c.audit(); exitCode = !result.complete ? 1 : result.errors ? 4 : 0; return json ? result : formatAudit(result, details); }; }
+      break;
+    }
     case "recover": action = () => c.recover(); break;
     case "repair-paths": action = () => c.repairPaths(); break;
     case "backup": { const dest = a.shift("destination")!, filesOnly = a.takeFlag("--files-only"); action = () => backup(c, dest, filesOnly); break; }
