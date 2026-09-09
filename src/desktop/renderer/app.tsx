@@ -784,7 +784,7 @@ function RecordDetails({
             <Datum name="Exclusion reason" value={entry.matching.reason} />
             <Datum name="Presence" value={entry.presence} />
             <Datum name="Last seen" value={formatTime(entry.last_seen_at)} />
-            <Datum name="Missing since" value={entry.missing_since} />
+            <Datum name="Absent since" value={entry.absent_since} />
             <Datum name="Source entry ID" value={entry.scholar_id} />
           </dl>
           {entry.description && <p className="preserve">{entry.description}</p>}
@@ -2090,7 +2090,7 @@ function CollectionView({
           {[
             ["link", "unlinked"],
             ["policy", "excluded"],
-            ["presence", "missing"],
+            ["presence", "absent"],
           ].map(([field, value]) => (
             <button
               key={field}

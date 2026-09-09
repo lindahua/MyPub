@@ -39,10 +39,10 @@ export async function updateScholar(c: Catalog, options: ScholarUpdateOptions = 
   }
   options.onProgress?.(`Saving ${entries.length} Scholar entries (${added.length} new)`);
   const result = await applyScholarSnapshot(c, { rows: entries, payload: { profile_id: profile.profile_id, captured_at: captured, coverage: "complete", entries, pages }, profileId: profile.profile_id, captured, coverage: "complete", totals, sourceReference: scholarUrl(profile.profile_id), parserVersion: "mypub-scholar-web/1" });
-  const previouslyMissing = new Set(state.gscholar_entries.filter(g => g.presence === "missing").map(g => g.id));
-  const missing = new Set(result.missing);
+  const previouslyAbsent = new Set(state.gscholar_entries.filter(g => g.presence === "absent").map(g => g.id));
+  const absent = new Set(result.absent);
   return { ...result, observed: entries.length, added: added.length, updated: entries.length - added.length,
-    newly_missing: result.missing.filter(id => !previouslyMissing.has(id)).length,
-    restored: state.gscholar_entries.filter(g => previouslyMissing.has(g.id) && !missing.has(g.id)).length,
+    newly_absent: result.absent.filter(id => !previouslyAbsent.has(id)).length,
+    restored: state.gscholar_entries.filter(g => previouslyAbsent.has(g.id) && !absent.has(g.id)).length,
     citation_checks: entries.length };
 }

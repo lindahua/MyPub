@@ -14,10 +14,10 @@ const detailFields = ["publication_date", "volume", "issue", "pages", "publisher
 const externalId = (profile: string, value: string): string => value.startsWith(`${profile}:`) ? value : `${profile}:${value}`;
 function findEntry(s: CatalogState, ref: string): ScholarEntry { const matches = s.gscholar_entries.filter((g) => g.id === ref || g.scholar_id === ref || externalId(g.profile_id, ref) === externalId(g.profile_id, g.scholar_id)); if (matches.length !== 1) throw new MyPubError("Scholar entry not found or ambiguous", "NOT_FOUND"); return matches[0]!; }
 export function reconcileState(s: CatalogState): ScholarReconciliation {
-  const result: ScholarReconciliation = { local_only: s.publications.filter((p) => !scholarEntryIds(p).length).map((p) => p.id), matched: [], source_only: [], excluded: [], missing: [], candidates: [], rejected_pairs: [], differences: [], shared_counts: [] };
+  const result: ScholarReconciliation = { local_only: s.publications.filter((p) => !scholarEntryIds(p).length).map((p) => p.id), matched: [], source_only: [], excluded: [], absent: [], candidates: [], rejected_pairs: [], differences: [], shared_counts: [] };
   for (const g of s.gscholar_entries) {
     const linked = s.publications.filter((p) => scholarEntryIds(p).includes(g.id));
-    if (g.presence === "missing") result.missing.push(g.id);
+    if (g.presence === "absent") result.absent.push(g.id);
     if (g.matching.policy === "excluded") result.excluded.push(g.id);
     else if (linked.length) result.matched.push(g.id); else result.source_only.push(g.id);
     for (const p of s.publications) if (pairRejected(s, p.id, g.id)) result.rejected_pairs.push({ publication_id: p.id, entry_id: g.id });
@@ -78,7 +78,7 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
         const completeness = row.authors_completeness ?? "unknown";
         if (!["complete", "partial", "unknown"].includes(String(completeness))) throw new MyPubError("Invalid authors completeness", "IMPORT_INVALID");
         if (names !== undefined) { if (!Array.isArray(names) || !names.every((n) => typeof n === "string" && !!n.trim() && !["...", "…"].includes(n.trim()))) throw new MyPubError("Invalid source author array", "IMPORT_INVALID"); if (g.authors_completeness !== "complete" || completeness === "complete") { g.authors = names as string[]; g.authors_completeness = completeness as Coverage; } }
-        if (g.presence !== "missing" || !g.missing_since || Date.parse(captured) >= Date.parse(g.missing_since)) { g.presence = "present"; delete g.missing_since; }
+        if (g.presence !== "absent" || !g.absent_since || Date.parse(captured) >= Date.parse(g.absent_since)) { g.presence = "present"; delete g.absent_since; }
         g.last_seen_at = captured; g.source_review_id = source.id;
       }
       if (Date.parse(captured) < Date.parse(g.first_seen_at)) g.first_seen_at = captured;
@@ -94,10 +94,23 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
     for (const g of s.gscholar_entries) {
       const absent = profile.captures.find(capture => capture.coverage === "complete" && Date.parse(capture.captured_at) > Date.parse(g.last_seen_at) && !capture.observed_entry_ids.includes(g.id));
       if (absent) {
-        g.presence = "missing"; g.missing_since = absent.captured_at;
+        g.presence = "absent"; g.absent_since = absent.captured_at;
         if (!g.citation_history.some(sample => sample.observed_at === absent.captured_at && sample.source_review_id === absent.source_review_id)) g.citation_history.push({ observed_at: absent.captured_at, count: null, source_review_id: absent.source_review_id });
         g.citation_history.sort((a, b) => Date.parse(a.observed_at) - Date.parse(b.observed_at)); touch(g);
-      } else if (g.presence === "missing") { g.presence = "present"; delete g.missing_since; touch(g); }
+        if (g.matching.policy !== "excluded") {
+          const target = { entity_type: "gscholar_entry" as const, entity_id: g.id };
+          if (!source.targets.some(item => item.entity_type === target.entity_type && item.entity_id === target.entity_id)) source.targets.push(target);
+          const proposed = { policy: "excluded" as const, reason: "absent", decision_review_id: source.id };
+          source.proposals.push({ id: uuid(), target, operation: "replace", path: "/matching", expected_revision: fingerprint(g), current: clean(g.matching), proposed, state: "accepted", decided_at: time });
+          g.matching = proposed; touch(g);
+          for (const p of s.publications.filter(p => scholarEntryIds(p).includes(g.id))) {
+            const publicationTarget = { entity_type: "publication" as const, entity_id: p.id }; const old = clean(p.gscholar_entry_id); const next = scholarLinkValue(scholarEntryIds(p).filter(id => id !== g.id));
+            if (!source.targets.some(item => item.entity_type === publicationTarget.entity_type && item.entity_id === publicationTarget.entity_id)) source.targets.push(publicationTarget);
+            source.proposals.push({ id: uuid(), target: publicationTarget, operation: "unlink", path: "/gscholar_entry_id", expected_revision: fingerprint(p), current: old, ...(next !== undefined ? { proposed: clean(next) } : {}), candidate_ids: [g.id], state: "accepted", decided_at: time });
+            if (next === undefined) delete p.gscholar_entry_id; else p.gscholar_entry_id = next; touch(p);
+          }
+        }
+      } else if (g.presence === "absent") { g.presence = "present"; delete g.absent_since; touch(g); }
     }
     const result = reconcileState(s);
     const proposals: Proposal[] = result.candidates.flatMap((candidate) => candidate.publication_ids.flatMap((publicationId) => {

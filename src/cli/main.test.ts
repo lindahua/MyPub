@@ -80,11 +80,11 @@ test("gscholar update prints progress and a readable summary, keeping JSON stdou
       return new Response('<div id="gsc_prf_in">Self</div><table><tbody id="gsc_a_b"><tr class="gsc_a_tr"><td><a class="gsc_a_at" href="/citations?citation_for_view=profile:existing">Existing</a></td><td><a class="gsc_a_ac">7</a></td></tr></tbody></table><button id="gsc_bpf_more" disabled>Show more</button>');
     };
     const readable = await invoke(["--root", root, "gscholar", "update"]);
-    assert.equal(readable.stdout, "Google Scholar update complete.\nEntries observed: 1\nNew entries added: 0\nExisting entries refreshed: 1\nCitation counts checked: 1\nNewly missing: 1\nRestored: 0\nTotal missing: 1\n");
+    assert.equal(readable.stdout, "Google Scholar update complete.\nEntries observed: 1\nNew entries added: 0\nExisting entries refreshed: 1\nCitation counts checked: 1\nNewly absent: 1\nRestored: 0\nTotal absent: 1\n");
     assert.match(stderr, /Fetching Scholar profile page 1/); assert.match(stderr, /Read 1 entries on page 1 \(1 total\)/); assert.match(stderr, /Saving 1 Scholar entries/);
     stderr = "";
     const structured = JSON.parse((await invoke(["--root", root, "--json", "gscholar", "update"])).stdout);
-    assert.equal(structured.updated, 1); assert.equal(structured.newly_missing, 0); assert.equal(structured.missing.length, 1); assert.match(stderr, /Fetching Scholar profile page 1/);
+    assert.equal(structured.updated, 1); assert.equal(structured.newly_absent, 0); assert.equal(structured.absent.length, 1); assert.match(stderr, /Fetching Scholar profile page 1/);
     globalThis.fetch = async () => new Response("Blocked", { status: 429 });
     await assert.rejects(invoke(["--root", root, "gscholar", "update"]), /blocked/);
   } finally { globalThis.fetch = originalFetch; process.stderr.write = originalStderr; await rm(root, { recursive: true, force: true }); }

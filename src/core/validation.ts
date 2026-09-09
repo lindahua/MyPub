@@ -101,8 +101,8 @@ export function validateState(s: CatalogState): ValidationResult {
     if (g.profile_id !== s.gscholar_profile?.profile_id) issue("PROFILE_MEMBERSHIP", "Entry does not belong to selected profile", g.id);
     reference(g.source_review_id, "review", g.id); reference(g.matching.decision_review_id, "review", g.id);
     if (Date.parse(g.last_seen_at) < Date.parse(g.first_seen_at)) issue("PRESENCE_TIME", "last_seen precedes first_seen", g.id);
-    if ((g.presence === "missing") !== !!g.missing_since) issue("PRESENCE_STATE", "missing_since must accompany missing presence only", g.id);
-    if (g.presence === "missing" && !s.gscholar_profile?.captures.some((c) => c.coverage === "complete" && c.captured_at === g.missing_since && Date.parse(c.captured_at) > Date.parse(g.last_seen_at) && !c.observed_entry_ids.includes(g.id))) issue("PRESENCE_EVIDENCE", "Missing state needs a newer complete capture", g.id);
+    if ((g.presence === "absent") !== !!g.absent_since) issue("PRESENCE_STATE", "absent_since must accompany absent presence only", g.id);
+    if (g.presence === "absent" && !s.gscholar_profile?.captures.some((c) => c.coverage === "complete" && c.captured_at === g.absent_since && Date.parse(c.captured_at) > Date.parse(g.last_seen_at) && !c.observed_entry_ids.includes(g.id))) issue("PRESENCE_EVIDENCE", "Absent state needs a newer complete capture", g.id);
     if (g.matching.policy === "excluded") {
       const decision = reviews.get(g.matching.decision_review_id ?? "");
       if (!g.matching.reason || !decision || !(decision.state === "accepted" || decision.proposals.some((p) => p.state === "accepted" && p.target.entity_id === g.id && p.path === "/matching"))) issue("EXCLUSION_DECISION", "Exclusion requires reason and accepted decision", g.id);

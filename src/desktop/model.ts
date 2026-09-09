@@ -550,7 +550,7 @@ export function fieldsFor(collection: Collection, model: ViewModel): Field[] {
     text("venue_text", "Source venue"),
     { ...link, label: "Publication link" },
     choice("policy", "Matching policy", ["eligible", "excluded"]),
-    choice("presence", "Source presence", ["present", "missing"]),
+    choice("presence", "Source presence", ["present", "absent"]),
     choice("completeness", "Author list completeness", [
       "complete",
       "partial",

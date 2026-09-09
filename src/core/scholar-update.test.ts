@@ -20,7 +20,7 @@ async function fixture() {
   await c.initialize(); const author = await addAuthor(c, { author_key: "self", preferred_name: "Self" }); await configureOwner(c, author.id, "profile");
   return { root, c };
 }
-test("live update paginates, fetches only new details, retains links/history and restores missing entries", async () => {
+test("live update paginates, excludes and unlinks absent entries, and restores source presence", async () => {
   const { root, c } = await fixture();
   try {
     const urls: string[] = [];
@@ -31,9 +31,10 @@ test("live update paginates, fetches only new details, retains links/history and
     assert.equal(state.reviews.find(r => r.id === first.source_review_id)?.evidence?.parser_version, "mypub-scholar-web/1");
     const p = await c.add({ citation_key: "local", title: "Curated", type: "other", authors: [] }); await linkScholar(c, p.id, a.id);
     const second = await updateScholar(c, transport([overview(row("b", "5"))])); assert.equal(second.added, 0);
-    state = await c.read(); assert.equal(state.gscholar_entries.find(g => g.id === a.id)?.presence, "missing"); assert.equal((await c.details(p.id)).citation_count, null); assert.equal((await c.get(p.id)).title, "Curated");
+    state = await c.read(); const absent = state.gscholar_entries.find(g => g.id === a.id)!; assert.equal(absent.presence, "absent"); assert.equal(absent.matching.policy, "excluded"); assert.equal(absent.matching.reason, "absent"); assert.equal((await c.get(p.id)).gscholar_entry_id, undefined); assert.equal((await c.details(p.id)).citation_count, null); assert.equal((await c.get(p.id)).title, "Curated");
+    const absenceReview = state.reviews.find(r => r.id === absent.matching.decision_review_id)!; assert.equal(absenceReview.proposals.some(change => change.operation === "unlink" && change.target.entity_id === p.id && change.state === "accepted"), true);
     await updateScholar(c, transport([overview(row("a", "9") + row("b", ""))]));
-    state = await c.read(); assert.equal(state.gscholar_entries.find(g => g.id === a.id)?.presence, "present"); assert.deepEqual(state.gscholar_entries.find(g => g.id === a.id)?.authors, a.authors); assert.equal((await c.details(p.id)).citation_count, 9);
+    state = await c.read(); assert.equal(state.gscholar_entries.find(g => g.id === a.id)?.presence, "present"); assert.equal(state.gscholar_entries.find(g => g.id === a.id)?.matching.policy, "excluded"); assert.deepEqual(state.gscholar_entries.find(g => g.id === a.id)?.authors, a.authors); assert.equal((await c.details(p.id)).citation_count, null);
     assert.equal(state.gscholar_entries.find(g => g.scholar_id === "profile:b")?.citation_history.at(-1)?.count, null);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
@@ -44,7 +45,7 @@ test("failed pages, detail failures, duplicate pagination, and malformed respons
     for (const pages of [[429], ["<html>recaptcha</html>"], ["<html>Login</html>"], [overview(row("b")), 500], [overview(row("a"), true), overview(row("a"))], [overview(row("a"), true), "truncated"], [overview(row("b")), "<div id=gsc_oci_title>truncated</div>"]]) {
       await assert.rejects(updateScholar(c, transport(pages))); assert.deepEqual(await c.read(), before);
     }
-    await updateScholar(c, transport([overview("")])); assert.equal((await c.read()).gscholar_entries[0]?.presence, "missing");
+    await updateScholar(c, transport([overview("")])); assert.equal((await c.read()).gscholar_entries[0]?.presence, "absent");
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 test("parser rejects ambiguous coverage and foreign IDs; keeps unknown counts and partial authors", () => {

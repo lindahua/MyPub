@@ -129,8 +129,8 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
         return json ? result : ["Google Scholar update complete.",
           `Entries observed: ${result.observed}`, `New entries added: ${result.added}`,
           `Existing entries refreshed: ${result.updated}`, `Citation counts checked: ${result.citation_checks}`,
-          `Newly missing: ${result.newly_missing}`, `Restored: ${result.restored}`,
-          `Total missing: ${result.missing.length}`].join("\n");
+          `Newly absent: ${result.newly_absent}`, `Restored: ${result.restored}`,
+          `Total absent: ${result.absent.length}`].join("\n");
       };
       else if (sub === "reconcile") action = () => reconcileScholar(c);
       else if (sub === "link" || sub === "unlink") { const pub = a.shift("publication")!, entry = a.shift(sub === "link" ? "entry" : undefined); action = () => sub === "link" ? linkScholar(c, pub, entry!) : unlinkScholar(c, pub, entry); }

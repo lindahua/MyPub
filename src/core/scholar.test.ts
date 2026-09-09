@@ -18,9 +18,13 @@ test("Scholar capture preserves source details, requires explicit matching, and 
     const result = await importScholarSnapshot(c, path); assert.equal(result.candidates[0]?.publication_ids.length, 2); assert.deepEqual(result.matched, []);
     assert.equal((await importScholarSnapshot(c, path)).source_review_id, result.source_review_id);
     const entry = (await c.read()).gscholar_entries[0]!; assert.equal(entry.publication_date, "2026/9/1"); assert.equal(entry.authors_text, "A, B, …");
-    await c.change((state) => { state.gscholar_entries[0]!.pub_type = "journal"; });
+    await c.change((state) => { state.gscholar_entries[0]!.pub_type = "software"; });
     await importScholarSnapshot(c, await snapshot(root, "2026-09-01T12:00:00Z", [{ scholar_id: "entry", title: "Shared Paper" }]));
-    assert.equal((await c.read()).gscholar_entries[0]?.pub_type, "journal");
+    assert.equal((await c.read()).gscholar_entries[0]?.pub_type, "software");
+    for (const pubType of ["tech_report", "incomplete", "unpublished"] as const) {
+      await c.change((state) => { state.gscholar_entries[0]!.pub_type = pubType; });
+      assert.equal((await c.read()).gscholar_entries[0]?.pub_type, pubType);
+    }
     await assert.rejects(c.change((state) => { (state.gscholar_entries[0] as unknown as { pub_type: string }).pub_type = "article"; }));
     await linkScholar(c, first.id, entry.id); await linkScholar(c, second.id, entry.id);
     assert.equal((await c.details(first.id)).citation_count, 12); assert.equal((await reconcileScholar(c)).shared_counts[0]?.publication_ids.length, 2);
@@ -65,14 +69,14 @@ test("exclusion requires atomic unlinking, survives refresh, and does not lose c
     await decideReview(c, pending.id, "rejected"); await assert.rejects(linkScholar(c, p.id, id)); await reopenReview(c, pending.id); await decideReview(c, pending.id, "accepted"); assert.equal((await c.get(p.id)).gscholar_entry_id, id);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
-test("only newer complete captures mark entries missing; metadata-only capture adds no count", async () => {
+test("only newer complete captures mark entries absent and exclude them; metadata-only capture adds no count", async () => {
   const { root, c } = await fixture(); try {
     await importScholarSnapshot(c, await snapshot(root, "2026-09-02T00:00:00Z", [{ scholar_id: "entry", title: "Paper", citation_count: 0 }]));
     await importScholarSnapshot(c, await snapshot(root, "2026-09-03T00:00:00Z", [])); assert.equal((await c.read()).gscholar_entries[0]?.presence, "present");
     await importScholarSnapshot(c, await snapshot(root, "2026-09-01T00:00:00Z", [], "complete")); assert.equal((await c.read()).gscholar_entries[0]?.presence, "present");
     await importScholarSnapshot(c, await snapshot(root, "2026-09-04T00:00:00Z", [{ scholar_id: "entry", title: "Paper", authors: ["Full", "List"], authors_completeness: "complete" }])); assert.equal((await c.read()).gscholar_entries[0]?.citation_history.length, 1);
-    await importScholarSnapshot(c, await snapshot(root, "2026-09-05T00:00:00Z", [], "complete")); const entry = (await c.read()).gscholar_entries[0]!; assert.equal(entry.presence, "missing"); assert.equal(entry.citation_history.at(-1)?.count, null);
-    await importScholarSnapshot(c, await snapshot(root, "2026-09-06T00:00:00Z", [{ scholar_id: "entry", title: "Paper", authors: ["Full"], authors_completeness: "partial" }])); const fresh = (await c.read()).gscholar_entries[0]!; assert.equal(fresh.presence, "present"); assert.deepEqual(fresh.authors, ["Full", "List"]);
+    await importScholarSnapshot(c, await snapshot(root, "2026-09-05T00:00:00Z", [], "complete")); const entry = (await c.read()).gscholar_entries[0]!; assert.equal(entry.presence, "absent"); assert.equal(entry.absent_since, "2026-09-05T00:00:00Z"); assert.equal(entry.matching.policy, "excluded"); assert.equal(entry.matching.reason, "absent"); assert.equal(entry.citation_history.at(-1)?.count, null);
+    await importScholarSnapshot(c, await snapshot(root, "2026-09-06T00:00:00Z", [{ scholar_id: "entry", title: "Paper", authors: ["Full"], authors_completeness: "partial" }])); const fresh = (await c.read()).gscholar_entries[0]!; assert.equal(fresh.presence, "present"); assert.equal(fresh.matching.policy, "excluded"); assert.deepEqual(fresh.authors, ["Full", "List"]);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 test("invalid citation counts roll back the whole capture", async () => {
@@ -82,6 +86,6 @@ test("an older newly discovered entry respects a previously imported complete ca
   const { root, c } = await fixture(); try {
     await importScholarSnapshot(c, await snapshot(root, "2026-09-05T00:00:00Z", [], "complete"));
     await importScholarSnapshot(c, await snapshot(root, "2026-09-01T00:00:00Z", [{ scholar_id: "old", title: "Historical Entry", citation_count: 8 }]));
-    const g = (await c.read()).gscholar_entries[0]!; assert.equal(g.presence, "missing"); assert.equal(g.missing_since, "2026-09-05T00:00:00Z"); assert.equal(g.citation_history.at(-1)?.count, null);
+    const g = (await c.read()).gscholar_entries[0]!; assert.equal(g.presence, "absent"); assert.equal(g.absent_since, "2026-09-05T00:00:00Z"); assert.equal(g.matching.policy, "excluded"); assert.equal(g.citation_history.at(-1)?.count, null);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
