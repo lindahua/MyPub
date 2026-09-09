@@ -162,11 +162,18 @@ For arXiv histories:
 - Versions run consecutively from v1 and have nondecreasing dates.
 - Each version contains its required date, title, authors, and abstract.
 - `publication_date` and `submission_date` equal the v1 date.
-- Current title, author-name sequence, and any supplied current abstract agree
+- Current title agrees
   with the latest stored version after conservative formatting normalization.
+- A supplied current abstract that differs from the latest stored abstract
+  produces a warning (`ARXIV_CURRENT_ABSTRACT`), including both values.
+- Differences between current author names and the latest stored author-name
+  sequence produce a warning (`ARXIV_CURRENT_AUTHORS`), not an error. Source
+  spelling mistakes or reviewed local corrections must not make these differences
+  blocking audit findings. The warning includes both author-name sequences.
 - `arxiv_versions` on a non-preprint is an error.
 
-Violations of these arXiv rules are errors. Complete history means through the
+Except for author-name and abstract differences, violations of these arXiv rules
+are errors. Missing required revision authors or abstract remain errors. Complete history means through the
 latest retrieved version, without asserting online freshness.
 
 Attachment auditing covers manifests and references. Downloading attachments,

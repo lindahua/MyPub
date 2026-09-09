@@ -173,7 +173,9 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     for (const [a, b] of [[p.submission_date, p.acceptance_date], [p.acceptance_date, p.publication_date]]) if (a && b && interval(a)[0] > interval(b)[1]) warn("DATE_ORDER", `Date ${b} definitely precedes ${a}`, p.id);
     const latest = p.arxiv_versions?.at(-1);
     if (latest && (!latest.title || !latest.authors || !latest.abstract)) result.skipped.push({ path: ownerRows(p.id)[0]!.path, check: "current arXiv metadata", reason: "Incomplete latest revision metadata; only available fields compared" });
-    if (latest && (latest.title && norm(p.title) !== norm(latest.title) || latest.authors && JSON.stringify(p.authors.map(a => norm(a.name))) !== JSON.stringify(latest.authors.map(norm)) || p.abstract && latest.abstract && norm(p.abstract) !== norm(latest.abstract))) add("ARXIV_CURRENT_VERSION", "error", "Current metadata disagrees with latest stored arXiv version", ownerRows(p.id), "/arxiv_versions");
+    if (latest?.title && norm(p.title) !== norm(latest.title)) add("ARXIV_CURRENT_VERSION", "error", "Current title disagrees with latest stored arXiv version", ownerRows(p.id), "/title");
+    if (p.abstract && latest?.abstract && norm(p.abstract) !== norm(latest.abstract)) add("ARXIV_CURRENT_ABSTRACT", "warning", "Current abstract disagrees with latest stored arXiv version", ownerRows(p.id), "/abstract", { current: p.abstract, latest: latest.abstract });
+    if (latest?.authors && JSON.stringify(p.authors.map(a => norm(a.name))) !== JSON.stringify(latest.authors.map(norm))) add("ARXIV_CURRENT_AUTHORS", "warning", "Current author names disagree with latest stored arXiv version", ownerRows(p.id), "/authors", { current: p.authors.map(a => a.name), latest: latest.authors });
   }
   for (const g of state.gscholar_entries) {
     if (g.matching.policy !== "excluded") {

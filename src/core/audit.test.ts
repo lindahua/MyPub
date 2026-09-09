@@ -93,6 +93,34 @@ test("precision, archived completeness, current revisions and independent compar
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("current arXiv author and abstract differences warn independently of title errors", async () => {
+  const f = await fixture(); try {
+    const p = JSON.parse(await readFile(f.path(f.p.id), "utf8"));
+    p.arxiv_versions[1].authors = ["Jane Doee"];
+    await writeFile(f.path(f.p.id), JSON.stringify(p));
+    let r = await f.c.audit();
+    const warning = r.findings.find(x => x.code === "ARXIV_CURRENT_AUTHORS");
+    assert.equal(warning?.severity, "warning");
+    assert.deepEqual(warning?.values, { current: ["Jane Doe"], latest: ["Jane Doee"] });
+    assert.equal(r.errors, 0); assert.equal(cli(f.root).status, 0);
+    for (const field of ["abstract", "title"]) {
+      const changed = { ...p, [field]: "Different current text" };
+      await writeFile(f.path(f.p.id), JSON.stringify(changed));
+      r = await f.c.audit();
+      assert.ok(r.findings.some(x => x.code === "ARXIV_CURRENT_AUTHORS" && x.severity === "warning"));
+      if (field === "abstract") {
+        const abstract = r.findings.find(x => x.code === "ARXIV_CURRENT_ABSTRACT");
+        assert.equal(abstract?.severity, "warning");
+        assert.deepEqual(abstract?.values, { current: "Different current text", latest: "New" });
+        assert.equal(r.errors, 0); assert.equal(cli(f.root).status, 0);
+      } else {
+        assert.ok(r.findings.some(x => x.code === "ARXIV_CURRENT_VERSION" && x.severity === "error"));
+        assert.equal(cli(f.root).status, 4);
+      }
+    }
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("incomplete revision metadata is reported without aborting other comparisons", async () => {
   const f = await fixture(); try {
     const p = JSON.parse(await readFile(f.path(f.p.id), "utf8"));
