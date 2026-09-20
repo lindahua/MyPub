@@ -29,7 +29,7 @@ test("imports are idempotent and accepted through durable review", async () => {
     const catalog = new Catalog({ root }); await catalog.initialize(); const path = join(root, "source.bib");
     await writeFile(path, "@article{hopper2024,\n title={Compiler Notes},\n author={Grace Hopper},\n year={2024},\n doi={10.1000/compiler}\n}\n", "utf8");
     const first = await importFile(catalog, path); const second = await importFile(catalog, path); assert.deepEqual(second.review_ids, first.review_ids); assert.equal(second.duplicates, 1);
-    const review = (await listReviews(catalog, "pending"))[0]!; await decideReview(catalog, review.id, "accepted"); assert.equal((await catalog.list()).length, 1); assert.equal((await listReviews(catalog, "accepted")).length, 1);
+    const review = (await listReviews(catalog, "pending"))[0]!; await decideReview(catalog, review.id, "accepted"); assert.equal((await catalog.list()).length, 1); assert.equal((await listReviews(catalog, "accepted")).length, 2);
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
@@ -102,8 +102,9 @@ test("arXiv imports stay separate from conferences and refresh historical and cu
     const input = { citation_key: "arxiv_2501_12345", type: "preprint", title: "Paper", authors: [{ name: "Ada" }, { name: "Bob" }], identifiers: { arxiv: "2501.12345" }, publication_date: "2025-01-01", submission_date: "2025-01-01", arxiv_versions: [{ version: 1, submission_date: "2025-01-01", title: "Paper", authors: ["Ada", "Bob"], abstract: "Original" }] };
     await writeFile(file, JSON.stringify(input)); const first = await importFile(c, file); await decideReview(c, first.review_ids[0]!, "accepted");
     assert.equal((await c.list()).length, 2);
+    const bob = (await c.get("2501.12345")).authors[1]!;
     const changed = { ...input, authors: [{ name: "Bob" }], arxiv_versions: [...input.arxiv_versions, { version: 2, submission_date: "2026-01-01", title: "Paper", authors: ["Bob"], abstract: "Revised" }] };
     await writeFile(file, JSON.stringify(changed)); const update = await importFile(c, file); await decideReview(c, update.review_ids[0]!, "accepted");
-    const result = await c.get("2501.12345"); assert.deepEqual(result.authors, [{ name: "Bob" }]); assert.equal(result.arxiv_versions?.length, 2); assert.equal(result.publication_date, "2025-01-01");
+    const result = await c.get("2501.12345"); assert.deepEqual(result.authors, [bob]); assert.equal(result.arxiv_versions?.length, 2); assert.equal(result.publication_date, "2025-01-01");
   } finally { await rm(root, { recursive: true, force: true }); }
 });

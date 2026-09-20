@@ -185,7 +185,7 @@ There is no publication `status` field in version 2. Do not substitute a require
 | Field | Presence and form | Semantics |
 | --- | --- | --- |
 | `name` | required non-empty string | Name exactly accepted for this publication. It remains authoritative even when `author_id` is present. |
-| `author_id` | optional UUID | Confirmed link to an author identity. Absence means unresolved, not “no identity exists.” |
+| `author_id` | optional UUID | Accepted link to an author identity, including links made under the user-approved automatic name policy in DESIGN.md. Absence means unresolved, not “no identity exists.” |
 | `name_parts` | optional name-parts object | Reviewed structure of this credited form, not the identity's preferred form. |
 | `roles` | optional array of unique role enums | Any of `co_first`, `corresponding`, `co_last`, `equal_contributor`. Omission and `[]` both mean no special role recorded, not verified absence. Writers omit an empty array. |
 | `equal_contribution_group` | optional non-empty string | Publication-local opaque label grouping equal-contribution credits. It conveys no first/last role. At least two credits should share a used label. |
@@ -313,7 +313,7 @@ Path: `catalog/authors/<surname-bucket>/<surname-first-slug>_<uuid-prefix>.json`
 | Field | Presence and form | Semantics |
 | --- | --- | --- |
 | `schema_version` | required integer `2` | Author schema version. |
-| `id` | required UUID | Immutable person identity. Equal names never imply equal IDs. |
+| `id` | required UUID | Immutable person identity. Equal names can belong to different IDs; the automatic enrollment policy may reuse a unique matching identity, subject to later user correction. |
 | `author_key` | required key string | Unique stable CLI handle. |
 | `preferred_name` | required non-empty string | Natural-order display name for the identity. It does not rewrite publication credits. |
 | `name_parts` | optional name-parts object | Reviewed structure of `preferred_name`, used for filing and identity-level formatting. |

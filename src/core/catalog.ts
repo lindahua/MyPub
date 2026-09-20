@@ -10,6 +10,7 @@ import { catalogFiles } from "./paths.js";
 import { loadState, recoverTransactions, refreshStoredDatabase, writeState } from "./storage.js";
 import { assertUnchangedEvidence, resolveIdentity, validateState } from "./validation.js";
 import { auditRepository } from "./audit.js";
+import { resolvePublicationAuthors } from "./author-resolution.js";
 import { MyPubError } from "./errors.js";
 import { databasePath, listDatabase, readDatabaseState } from "../adapters/database.js";
 
@@ -121,7 +122,8 @@ export class Catalog {
     });
   }
   async details(ref: string): Promise<PublicationDetails> { const s = await this.read(); const publication = findPublication(s, ref); const counts = citationCounts(s, publication); return { publication, record_revision: fingerprint(publication), citation_count: currentCitations(s, publication), citation_counts: counts, citation_count_potentially_overlapping: counts.length > 1, incoming_relations: s.publications.flatMap((p) => p.relations.filter((r) => r.target_id === publication.id).map((r) => ({ source_id: p.id, source_title: p.title, type: r.type, label: r.type === "published_version_of" ? "Published version" : r.type === "extends" ? "Extended by" : "Related publication", ...(r.note ? { note: r.note } : {}) }))) }; }
-  async add(input: AddPublicationInput): Promise<Publication> { return this.change((s) => { const p = publicationFromInput(input); s.publications.push(p); return p; }); }
+  async add(input: AddPublicationInput): Promise<Publication> { return this.change((s) => { const p = publicationFromInput(input); s.publications.push(p); resolvePublicationAuthors(s, [p]); return p; }); }
+  async resolveAuthors(): Promise<ReturnType<typeof resolvePublicationAuthors>> { return this.change(s => resolvePublicationAuthors(s, s.publications)); }
   async update(ref: string, patch: Partial<Omit<Publication, "schema_version" | "id" | "created_at">>, expected?: string): Promise<Publication> {
     return this.change((s) => { const p = findPublication(s, ref); if (expected && fingerprint(p) !== expected) throw new MyPubError("Publication changed", "STALE_REVISION"); for (const field of ["id", "schema_version", "created_at", "updated_at", "status", "dates"]) if (Object.hasOwn(patch, field)) throw new MyPubError(`Cannot update ${field}`, "SCHEMA_INVALID"); const updated = clean({ ...p, ...patch }); if (updated.identifiers?.doi) updated.identifiers.doi = normalizeDoi(updated.identifiers.doi); if (updated.identifiers?.arxiv) updated.identifiers.arxiv = normalizeArxiv(updated.identifiers.arxiv); touch(updated); s.publications[s.publications.indexOf(p)] = updated; return updated; });
   }

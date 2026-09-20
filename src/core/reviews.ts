@@ -4,6 +4,7 @@ import { fingerprint, now, uuid } from "./utils.js";
 import { MyPubError } from "./errors.js";
 import { applyNative } from "./native.js";
 import { reviewState } from "./validation.js";
+import { resolvePublicationAuthors } from "./author-resolution.js";
 
 export const targetCollection = { publication: "publications", author: "authors", venue: "venues", gscholar_entry: "gscholar_entries" } as const;
 export function targetRecord(s: CatalogState, target: ReviewTarget): unknown {
@@ -104,7 +105,14 @@ export async function decideReview(c: Catalog, id: string, state: Exclude<Propos
     const selected = r.proposals.filter((p) => (!proposalIds || proposalIds.includes(p.id)) && ["pending", "deferred"].includes(p.state));
     if (r.proposals.length && !selected.length || !r.proposals.length && ["accepted", "rejected"].includes(r.state)) throw new MyPubError("Review is already decided", "REVIEW_DECIDED");
     if (proposalIds?.some((id) => !selected.some((p) => p.id === id))) throw new MyPubError("Unknown or already decided proposal", "REVIEW_DECIDED");
-    if (state === "accepted") { if (r.evidence?.provider === "mypub-native") applyNative(s, r.evidence.payload); else applyProposals(s, selected); }
+    if (state === "accepted") {
+      if (r.evidence?.provider === "mypub-native") applyNative(s, r.evidence.payload);
+      else {
+        applyProposals(s, selected);
+        const created = new Set(selected.filter(p => p.operation === "create" && p.target.entity_type === "publication").map(p => p.target.entity_id));
+        resolvePublicationAuthors(s, s.publications.filter(p => created.has(p.id)));
+      }
+    }
     for (const p of selected) { p.state = state; if (state === "deferred") delete p.decided_at; else p.decided_at = now(); if (note) p.decision_note = note; }
     r.state = r.proposals.length ? reviewState(r) : state;
     if (r.state === "accepted" || r.state === "rejected") r.decided_at = now(); else delete r.decided_at;

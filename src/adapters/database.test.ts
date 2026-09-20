@@ -6,14 +6,14 @@ import { mkdtemp, mkdir, readFile, readdir, rename, rm, stat, utimes, writeFile 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Catalog } from "../core/catalog.js";
-import { addAuthor, addVenue, configureOwner, mergeIdentity, updateIdentity } from "../core/identities.js";
+import { addAuthor, addVenue, configureOwner, mergeIdentity, updateIdentity, unlinkCredit } from "../core/identities.js";
 import { importScholarSnapshot, linkScholar } from "../core/scholar.js";
 import { importFile } from "../core/imports.js";
 import { decideReview } from "../core/reviews.js";
 import { backup, restore } from "../core/backup.js";
 import { commit, initializeGit, sync } from "../core/sync.js";
 import { catalogFiles } from "../core/paths.js";
-import { atomicWriteJson, now, sha256, uuid } from "../core/utils.js";
+import { atomicWriteJson, fingerprint, now, sha256, uuid } from "../core/utils.js";
 import { MyPubError } from "../core/errors.js";
 import { databasePath } from "./database.js";
 import { run } from "./process.js";
@@ -73,7 +73,8 @@ test("SQL filters preserve exact identity, role, text, date and archive semantic
   const b = await addAuthor(c, { author_key: "b", preferred_name: "Person Two" });
   const v = await addVenue(c, { venue_key: "v", preferred_name: "Named Venue", kind: "conference", aliases: ["Venue Alias"] });
   const p = await c.add({ ...input, title: "Unicode École 100% _ ?", authors: [{ name: "First", author_id: b.id }, { name: "Second", author_id: a.id, roles: ["co_first", "corresponding"] }], venue: { name: "Printed Venue", venue_id: v.id }, publication_date: "2026", tags: ["Tag One"], identifiers: { doi: "10.1000/example" } });
-  await c.add({ ...input, citation_key: "unresolved", authors: [{ name: "Person One" }], venue: { name: "Printed Venue" }, issued_date: "2025" });
+  const unresolved = await c.add({ ...input, citation_key: "unresolved", authors: [{ name: "Person One" }], venue: { name: "Printed Venue" }, issued_date: "2025" });
+  await unlinkCredit(c, unresolved.id, 1, fingerprint(unresolved));
   assert.deepEqual((await c.list({ author: a.author_key, role: "first" })).map(p => p.id), [p.id]);
   assert.equal((await c.list({ author: a.id, role: "first_listed" })).length, 0);
   assert.equal((await c.list({ author: b.id, role: "corresponding" })).length, 0);

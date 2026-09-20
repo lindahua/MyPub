@@ -1,5 +1,14 @@
 # MyPub
 
+Author identities are resolved automatically when adding a publication or accepting
+a new publication import: a unique name match is linked; otherwise, when there is
+no match, a new identity is created. Existing links are preserved. Multiple matches
+and repeated-name byline conflicts remain unresolved for examination. Run
+`mypub author resolve` to apply this policy to existing active publications.
+Matching uses preferred names, aliases, and linked credit spellings, ignoring case
+and whitespace (not initials, punctuation, or accents). Decisions are saved as
+accepted identity reviews. Native catalog imports preserve their original links.
+
 MyPub is a local-first publication catalog with a reusable TypeScript API and the `mypub` command-line interface. Curated records live as readable, versioned JSON; attachments use repository-relative paths tracked by Git LFS; machine-local state and the integrated SQLite read model live under Git-ignored `local/`.
 
 ## Requirements

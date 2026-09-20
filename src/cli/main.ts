@@ -37,6 +37,7 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   author|venue list|show ID|add --json-file FILE|update ID --json-file FILE
   author|venue archive ID|restore ID|merge SOURCE TARGET [--apply]
   author unresolved | venue unresolved
+  author resolve
   author credit PUBLICATION POSITION --json-file FILE --expected-revision HASH
   author unlink PUBLICATION POSITION --expected-revision HASH
   venue link PUBLICATION VENUE | venue unlink PUBLICATION
@@ -112,6 +113,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     case "author": case "venue": {
       const kind = command, sub = a.shift("action")!;
       if (sub === "list") action = async () => (await c.read())[kind === "author" ? "authors" : "venues"];
+      else if (kind === "author" && sub === "resolve") action = () => c.resolveAuthors();
       else if (sub === "unresolved") action = async () => (await c.read()).publications.flatMap(p => kind === "author" ? p.authors.flatMap((credit, position) => credit.author_id ? [] : [{ publication_id: p.id, position, name: credit.name }]) : p.venue && !p.venue.venue_id ? [{ publication_id: p.id, name: p.venue.name }] : []);
       else if (sub === "add") { const file = a.take("--json-file") ?? usage("add requires --json-file"); action = async () => kind === "author" ? addAuthor(c, await jsonFile(file)) : addVenue(c, await jsonFile(file)); }
       else if (sub === "merge") { const source = a.shift("source")!, target = a.shift("target")!, apply = a.takeFlag("--apply"); action = () => mergeIdentity(c, kind, source, target, apply); }
