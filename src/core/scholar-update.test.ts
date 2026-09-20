@@ -59,6 +59,7 @@ test("parser rejects ambiguous coverage and foreign IDs; keeps unknown counts an
 });
 test("network errors are actionable and profile setup is required before requests", async () => {
   const get = scholarFetcher({ fetch: async () => { throw new Error("offline"); } }); await assert.rejects(get("https://scholar.google.com"), /request failed: offline/);
+  const blocked = scholarFetcher({ fetch: async () => new Response("", { status: 302, headers: { location: "https://www.google.com/sorry/index" } }) }); await assert.rejects(blocked("https://scholar.google.com"), (error: unknown) => error instanceof Error && error.message === "Google Scholar blocked the request. Retry later.");
   const root = await mkdtemp(join(tmpdir(), "mypub-no-profile-"));
   try { const c = new Catalog({ root }); await c.initialize(); await assert.rejects(updateScholar(c, transport([])), /Configure the owner/); } finally { await rm(root, { recursive: true, force: true }); }
 });
