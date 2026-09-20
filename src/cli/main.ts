@@ -59,18 +59,22 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   sync [--message TEXT] | status [--details] | history [RECORD_UUID]
   conflicts [ID --choice ours|theirs [--file FILE]]
   export --format bibtex|csv|json [--output FILE] [filters]
-  validate [--skip-attachments] | audit [--details] | audit acknowledge FINGERPRINT --reason TEXT
+  validate [--skip-attachments]
+  audit [--details] [--json]
+  audit acknowledge FINGERPRINT --reason TEXT
   recover | repair-paths
   backup DESTINATION [--files-only] | restore SOURCE | index rebuild
 
 Commit saves all managed edits locally without network access. Sync requires a clean tree and a remote upstream; its --message applies only to merge commits.
+
+Audit checks publications, Google Scholar entries, and their links offline without modifying the catalog. --details includes comparison values; --json returns the full report.
 
 Repository: --root overrides ~/.config/mypub/config.json repo_path; otherwise use the current directory.
 
 Filters: --year YYYY --venue ID_OR_NAME --author UUID_OR_KEY --role ROLE
          --type TYPE --tag TAG --include-archived
 Credit positions are one-based. show returns record_revision for credit edits. Metadata lookups stage reviews for acceptance.
-Only schema version 2 is supported. Electron is planned for a later phase.`;
+Only schema version 2 is supported. Launch the desktop viewer with mypub-view.`;
 class Args {
   constructor(public values: string[]) {}
   takeFlag(name: string): boolean { const i = this.values.indexOf(name); if (i < 0) return false; this.values.splice(i, 1); return true; }
