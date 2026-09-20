@@ -77,8 +77,8 @@ export class LibraryService {
   private debounce: ReturnType<typeof setTimeout> | undefined;
   private poll: ReturnType<typeof setInterval> | undefined;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
-  private running = false;
-  private queued = false;
+  private operations: Promise<void> = Promise.resolve();
+  private pendingRefresh: Promise<void> | undefined;
   private stopped = false;
   private lastFingerprint = "";
   constructor(
@@ -114,13 +114,25 @@ export class LibraryService {
     this.state = { ...this.state, ...patch };
     this.emit(this.state);
   }
-  async refresh(): Promise<void> {
+  private enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    const result = this.operations.then(operation);
+    this.operations = result.then(
+      () => {},
+      () => {},
+    );
+    return result;
+  }
+  refresh(): Promise<void> {
+    // Coalesce requests still waiting in the queue, but a request during an
+    // active inspection needs a subsequent inspection to observe new changes.
+    this.pendingRefresh ??= this.enqueue(async () => {
+      this.pendingRefresh = undefined;
+      await this.refreshNow();
+    });
+    return this.pendingRefresh;
+  }
+  private async refreshNow(): Promise<void> {
     if (this.stopped) return;
-    if (this.running) {
-      this.queued = true;
-      return;
-    }
-    this.running = true;
     try {
       // Never initialize a catalog merely because a folder was selected.
       await access(join(this.catalog.root, "catalog/library.json"));
@@ -191,12 +203,6 @@ export class LibraryService {
         if (this.retryTimer) clearTimeout(this.retryTimer);
         this.retryTimer = setTimeout(() => void this.refresh(), 1000);
       }
-    } finally {
-      this.running = false;
-      if (this.queued && !this.stopped) {
-        this.queued = false;
-        this.schedule();
-      }
     }
   }
   async action(
@@ -205,6 +211,17 @@ export class LibraryService {
     publicationId: string,
     attachmentId?: string,
   ): Promise<string> {
+    return this.enqueue(() =>
+      this.actionNow(action, libraryId, publicationId, attachmentId),
+    );
+  }
+  private async actionNow(
+    action: "citation" | "attachment",
+    libraryId: string,
+    publicationId: string,
+    attachmentId?: string,
+  ): Promise<string> {
+    if (this.stopped) throw new Error("Library changed or closed");
     // Resolve against fresh canonical data, not a stale renderer-supplied path.
     const state = await this.catalog.read();
     if (state.library.id !== libraryId)

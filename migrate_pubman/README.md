@@ -74,10 +74,17 @@ python3 migrate_pubman/scripts/snapshot_supabase.py \
   --output /Users/dhlin/Temp/pubman_tmp/pubman.sqlite
 ```
 
+The snapshot dependencies require **Python 3.10 or newer**. The system Python 3.9 on older macOS installations cannot install the pinned Psycopg release. Create an isolated environment with a supported interpreter (Python 3.12 shown):
+
+```sh
+python3.12 -m venv migrate_pubman/.venv
+migrate_pubman/.venv/bin/python -m pip install -r migrate_pubman/requirements.txt
+```
+
 Offline helper tests:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s migrate_pubman/tests -v
+PYTHONDONTWRITEBYTECODE=1 migrate_pubman/.venv/bin/python -m unittest discover -s migrate_pubman/tests -v
 ```
 
 All four tests passed. Future migration analysis should open the baseline SQLite file read-only. Put derived reports or a separate working copy in the same temporary workspace; do not modify the verified snapshot or rerun against live Supabase unless a refreshed snapshot is explicitly needed. No source-edit freeze was claimed or enforced by this export: if PubMan2 changes after this timestamp, decide whether to take a new snapshot before conversion/cutover.

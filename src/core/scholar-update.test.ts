@@ -4,6 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { Catalog } from "./catalog.js";
+import { MyPubError } from "./errors.js";
 import { addAuthor, configureOwner } from "./identities.js";
 import { backfillScholarDetails, updateScholar } from "./scholar-update.js";
 import { importScholarSnapshot, linkScholar } from "./scholar.js";
@@ -85,6 +86,26 @@ test("detail backfill enriches existing unknown entries in durable, resumable ba
     assert.equal(state.gscholar_entries.find(entry => entry.scholar_id.endsWith(":b"))?.authors_completeness, "partial");
     assert.equal(state.reviews.filter(review => review.evidence?.parser_version === "mypub-scholar-detail-backfill/1").length, 2);
     assert.equal((await backfillScholarDetails(c, transport([]))).processed, 0);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("relative block redirects stop backfill without retrying or saving the active batch", async () => {
+  const { root, c } = await fixture();
+  try {
+    const path = join(root, "unknown.json");
+    await writeFile(path, JSON.stringify({ profile_id: "profile", captured_at: "2026-09-01T00:00:00Z", entries: [
+      { scholar_id: "a", title: "A" }, { scholar_id: "b", title: "B" }, { scholar_id: "c", title: "C" }
+    ] }));
+    await importScholarSnapshot(c, path);
+    const before = await c.read();
+    for (const location of ["/sorry/index?continue=x", "//www.google.com/sorry/index", "https://www.google.com/sorry/index"]) {
+      let requests = 0;
+      await assert.rejects(backfillScholarDetails(c, { sleep: async () => {}, fetch: async () => {
+        requests++;
+        return requests === 1 ? new Response(detail) : new Response("", { status: 302, headers: { location } });
+      } }), (error: unknown) => error instanceof MyPubError && error.code === "SCHOLAR_BLOCKED");
+      assert.equal(requests, 2);
+      assert.deepEqual(await c.read(), before);
+    }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 test("sparse detail evidence retains a fuller existing author array and its unknown completeness", async () => {

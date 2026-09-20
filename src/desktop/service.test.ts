@@ -12,6 +12,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { setTimeout as delay } from "node:timers/promises";
 import { Catalog } from "../core/catalog.js";
+import { MyPubError } from "../core/errors.js";
 import { LibraryService, relevantChange } from "./service.js";
 import type { DesktopState } from "./types.js";
 async function setup(t: test.TestContext) {
@@ -69,7 +70,22 @@ test("watches canonical edits, database replacement/deletion, and recovers from 
       service.state.snapshot?.paths[paper.id]?.endsWith("_renamed.json") ===
       true,
   );
-  await catalog.rebuildIndex();
+  // This separate catalog client can legitimately contend with the watcher;
+  // external callers retry CATALOG_LOCKED just as the CLI workflow requires.
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await catalog.rebuildIndex();
+      break;
+    } catch (error) {
+      if (
+        !(error instanceof MyPubError) ||
+        error.code !== "CATALOG_LOCKED" ||
+        attempt >= 50
+      )
+        throw error;
+      await delay(20);
+    }
+  }
   await rm(join(root, "local/index.sqlite"));
   await until(() => service.state.status === "current");
   await service.refresh();
@@ -101,6 +117,7 @@ test("wrong folders are never initialized and no watcher loop follows local outp
 });
 test("file opening rejects LFS pointers, missing binaries and escaping symlinks; citations use the core exporter", async (t) => {
   const { root, catalog, paper, service } = await setup(t);
+  service.setActive(false);
   const source = join(root, "source.pdf");
   await writeFile(source, "%PDF test");
   const a = await catalog.addAttachment(paper.id, source, "paper");
@@ -135,4 +152,55 @@ test("file opening rejects LFS pointers, missing binaries and escaping symlinks;
     service.action("citation", "different", paper.id),
     /library changed/,
   );
+});
+test("refreshes and actions serialize, await fresh state, and recover after rejection", async (t) => {
+  const { paper, service } = await setup(t);
+  service.setActive(false);
+  const library = service.state.snapshot!.state.library.id;
+  const snapshot = service.catalog.snapshot.bind(service.catalog);
+  let enter!: () => void;
+  const entered = new Promise<void>((resolve) => {
+    enter = resolve;
+  });
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let snapshots = 0;
+  t.mock.method(service.catalog, "snapshot", async () => {
+    snapshots++;
+    if (snapshots === 1) {
+      enter();
+      await gate;
+    }
+    return snapshot();
+  });
+  const first = service.refresh();
+  await entered;
+  let actionFinished = false,
+    refreshFinished = false;
+  const action = service.action("citation", library, paper.id).then((value) => {
+    actionFinished = true;
+    return value;
+  });
+  const second = service.refresh().then(() => {
+    refreshFinished = true;
+  });
+  await delay(20);
+  assert.equal(actionFinished, false);
+  assert.equal(refreshFinished, false);
+  release();
+  await Promise.all([first, second]);
+  assert.match(await action, /@article\{one/);
+  assert.equal(snapshots, 2);
+  await assert.rejects(
+    service.action("citation", "different", paper.id),
+    /library changed/,
+  );
+  assert.match(
+    await service.action("citation", library, paper.id),
+    /@article\{one/,
+  );
+  service.stop();
+  await assert.rejects(service.action("citation", library, paper.id), /closed/);
 });

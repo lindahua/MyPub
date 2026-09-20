@@ -96,8 +96,8 @@ export function scholarFetcher(options: ScholarTransportOptions = {}): (url: str
     try {
       const response = await (options.fetch ?? globalThis.fetch)(url, { signal: AbortSignal.timeout(30_000), redirect: "manual", headers: { "Accept": "text/html", "Accept-Language": "en-US,en;q=0.9" } });
       if (response.status >= 300 && response.status < 400) {
-        const location = response.headers.get("location") ?? "";
-        if (/google\.[^/]+\/sorry\//i.test(location)) throw new MyPubError("Google Scholar blocked the request. Retry later.", "SCHOLAR_BLOCKED");
+        const location = new URL(response.headers.get("location") ?? "", url);
+        if (/(^|\.)google\.[a-z.]+$/i.test(location.hostname) && location.pathname.startsWith("/sorry/")) throw new MyPubError("Google Scholar blocked the request. Retry later.", "SCHOLAR_BLOCKED");
         throw new MyPubError(`Google Scholar returned an unexpected redirect (HTTP ${response.status})`, "SCHOLAR_FETCH");
       }
       if ([403, 429, 503].includes(response.status)) throw new MyPubError(`Google Scholar blocked the request (HTTP ${response.status}). Retry later.`, "SCHOLAR_BLOCKED");
