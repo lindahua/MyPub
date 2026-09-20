@@ -15,7 +15,7 @@ import { commit, initializeGit, listConflicts, resolveConflict, status, sync } f
 import { lookupArxiv, lookupDoi } from "../adapters/metadata.js";
 import { run } from "../adapters/process.js";
 import { rebuildSearchIndex } from "../adapters/search.js";
-import { updateScholar } from "../core/scholar-update.js";
+import { backfillScholarDetails, updateScholar } from "../core/scholar-update.js";
 import { correctScholarEntry, importScholarSnapshot, linkScholar, matchingPolicy, reconcileScholar, releaseScholarCorrection, unlinkScholar } from "../core/scholar.js";
 import { addAuthor, addVenue, updateIdentity, archiveIdentity, identityDetails, updateCredit, unlinkCredit, linkVenue, mergeIdentity, configureOwner } from "../core/identities.js";
 import { history } from "../core/history.js";
@@ -48,6 +48,7 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   review list [--state STATE] | show ID | accept|reject|defer ID [--proposal ID]
   review reopen ID [--proposal ID]
   gscholar update
+  gscholar backfill-details [--limit N] [--batch-size N]
   gscholar import FILE [--coverage complete|partial|unknown] [--observed-at TIME]
   gscholar reconcile | link PUBLICATION ENTRY | unlink PUBLICATION [ENTRY]
   gscholar correct ENTRY --json-file FILE --reason TEXT
@@ -136,6 +137,15 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
           `Newly absent: ${result.newly_absent}`, `Restored: ${result.restored}`,
           `Total absent: ${result.absent.length}`].join("\n");
       };
+      else if (sub === "backfill-details") {
+        const limitText = a.take("--limit"), batchText = a.take("--batch-size");
+        const positive = (value: string | undefined, name: string): number | undefined => { if (value === undefined) return undefined; if (!/^[1-9]\d*$/.test(value) || !Number.isSafeInteger(Number(value))) usage(`${name} must be a positive integer`); return Number(value); };
+        const limit = positive(limitText, "limit"), batchSize = positive(batchText, "batch-size");
+        action = async () => {
+          const result = await backfillScholarDetails(c, { ...(limit === undefined ? {} : { limit }), ...(batchSize === undefined ? {} : { batchSize }), onProgress: message => process.stderr.write(`${message}\n`) });
+          return json ? result : ["Google Scholar detail backfill complete.", `Entries eligible before limit: ${result.candidates}`, `Entries processed: ${result.processed}`, `Transiently failed entries: ${result.failed}`, `Complete author lists: ${result.complete}`, `Known partial author lists: ${result.partial}`, `Author completeness still unknown: ${result.unknown}`, `Entries remaining: ${result.remaining}`, `Batches saved: ${result.batches}`].join("\n");
+        };
+      }
       else if (sub === "reconcile") action = () => reconcileScholar(c);
       else if (sub === "correct") { const id = a.shift("entry")!, file = a.take("--json-file") ?? usage("gscholar correct requires --json-file"), reason = a.take("--reason") ?? usage("gscholar correct requires --reason"); action = async () => correctScholarEntry(c, id, await jsonFile(file), reason); }
       else if (sub === "correction") { if (a.shift("correction action") !== "release") usage("gscholar correction action must be release"); const id = a.shift("entry")!, field = a.shift("field")!, reason = a.take("--reason") ?? usage("gscholar correction release requires --reason"); action = () => releaseScholarCorrection(c, id, field, reason); }

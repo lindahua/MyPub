@@ -47,6 +47,7 @@ export interface ScholarSnapshotInput {
   rows: Record<string, unknown>[]; payload: unknown; profileId: string | undefined;
   captured: string; totals?: unknown; coverage: Coverage; sourceReference: string;
   parserVersion?: string;
+  proposeMatches?: boolean;
 }
 export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInput): Promise<ScholarReconciliation> {
   const { rows, payload, profileId, captured, totals, coverage } = input;
@@ -79,7 +80,14 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
         if (typeof names === "string") { if (names.trim().startsWith("[")) names = JSON.parse(names); else { if (!protectedField("authors_text")) g.authors_text = names; names = undefined; } }
         const completeness = row.authors_completeness ?? "unknown";
         if (!["complete", "partial", "unknown"].includes(String(completeness))) throw new MyPubError("Invalid authors completeness", "IMPORT_INVALID");
-        if (names !== undefined) { if (!Array.isArray(names) || !names.every((n) => typeof n === "string" && !!n.trim() && !["...", "…"].includes(n.trim()))) throw new MyPubError("Invalid source author array", "IMPORT_INVALID"); if (!protectedField("authors") && (g.authors_completeness !== "complete" || completeness === "complete")) { g.authors = names as string[]; g.authors_completeness = completeness as Coverage; } }
+        if (names !== undefined) {
+          if (!Array.isArray(names) || !names.every((n) => typeof n === "string" && !!n.trim() && !["...", "…"].includes(n.trim()))) throw new MyPubError("Invalid source author array", "IMPORT_INVALID");
+          const incoming = names as string[];
+          const sparse = completeness !== "complete" && g.authors.length > incoming.length;
+          if (!protectedField("authors") && (completeness === "complete" || (g.authors_completeness !== "complete" && !sparse))) {
+            g.authors = incoming; g.authors_completeness = completeness as Coverage;
+          }
+        }
         if (g.presence !== "absent" || !g.absent_since || Date.parse(captured) >= Date.parse(g.absent_since)) { g.presence = "present"; delete g.absent_since; }
         g.last_seen_at = captured; g.source_review_id = source.id;
       }
@@ -115,7 +123,7 @@ export async function applyScholarSnapshot(c: Catalog, input: ScholarSnapshotInp
       } else if (g.presence === "absent") { g.presence = "present"; delete g.absent_since; touch(g); }
     }
     const result = reconcileState(s);
-    const proposals: Proposal[] = result.candidates.flatMap((candidate) => candidate.publication_ids.flatMap((publicationId) => {
+    const proposals: Proposal[] = input.proposeMatches === false ? [] : result.candidates.flatMap((candidate) => candidate.publication_ids.flatMap((publicationId) => {
       if (s.reviews.some((r) => r.proposals.some((p) => ["pending", "deferred"].includes(p.state) && p.target.entity_id === publicationId && p.path === "/gscholar_entry_id" && (p.proposed === candidate.entry_id || p.candidate_ids?.includes(candidate.entry_id))))) return [];
       const p = s.publications.find((p) => p.id === publicationId)!; const current = p.gscholar_entry_id; const proposed = scholarLinkValue([...scholarEntryIds(p), candidate.entry_id]); return [{ id: uuid(), target: { entity_type: "publication" as const, entity_id: p.id }, operation: "link" as const, path: "/gscholar_entry_id", expected_revision: fingerprint(p), ...(current !== undefined ? { current: clean(current) } : {}), proposed, candidate_ids: [candidate.entry_id], state: "pending" as const }];
     }));

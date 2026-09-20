@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { Catalog } from "./catalog.js";
 import { addAuthor, configureOwner } from "./identities.js";
-import { updateScholar } from "./scholar-update.js";
-import { linkScholar } from "./scholar.js";
+import { backfillScholarDetails, updateScholar } from "./scholar-update.js";
+import { importScholarSnapshot, linkScholar } from "./scholar.js";
 import { parseScholarDetail, parseScholarOverview, scholarFetcher } from "../adapters/scholar.js";
 
 const row = (id: string, citations = "1,234") => `<tr class="gsc_a_tr"><td><a class="gsc_a_at" href="/citations?citation_for_view=profile:${id}">Paper &amp; ${id}</a><div class="gs_gray">A, …</div><div class="gs_gray">Overview venue</div></td><td><a class="gsc_a_ac">${citations}</a></td><td class="gsc_a_y"><span>2026</span></td></tr>`;
@@ -61,4 +61,40 @@ test("network errors are actionable and profile setup is required before request
   const get = scholarFetcher({ fetch: async () => { throw new Error("offline"); } }); await assert.rejects(get("https://scholar.google.com"), /request failed: offline/);
   const root = await mkdtemp(join(tmpdir(), "mypub-no-profile-"));
   try { const c = new Catalog({ root }); await c.initialize(); await assert.rejects(updateScholar(c, transport([])), /Configure the owner/); } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("detail backfill enriches existing unknown entries in durable, resumable batches", async () => {
+  const { root, c } = await fixture();
+  try {
+    const path = join(root, "unknown.json");
+    await writeFile(path, JSON.stringify({ profile_id: "profile", captured_at: "2026-09-01T00:00:00Z", entries: [
+      { scholar_id: "a", title: "Existing A", authors: ["Overview A"], authors_completeness: "unknown" },
+      { scholar_id: "b", title: "Existing B", authors: ["Overview B"], authors_completeness: "unknown" }
+    ] }));
+    await importScholarSnapshot(c, path);
+    const completeDetail = detail.replace("Full &amp; title", "Existing A");
+    const interrupted = await backfillScholarDetails(c, { batchSize: 1, ...transport([completeDetail, 500, 500, 500]) });
+    assert.equal(interrupted.processed, 1); assert.equal(interrupted.failed, 1); assert.equal(interrupted.remaining, 1);
+    let state = await c.read();
+    assert.equal(state.gscholar_entries.find(entry => entry.scholar_id.endsWith(":a"))?.authors_completeness, "complete");
+    assert.equal(state.gscholar_entries.find(entry => entry.scholar_id.endsWith(":b"))?.authors_completeness, "unknown");
+    assert.equal(state.reviews.filter(review => review.evidence?.parser_version === "mypub-scholar-detail-backfill/1").length, 1);
+    const result = await backfillScholarDetails(c, { batchSize: 1, ...transport([detail.replace("Full &amp; title", "Existing B").replace("Alice Doe, Bob Li", "Overview B, …")]) });
+    assert.deepEqual({ candidates: result.candidates, processed: result.processed, failed: result.failed, complete: result.complete, partial: result.partial, unknown: result.unknown, remaining: result.remaining, batches: result.batches }, { candidates: 1, processed: 1, failed: 0, complete: 0, partial: 1, unknown: 0, remaining: 0, batches: 1 });
+    state = await c.read();
+    assert.equal(state.gscholar_entries.find(entry => entry.scholar_id.endsWith(":b"))?.authors_completeness, "partial");
+    assert.equal(state.reviews.filter(review => review.evidence?.parser_version === "mypub-scholar-detail-backfill/1").length, 2);
+    assert.equal((await backfillScholarDetails(c, transport([]))).processed, 0);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});
+test("sparse detail evidence retains a fuller existing author array and its unknown completeness", async () => {
+  const { root, c } = await fixture();
+  try {
+    const path = join(root, "fuller.json");
+    await writeFile(path, JSON.stringify({ profile_id: "profile", captured_at: "2026-09-01T00:00:00Z", entries: [{ scholar_id: "a", title: "Existing", authors: ["Alice Doe", "Bob Li"], authors_completeness: "unknown" }] }));
+    await importScholarSnapshot(c, path);
+    const result = await backfillScholarDetails(c, transport([detail.replace("Alice Doe, Bob Li", "Alice Doe, …")]));
+    const entry = (await c.read()).gscholar_entries[0]!;
+    assert.deepEqual(entry.authors, ["Alice Doe", "Bob Li"]); assert.equal(entry.authors_completeness, "unknown"); assert.equal(entry.authors_text, "Alice Doe, …");
+    assert.equal(result.unknown, 1); assert.equal(result.remaining, 0);
+  } finally { await rm(root, { recursive: true, force: true }); }
 });

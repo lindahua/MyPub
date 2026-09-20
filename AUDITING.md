@@ -203,7 +203,8 @@ For non-excluded entries:
 | --- | --- |
 | Missing `pub_type` | Warning |
 | Empty `authors` | Warning |
-| `authors_completeness` is `partial` or `unknown` | Warning |
+| `authors_completeness` is `unknown` (`SCHOLAR_AUTHORS_UNKNOWN`) | Warning |
+| `authors_completeness` is `partial` (`SCHOLAR_AUTHORS_PARTIAL`) | Warning |
 | Missing `year` | Warning |
 | Missing venue for journal, conference, workshop, or preprint | Warning |
 | Missing `scholar_url` | Warning |

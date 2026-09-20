@@ -60,6 +60,8 @@ test("gscholar update dispatches, rejects unknown options, and scholar is not an
     for (const command of ["gscholar"]) {
       await assert.rejects(main(["--root", root, command, "update"]), (error: unknown) => error instanceof MyPubError && error.code === "PROFILE_NOT_CONFIGURED");
       await assert.rejects(main(["--root", root, command, "update", "--unexpected"]), (error: unknown) => error instanceof MyPubError && error.code === "USAGE");
+      await assert.rejects(main(["--root", root, command, "backfill-details"]), (error: unknown) => error instanceof MyPubError && error.code === "PROFILE_NOT_CONFIGURED");
+      await assert.rejects(main(["--root", root, command, "backfill-details", "--batch-size", "0"]), (error: unknown) => error instanceof MyPubError && error.code === "USAGE");
     }
   } finally { await rm(root, { recursive: true, force: true }); }
 });
