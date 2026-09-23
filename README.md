@@ -60,7 +60,7 @@ Edits save immediately to the local catalog. `mypub commit` records a local chec
 
 | Behavior | `mypub commit [--message TEXT]` | `mypub sync [--message TEXT]` |
 | --- | --- | --- |
-| Network | None | Fetches the configured remote branch and pushes outgoing commits |
+| Network | None | Fetches the configured remote branch, downloads registered main papers, and uploads outgoing LFS objects and commits |
 | Uncommitted changes | Validates and commits all managed changes | Refuses to proceed until the working tree and index are clean, including untracked files; ignored files are exempt |
 | Managed scope | `catalog/`, `attachments/`, `.gitattributes`, `.gitignore` | Synchronizes the branch's full committed history, including any files committed with ordinary Git |
 | Partial staging | Includes unstaged portions of managed files too | Never stages, commits edits, stashes, or discards changes |
@@ -73,11 +73,11 @@ No-change commits return after Git preflight without reading or validating the u
 
 Both require an initialized Git repository and a selected branch; finish or abort an active Git merge/rebase/cherry-pick/revert first. Pending catalog review proposals remain pending when committed. Commit validates attachment manifests against the staged LFS pointers and stores attachment bytes locally without uploading. A failed commit can leave managed files staged; it does not discard edits.
 
-Sync always fetches the upstream to check its current state. Identical histories return immediately after preflight/fetch without full catalog or attachment validation; use `mypub validate` for integrity checks. When histories differ, full validation remains required before integration or upload. Fast-forwards validate the incoming catalog and attachment pointers, preserving review evidence, so remote commits can update an older local field layout (such as `urls` to `extra_urls`). Readable mode shows concise phase indicators on stderr; `--json` suppresses them. Network latency still applies to an unchanged sync.
+Sync always fetches the upstream to check its current state. Identical histories skip full catalog and attachment-reference validation; use `mypub validate` for integrity checks. They still confirm and materialize registered main papers, which lets an interrupted LFS download resume on the next sync. When histories differ, full validation remains required before integration or upload. Fast-forwards validate the incoming catalog and attachment pointers, preserving review evidence, so remote commits can update an older local field layout (such as `urls` to `extra_urls`). Phase indicators are written to stderr in readable and `--json` modes, so JSON stdout stays parseable. LFS progress includes the pending paper/file count and byte total, then identifies each transferring file with its file index, transferred bytes, total bytes, and percentage. Objects already present at the destination are identified as completed without being transferred again. Network latency still applies to an unchanged sync.
 
 Sync fast-forwards when only the remote has new commits, uploads when only local history has advanced, and reconciles divergent histories by record UUID in a temporary workspace. A validated merge may create a merge commit; existing commits are never rebased or force-pushed. Conflicts preserve the current catalog. Record-resolution choices are saved locally and used by the next `sync`; changed histories require fresh reconciliation. Some reference or attachment conflicts require explicit catalog/Git edits, followed by `commit` where applicable.
 
-A failed upload retains local commits and any remote changes already integrated locally. Sync is not an atomic operation across both computers; retry safely after resolving the failure. Only a completed synchronization updates the last-successful-sync timestamp. Metadata sync retains LFS pointers without downloading attachments; use explicit attachment downloads for offline access.
+A failed incoming paper download leaves the active commit unchanged. A failure while materializing already fetched paper objects retains the integrated commit and cached objects. A failed upload retains local commits, paper files, and any remote changes already integrated locally; if LFS upload succeeds but Git push fails, the retry reuses the uploaded objects. Only a completed Git and LFS synchronization updates the last-successful-sync timestamp. Sync materializes current registered main papers under `catalog/paper_files/`; other attachments remain selective through `mypub attachment fetch PUBLICATION`.
 
 `mypub backup DESTINATION` captures current attachments, catalog JSON, Git history as a bundle, and fetched historical LFS objects when available. Keep backups outside the synchronized repository.
 
@@ -222,3 +222,32 @@ Desktop paper lists use pages of 30; author and venue dropdown bibliographies us
 ```
 
 Venue links use labeled objects, for example `{"url":"https://cvpr.thecvf.com/","role":"homepage"}` or `{"url":"https://www.computer.org/csdl/proceedings/1000147","role":"proceedings","label":"IEEE proceedings"}`. Supported roles are `homepage`, `proceedings`, `submission`, and `other`. The viewer uses the label when supplied, otherwise a role-based caption. Publication URLs remain strings.
+
+### Download PDFs from publication websites
+
+```sh
+# Discover candidates without storing PDFs
+mypub attachment download PUBLICATION --preview
+
+# Download and verify into local/downloads/, without registering
+mypub attachment download PUBLICATION
+mypub attachment download --all --missing --max-new 20 --concurrency 4
+
+# Inspect staging results; open local/downloads/DOWNLOAD_ID/paper.pdf to review
+mypub attachment downloads
+mypub attachment inspect DOWNLOAD_ID
+mypub attachment verify DOWNLOAD_ID --accept-reason "Checked title, authors, and publication version"
+mypub attachment register DOWNLOAD_ID
+
+# Optional: register automatically verified PDFs in the same run
+mypub attachment download --all --missing --concurrency 4 --register
+
+# Choose a specific candidate when discovery finds multiple PDFs
+mypub attachment download PUBLICATION --url https://publisher.example/paper.pdf
+```
+
+Staged PDFs are local and ignored by Git. Downloading does not add an attachment unless `--register` is supplied, and uncertain matches always remain staged for inspection. Verification parses PDFs and checks available identity metadata; it does not perform full-text identity verification. Registration stores the first managed paper PDF at `catalog/paper_files/<year>/<title-stem>_<publication-UUID-prefix>.pdf`, matching its publication JSON filename. Further paper files and other media use `attachments/<publication-UUID>/<attachment-UUID>/<filename>`. It preserves existing files and primary selections, records provenance, and proposes discovered paper URLs for review. The readable PDF path moves with a title/year edit; existing UUID-based paper paths stay valid. Reruns reuse intact stages. Requests run concurrently across hosts and serially per host, with timeouts, pacing, size limits and retry backoff. Authenticated or JavaScript-only publisher pages may need manual downloading followed by `mypub attachment add`.
+
+For large batches, `--max-new N` stops after at most N new PDFs have been transferred. Existing reusable stages do not count against that allowance, and failures allow the command to continue examining later publications until it reaches the cap or exhausts the selection. `--limit N` instead limits how many publication records are examined, regardless of whether they download successfully. Progress is written to stderr, including with `--json`: the console shows the selected count and concurrency, per-paper starts and outcomes, verification/registration steps, and a final summary with new, reused, failed, and unexamined counts.
+
+`attachment fetch PUBLICATION` retains its separate meaning: retrieve already registered attachments from Git LFS. Neither website downloads nor registration automatically commit or synchronize the catalog.

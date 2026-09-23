@@ -59,7 +59,7 @@ export async function restore(c: Catalog, source: string): Promise<void> {
       await run("git", ["fetch", "--update-head-ok", join(origin, m.git_bundle), "+refs/*:refs/*"], stage);
       await run("git", ["read-tree", "HEAD"], stage);
     }
-    await copyTree(join(origin, "catalog"), join(stage, "catalog")); await copyTree(join(origin, "attachments"), join(stage, "attachments"));
+    await copyTree(join(origin, "catalog"), join(stage, "catalog")); if (await fileExists(join(origin, "attachments"))) await copyTree(join(origin, "attachments"), join(stage, "attachments"));
     for (const path of [".gitattributes", ".gitignore"]) if (await fileExists(join(origin, path))) await cp(join(origin, path), join(stage, path));
     if (m.git_bundle && await fileExists(join(origin, "lfs-objects"))) await copyTree(join(origin, "lfs-objects"), join(stage, ".git/lfs/objects"));
     if (m.includes_historical_lfs_objects && (!m.git_bundle || !await verifyHistorical(stage, join(stage, ".git/lfs/objects")))) throw new MyPubError("Historical LFS objects are missing or corrupt", "BACKUP_INVALID");

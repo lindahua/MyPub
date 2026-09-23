@@ -114,6 +114,7 @@ test("wrong folders are never initialized and no watcher loop follows local outp
   assert.equal(relevantChange("local/index-abc.sqlite.tmp"), false);
   assert.equal(relevantChange("local/index.sqlite"), true);
   assert.equal(relevantChange("catalog/publications/2025/x.json"), true);
+  assert.equal(relevantChange("catalog/paper_files/2025/x.pdf"), true);
 });
 test("file opening rejects LFS pointers, missing binaries and escaping symlinks; citations use the core exporter", async (t) => {
   const { root, catalog, paper, service } = await setup(t);
@@ -129,9 +130,7 @@ test("file opening rejects LFS pointers, missing binaries and escaping symlinks;
     /@article\{one/,
   );
   assert.ok(
-    (await service.action("attachment", library, paper.id, a.id)).endsWith(
-      "source.pdf",
-    ),
+    (await service.action("attachment", library, paper.id, a.id)).endsWith(a.path),
   );
   await writeFile(
     join(root, a.path),
@@ -146,8 +145,9 @@ test("file opening rejects LFS pointers, missing binaries and escaping symlinks;
   await rm(join(root, a.path));
   await symlink("/etc/hosts", join(root, a.path));
   await service.refresh();
-  assert.equal(service.state.snapshot?.availability[a.id], "error");
+  assert.equal(service.state.status, "stale");
   await assert.rejects(service.action("attachment", library, paper.id, a.id));
+  await rm(join(root, a.path));
   await assert.rejects(
     service.action("citation", "different", paper.id),
     /library changed/,

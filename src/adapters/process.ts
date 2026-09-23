@@ -2,10 +2,11 @@ import { spawn } from "node:child_process";
 import { MyPubError } from "../core/errors.js";
 
 export interface ProcessResult { stdout: string; stderr: string; code: number; }
-export function run(executable: string, args: string[], cwd: string, allowFailure = false, input?: string): Promise<ProcessResult> {
+export interface ProcessOptions { env?: NodeJS.ProcessEnv; onStdout?: (chunk: string) => void; onStderr?: (chunk: string) => void; }
+export function run(executable: string, args: string[], cwd: string, allowFailure = false, input?: string, options: ProcessOptions = {}): Promise<ProcessResult> {
   return new Promise((resolve, reject) => {
-    const child = spawn(executable, args, { cwd, shell: false, stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"] }); let stdout = ""; let stderr = "";
-    child.stdout!.setEncoding("utf8"); child.stderr!.setEncoding("utf8"); child.stdout!.on("data", (chunk: string) => { stdout += chunk; }); child.stderr!.on("data", (chunk: string) => { stderr += chunk; });
+    const child = spawn(executable, args, { cwd, shell: false, env: options.env ? { ...process.env, ...options.env } : undefined, stdio: [input === undefined ? "ignore" : "pipe", "pipe", "pipe"] }); let stdout = ""; let stderr = "";
+    child.stdout!.setEncoding("utf8"); child.stderr!.setEncoding("utf8"); child.stdout!.on("data", (chunk: string) => { stdout += chunk; options.onStdout?.(chunk); }); child.stderr!.on("data", (chunk: string) => { stderr += chunk; options.onStderr?.(chunk); });
     if (input !== undefined) {
       child.stdin!.on("error", error => reject(new MyPubError(`Cannot write to ${executable}: ${error.message}`, "PROCESS_FAILED")));
       child.stdin!.end(input, "utf8");

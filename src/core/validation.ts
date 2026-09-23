@@ -1,4 +1,5 @@
 import type { AuditFinding, CatalogState, EntityType, Review, ValidationIssue, ValidationResult } from "./types.js";
+import { paperFilePaths, PAPER_FILES } from "./paper-files.js";
 import { recordIssues, validOrcid } from "./schemas.js";
 import { fingerprint, normalizeArxiv, normalizeDoi } from "./utils.js";
 import { scholarEntryIds } from "./scholar-links.js";
@@ -53,6 +54,7 @@ export function validateState(s: CatalogState): ValidationResult {
   if (s.owner.self_author_id && (!owner || owner.merged_into)) issue("OWNER_INVALID", "self_author_id must identify a non-merged author");
   if (s.gscholar_profile && (!owner || ![owner.identifiers.google_scholar, ...(owner.identifier_aliases ?? []).filter((a) => a.provider === "google_scholar").map((a) => a.value)].includes(s.gscholar_profile.profile_id))) issue("PROFILE_OWNER", "Selected Scholar profile must be a confirmed owner identifier");
   const allAttachments: Array<[string, string]> = [];
+  const paperPaths = paperFilePaths(s); const attachmentPaths = new Set<string>();
   for (const p of s.publications) {
     reference(p.venue?.venue_id, "venue", p.id); scholarEntryIds(p).forEach(id => reference(id, "gscholar_entry", p.id));
     if (p.archived_at && scholarEntryIds(p).length) issue("ARCHIVED_SCHOLAR_LINK", "Archived publications cannot have confirmed Scholar links", p.id);
@@ -74,7 +76,8 @@ export function validateState(s: CatalogState): ValidationResult {
       if (pairs.has(pair)) issue("DUPLICATE_RELATION", "Repeated relation", p.id); pairs.add(pair);
       if (r.type === "related_to" && s.publications.find((q) => q.id === r.target_id)?.relations.some((x) => x.type === r.type && x.target_id === p.id)) issue("DUPLICATE_RELATION", "Symmetric relation is stored twice", p.id);
     }
-    for (const a of p.attachments) { allAttachments.push([a.id, p.id]); if (a.path !== `attachments/${p.id}/${a.id}/${a.original_filename}`) issue("ATTACHMENT_PATH", "Attachment path does not match containing IDs/filename", p.id); }
+    for (const a of p.attachments) { allAttachments.push([a.id, p.id]); if (a.path.startsWith(PAPER_FILES) ? a.role !== "paper" || a.media_type !== "application/pdf" || a.path !== paperPaths.get(p.id) : a.path !== `attachments/${p.id}/${a.id}/${a.original_filename}`) issue("ATTACHMENT_PATH", "Attachment path does not match publication/attachment identity", p.id);
+      if (attachmentPaths.has(a.path)) issue("ATTACHMENT_PATH", "Multiple attachments share a file path", p.id); attachmentPaths.add(a.path); }
     if (p.primary_attachment_id && !p.attachments.some((a) => a.id === p.primary_attachment_id)) issue("PRIMARY_ATTACHMENT", "Primary attachment does not belong to publication", p.id);
     const revisions = p.arxiv_versions ?? [];
     if (p.type === "preprint" && (p.identifiers.arxiv || revisions.length)) {

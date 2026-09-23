@@ -7,6 +7,7 @@ import { assertRecord } from "./schemas.js";
 import { fileExists, fingerprint, normalizeArxiv, normalizeDoi, now, safePath, sha256, uuid, withLock } from "./utils.js";
 import { scholarEntryIds } from "./scholar-links.js";
 import { catalogFiles } from "./paths.js";
+import { PAPER_LFS_RULE, PAPER_FILES, movePaperFiles, paperFilePath } from "./paper-files.js";
 import { loadState, recoverTransactions, refreshStoredDatabase, writeState } from "./storage.js";
 import { assertUnchangedEvidence, resolveIdentity, validateState } from "./validation.js";
 import { auditRepository } from "./audit.js";
@@ -88,8 +89,8 @@ export class Catalog {
   assertValid(s: CatalogState): void { const result = validateState(s); if (!result.valid) throw new MyPubError("Catalog validation failed", "VALIDATION_FAILED", result); }
   async change<T>(action: (state: CatalogState, binary: Map<string, Buffer>) => T | Promise<T>): Promise<T> {
     return withLock(join(this.localDir, "write.lock"), async () => {
-      await recoverTransactions(this.root); const loaded = await loadState(this.root); const before = clean(loaded.state); const originalFiles = new Map([...loaded.files].map(([path, value]) => [path, clean(value)])); const binaries = new Map<string, Buffer>();
-      const result = await action(loaded.state, binaries); this.assertValid(loaded.state); assertUnchangedEvidence(before, loaded.state);
+      await recoverTransactions(this.root); const loaded = await loadState(this.root); const before = clean(loaded.state); const originalFiles = new Map([...loaded.files].map(([path, value]) => [path, clean(value)])); const binaries = new Map<string, Buffer>(); const removedBinaries = new Set<string>();
+      const result = await action(loaded.state, binaries); await movePaperFiles(this.root, loaded.state, binaries, removedBinaries); this.assertValid(loaded.state); assertUnchangedEvidence(before, loaded.state);
       for (const collection of ["publications", "authors", "venues", "gscholar_entries", "reviews"] as const) for (const old of before[collection]) {
         const next = loaded.state[collection].find((r) => r.id === old.id); if (!next) throw new MyPubError("Retain records; archive rather than delete", "RECORD_DELETION");
         if (old.created_at !== next.created_at || Date.parse(next.updated_at) < Date.parse(old.updated_at)) throw new MyPubError("Record lifecycle timestamps are immutable/monotonic", "TIMESTAMP_INVALID");
@@ -104,8 +105,14 @@ export class Catalog {
         if (p.venue?.venue_id && previous?.venue?.venue_id !== p.venue.venue_id && resolveIdentity(loaded.state.venues, p.venue.venue_id)?.archived_at) throw new MyPubError("Restore the venue before linking", "ARCHIVED_IDENTITY");
         for (const entryId of scholarEntryIds(p).filter(id => !previous || !scholarEntryIds(previous).includes(id))) if (pairRejected(loaded.state, p.id, entryId)) throw new MyPubError("Reopen the rejected pair before linking", "MATCH_REJECTED");
       }
-      await writeState(this.root, originalFiles, loaded.state, binaries); return result === undefined ? result : clean(result);
+      if ([...binaries.keys()].some(path => path.startsWith(PAPER_FILES)) || loaded.state.publications.some(p => p.attachments.some(a => a.path.startsWith(PAPER_FILES)))) await this.ensurePaperLfsRule();
+      await writeState(this.root, originalFiles, loaded.state, binaries, removedBinaries); return result === undefined ? result : clean(result);
     });
+  }
+  private async ensurePaperLfsRule(): Promise<void> {
+    const path = join(this.root, ".gitattributes");
+    const existing = await fileExists(path) ? await readFile(path, "utf8") : "";
+    if (!existing.split(/\r?\n/).includes(PAPER_LFS_RULE)) await writeFile(path, `${existing.replace(/[^\n]$/, "$&\n")}${PAPER_LFS_RULE}\n`, "utf8");
   }
   async library(): Promise<Library> { return (await this.read()).library; }
   async list(filters: SearchFilters = {}): Promise<Publication[]> {
@@ -134,7 +141,7 @@ export class Catalog {
   async addAttachment(ref: string, source: string, role: AttachmentRole, label?: string, primary = false): Promise<Attachment> {
     const data = await readFile(resolve(source)); const filename = basename(source); const hash = createHash("sha256").update(data).digest("hex");
     return this.change((s, binary) => { const p = findPublication(s, ref); const existing = p.attachments.find((a) => a.sha256 === hash); if (existing) return existing;
-      const id = uuid(); const path = `attachments/${p.id}/${id}/${filename}`; const mime: Record<string, string> = { ".pdf": "application/pdf", ".mp4": "video/mp4", ".mov": "video/quicktime", ".zip": "application/zip", ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation" };
+      const id = uuid(); const path = role === "paper" && extname(filename).toLowerCase() === ".pdf" && !p.attachments.some(a => a.path.startsWith(PAPER_FILES)) ? paperFilePath(s, p) : `attachments/${p.id}/${id}/${filename}`; const mime: Record<string, string> = { ".pdf": "application/pdf", ".mp4": "video/mp4", ".mov": "video/quicktime", ".zip": "application/zip", ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation" };
       const a: Attachment = { id, role, ...(label ? { label } : {}), original_filename: filename, media_type: mime[extname(filename).toLowerCase()] ?? "application/octet-stream", size_bytes: data.length, storage: "git-lfs", path, sha256: hash };
       p.attachments.push(a); if (primary || !p.primary_attachment_id && role === "paper") p.primary_attachment_id = id; touch(p); binary.set(path, data); return a;
     });

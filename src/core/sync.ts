@@ -3,17 +3,97 @@ import { dirname, join } from "node:path";
 import type { CatalogState, CommitResult, ProgressHandler, StatusChange, StatusResult, SyncConflict, SyncResult } from "./types.js";
 import { Catalog } from "./catalog.js";
 import { atomicWriteJson, fileExists, now, readJson, uuid, withLock, fingerprint, safePath } from "./utils.js";
-import { run } from "../adapters/process.js";
+import { run, type ProcessOptions } from "../adapters/process.js";
 import { MyPubError } from "./errors.js";
-import { catalogFiles } from "./paths.js";
+import { catalogFiles, jsonFiles } from "./paths.js";
+import { movePaperFiles, rebasePaperFilePaths } from "./paper-files.js";
 import { loadState, recoverTransactions, refreshStoredDatabase } from "./storage.js";
 import { assertUnchangedEvidence, validateState } from "./validation.js";
 import { ensureLocalIgnored } from "../adapters/database.js";
 import { assertLibrary, validUuid, validRepositoryPath } from "./schemas.js";
 
-// Checkouts retain LFS pointers; synchronization must never implicitly download binaries.
+// Git integration skips automatic smudging. Sync fetches and materializes only the
+// main paper collection explicitly, after validating the incoming catalog.
 const lfsSkip = ["-c", "filter.lfs.smudge=git-lfs smudge --skip", "-c", "filter.lfs.process=git-lfs filter-process --skip"];
-const git = (catalog: Catalog, args: string[], allowFailure = false, input?: string) => run("git", [...lfsSkip, ...args], catalog.root, allowFailure, input);
+const git = (catalog: Catalog, args: string[], allowFailure = false, input?: string, options?: ProcessOptions) => run("git", [...lfsSkip, ...args], catalog.root, allowFailure, input, options);
+interface LfsFile { name: string; oid: string; size: number; downloaded?: boolean; }
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  const units = ["KiB", "MiB", "GiB", "TiB"]; let value = bytes;
+  for (const unit of units) { value /= 1024; if (value < 1024 || unit === units.at(-1)) return `${value.toFixed(value >= 10 ? 1 : 2)} ${unit}`; }
+  return `${bytes} B`;
+}
+async function lfsFiles(c: Catalog, revision: string, include?: string): Promise<LfsFile[]> {
+  const args = ["lfs", "ls-files", "--json", "--long", "--size", ...(include ? [`--include=${include}`] : []), revision];
+  const parsed = JSON.parse((await git(c, args)).stdout) as { files?: LfsFile[] | null };
+  return Array.isArray(parsed.files) ? parsed.files : [];
+}
+async function lfsTransfer(c: Catalog, args: string[], phase: string, onProgress?: ProgressHandler): Promise<Set<string>> {
+  if (!onProgress) { await git(c, args); return new Set(); }
+  await mkdir(c.localDir, { recursive: true });
+  const progressPath = join(c.localDir, `lfs-progress-${uuid()}.log`); await writeFile(progressPath, "");
+  let offset = 0, polling = false, pollError: unknown; const reported = new Map<string, number>(), completed = new Set<string>();
+  const poll = async (): Promise<void> => {
+    if (polling) return; polling = true;
+    try {
+      const data = await readFile(progressPath, "utf8"); const end = data.lastIndexOf("\n");
+      if (end < offset) return;
+      for (const line of data.slice(offset, end + 1).split("\n")) {
+        const match = /^(checkout|download|upload) (\d+)\/(\d+) (\d+)\/(\d+) (.+)$/.exec(line); if (!match) continue;
+        const [, direction, currentText, totalText, bytesText, sizeText, name] = match;
+        const current = Number(currentText), total = Number(totalText), bytes = Number(bytesText), size = Number(sizeText);
+        const percent = size > 0 ? Math.min(100, Math.floor(bytes * 100 / size)) : 100; const bucket = percent === 100 ? 20 : Math.floor(percent / 5);
+        const key = `${direction}:${name}`; if ((reported.get(key) ?? -1) >= bucket) continue; reported.set(key, bucket); if (percent === 100) completed.add(name!);
+        const verb = direction === "upload" ? "Uploading" : direction === "download" ? "Downloading" : "Materializing";
+        onProgress({ phase, message: `${verb} [${current}/${total}] ${name} — ${formatBytes(bytes)} / ${formatBytes(size)} (${percent}%)`, current, total });
+      }
+      offset = end + 1;
+    } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") pollError ??= error; }
+    finally { polling = false; }
+  };
+  const timer = setInterval(() => { void poll(); }, 200);
+  try { await git(c, args, false, undefined, { env: { GIT_LFS_PROGRESS: progressPath, GIT_LFS_FORCE_PROGRESS: "1" } }); }
+  finally { clearInterval(timer); while (polling) await new Promise(resolve => setTimeout(resolve, 10)); await poll(); await rm(progressPath, { force: true }); }
+  if (pollError) throw pollError;
+  return completed;
+}
+async function fetchPaperFiles(c: Catalog, remote: string, revision: string, onProgress?: ProgressHandler): Promise<LfsFile[]> {
+  const files = await lfsFiles(c, revision, "catalog/paper_files/**");
+  if (!files.length) return files;
+  const missing = files.filter(file => !file.downloaded); if (!missing.length) { onProgress?.({ phase: "download-papers", message: `All ${files.length} paper objects are already cached locally.` }); return files; }
+  const totalBytes = missing.reduce((sum, file) => sum + file.size, 0);
+  onProgress?.({ phase: "download-papers", message: `Downloading ${missing.length} paper file${missing.length === 1 ? "" : "s"} (${formatBytes(totalBytes)})…`, current: 0, total: missing.length });
+  try {
+    const completed = await lfsTransfer(c, ["lfs", "fetch", `--include=catalog/paper_files/**`, "--exclude=", remote, revision], "download-papers", onProgress);
+    missing.forEach((file, index) => { if (!completed.has(file.name)) onProgress?.({ phase: "download-papers", message: `Downloaded [${index + 1}/${missing.length}] ${file.name} — ${formatBytes(file.size)}`, current: index + 1, total: missing.length }); });
+  } catch (error) {
+    throw new MyPubError("Paper download failed before catalog integration. The active catalog was preserved; retry mypub sync. " + String(error), "SYNC_DOWNLOAD_FAILED");
+  }
+  onProgress?.({ phase: "download-papers", message: `Paper downloads complete: ${missing.length}/${missing.length} (${formatBytes(totalBytes)}).`, current: missing.length, total: missing.length });
+  return files;
+}
+async function checkoutPaperFiles(c: Catalog, files: LfsFile[], onProgress?: ProgressHandler): Promise<void> {
+  if (!files.length) return;
+  onProgress?.({ phase: "materialize-papers", message: `Materializing ${files.length} paper file${files.length === 1 ? "" : "s"} in the catalog…`, current: 0, total: files.length });
+  try { await lfsTransfer(c, ["lfs", "checkout", "catalog/paper_files/**"], "materialize-papers", onProgress); }
+  catch (error) { throw new MyPubError("Paper materialization failed after Git synchronization. Commits are retained and downloaded LFS objects are reusable; retry mypub sync. " + String(error), "SYNC_DOWNLOAD_FAILED"); }
+  onProgress?.({ phase: "materialize-papers", message: `Paper files ready: ${files.length}/${files.length}.`, current: files.length, total: files.length });
+}
+async function uploadLfsObjects(c: Catalog, remote: string, onProgress?: ProgressHandler): Promise<void> {
+  const files = await lfsFiles(c, "HEAD");
+  const dryRun = await git(c, ["lfs", "push", "--dry-run", remote, "HEAD"]); const pendingOids = new Set([...dryRun.stdout.matchAll(/^push ([a-f0-9]{64}) => /gm)].map(match => match[1])), selected = new Set<string>();
+  const pending = files.filter(file => { if (!pendingOids.has(file.oid) || selected.has(file.oid)) return false; selected.add(file.oid); return true; }); if (!pending.length) { onProgress?.({ phase: "upload-attachments", message: "All LFS objects are already present remotely." }); return; }
+  const papers = pending.filter(file => file.name.startsWith("catalog/paper_files/"));
+  const bytes = papers.reduce((sum, file) => sum + file.size, 0);
+  const detail = papers.length ? `${papers.length} paper file${papers.length === 1 ? "" : "s"}, ${formatBytes(bytes)}; ${pending.length} LFS file${pending.length === 1 ? "" : "s"} total` : `${pending.length} LFS file${pending.length === 1 ? "" : "s"}`;
+  onProgress?.({ phase: "upload-attachments", message: `Uploading ${detail}…`, current: 0, total: pending.length });
+  try {
+    const completed = await lfsTransfer(c, ["lfs", "push", remote, "HEAD"], "upload-attachments", onProgress);
+    pending.forEach((file, index) => { if (!completed.has(file.name)) onProgress?.({ phase: "upload-attachments", message: `Uploaded [${index + 1}/${pending.length}] ${file.name} — ${formatBytes(file.size)}`, current: index + 1, total: pending.length }); });
+  }
+  catch (error) { throw new MyPubError("LFS upload failed. Local commits and paper files are retained; retry mypub sync. " + String(error), "SYNC_UPLOAD_FAILED"); }
+  onProgress?.({ phase: "upload-attachments", message: `LFS uploads complete: ${pending.length}/${pending.length}.`, current: pending.length, total: pending.length });
+}
 export const managedPath = (path: string): boolean => path.startsWith("catalog/") || path.startsWith("attachments/") || [".gitattributes", ".gitignore"].includes(path);
 export async function initializeGit(catalog: Catalog): Promise<void> {
   if (!(await fileExists(join(catalog.root, ".git")))) await git(catalog, ["init", "--initial-branch=main"]);
@@ -78,9 +158,9 @@ async function revisionRecords(c: Catalog, revision: string): Promise<Records> {
     const tab = row.indexOf("\t");
     const [, type, oid] = row.slice(0, tab).split(" ");
     const path = row.slice(tab + 1);
-    if (tab < 0 || type !== "blob" || !oid || !path.endsWith(".json") || !validRepositoryPath(path)) throw new MyPubError(`Unexpected path in catalog Git tree: ${JSON.stringify(path)}`, "VALIDATION_FAILED");
-    return { path, oid };
-  });
+    if (tab < 0 || type !== "blob" || !oid || !validRepositoryPath(path) || !path.endsWith(".json") && !path.startsWith("catalog/paper_files/")) throw new MyPubError(`Unexpected path in catalog Git tree: ${JSON.stringify(path)}`, "VALIDATION_FAILED");
+    return path.endsWith(".json") ? { path, oid } : undefined;
+  }).filter((entry): entry is { path: string; oid: string } => entry !== undefined);
   const records: Records = new Map();
   if (!entries.length) return records;
   // Read every blob in one Git process. Frame by UTF-8 bytes, not JS characters.
@@ -192,6 +272,8 @@ export async function sync(c: Catalog, message = "mypub: merge synchronized cata
     const theirs = (await git(c, ["rev-parse", "FETCH_HEAD"])).stdout.trim();
     await assertLocalUntracked(c, theirs);
     if (ours === theirs) {
+      const papers = await fetchPaperFiles(c, remote, theirs, onProgress);
+      await checkoutPaperFiles(c, papers, onProgress);
       await recordSuccessfulSync(c, branchName, remote, ours);
       return { state: "up-to-date", commit: ours, conflicts: [] };
     }
@@ -208,9 +290,9 @@ export async function sync(c: Catalog, message = "mypub: merge synchronized cata
     if (fastForward) {
       const candidate = stateFromRecords(await revisionRecords(c, theirs)); c.assertValid(candidate);
       assertUnchangedEvidence(loaded.state, candidate); await validatePointers(c, candidate, theirs);
+      await fetchPaperFiles(c, remote, theirs, onProgress);
       onProgress?.({ phase: "integrate", message: "Applying remote commits…" });
       await git(c, ["merge", "--ff-only", theirs]); pulled = true;
-      await refreshStoredDatabase(c.root, true);
     } else if (ours !== theirs && (await git(c, ["merge-base", "--is-ancestor", theirs, ours], true)).code !== 0) {
       onProgress?.({ phase: "merge", message: "Reconciling local and remote changes…" });
       const base = (await git(c, ["merge-base", ours, theirs])).stdout.trim();
@@ -226,20 +308,25 @@ export async function sync(c: Catalog, message = "mypub: merge synchronized cata
       }
       const persist = async (): Promise<SyncResult> => { await rm(join(c.localDir, "conflicts"), { recursive: true, force: true }); for (const conflict of [...conflicts, ...saved.filter(x => x.details?.ours_commit === ours && x.details?.theirs_commit === theirs && Object.hasOwn(x.details, "resolution"))]) await atomicWriteJson(join(c.localDir, "conflicts", `${conflict.id}.json`), conflict); return { state: "needs-review", conflicts }; };
       if (conflicts.length) return persist();
-      const candidate = stateFromRecords(result); const validation = validateState(candidate);
+      const candidate = stateFromRecords(result); const attachmentSources = structuredClone(candidate); rebasePaperFilePaths(candidate); const validation = validateState(candidate);
       try { assertUnchangedEvidence(stateFromRecords(b), candidate); } catch (error) { validation.valid = false; validation.issues.push({ severity: "error", code: "EVIDENCE_CHANGED", message: String(error) }); }
       if (!validation.valid) { conflicts.push({ schema_version: 2, id: uuid(), kind: "reference", base: stateFromRecords(b), ours: stateFromRecords(o), theirs: stateFromRecords(t), details: { validation, ours_commit: ours, theirs_commit: theirs }, created_at: now() }); return persist(); }
+      await fetchPaperFiles(c, remote, theirs, onProgress);
       const stage = join(c.localDir, `sync-stage-${uuid()}`);
       await git(c, ["worktree", "add", "--detach", stage, ours]);
       try {
         const merge = await run("git", [...lfsSkip, "merge", "--no-commit", "--no-ff", theirs], stage, true);
         const unresolved = (await run("git", ["diff", "--name-only", "-z", "--diff-filter=U"], stage)).stdout.split("\0").filter(Boolean);
-        if (unresolved.some(p => !p.startsWith("catalog/"))) {
-          for (const path of unresolved.filter(p => !p.startsWith("catalog/"))) conflicts.push({ schema_version: 2, id: uuid(), kind: path.startsWith("attachments/") ? "attachment" : "path", path, base: null, ours: null, theirs: null, details: { ours_commit: ours, theirs_commit: theirs, message: "Resolve this non-catalog conflict with Git before retrying sync" }, created_at: now() });
+        if (unresolved.some(p => !p.startsWith("catalog/") || p.startsWith("catalog/paper_files/"))) {
+          for (const path of unresolved.filter(p => !p.startsWith("catalog/") || p.startsWith("catalog/paper_files/"))) conflicts.push({ schema_version: 2, id: uuid(), kind: path.startsWith("attachments/") || path.startsWith("catalog/paper_files/") ? "attachment" : "path", path, base: null, ours: null, theirs: null, details: { ours_commit: ours, theirs_commit: theirs, message: "Resolve this non-catalog conflict with Git before retrying sync" }, created_at: now() });
           return persist();
         }
         if (merge.code !== 0 && !unresolved.length) throw new MyPubError("Staged Git merge failed", "PROCESS_FAILED", merge);
-        await rm(join(stage, "catalog"), { recursive: true, force: true });
+        const moved = new Map<string, Buffer>(), removed = new Set<string>();
+        await movePaperFiles(stage, attachmentSources, moved, removed);
+        for (const [path, bytes] of moved) { await mkdir(dirname(safePath(stage, path)), { recursive: true }); await writeFile(safePath(stage, path), bytes); }
+        for (const path of removed) if (!moved.has(path)) await rm(safePath(stage, path), { force: true });
+        for (const path of await jsonFiles(join(stage, "catalog"))) await rm(path);
         for (const [path, value] of catalogFiles(candidate)) await atomicWriteJson(safePath(stage, path), value);
         await run("git", ["add", "-A", "--", "catalog"], stage);
         await validatePointers(new Catalog({ root: stage }), candidate, "");
@@ -247,20 +334,19 @@ export async function sync(c: Catalog, message = "mypub: merge synchronized cata
         const commit = (await run("git", ["rev-parse", "HEAD"], stage)).stdout.trim();
         // Only a completely validated tree reaches the active checkout.
         await git(c, ["merge", "--ff-only", commit]); merged = true;
-        await refreshStoredDatabase(c.root, true);
         await rm(join(c.localDir, "conflicts"), { recursive: true, force: true });
       } finally { await git(c, ["worktree", "remove", "--force", stage], true); }
     }
+    const papers = await lfsFiles(c, "HEAD", "catalog/paper_files/**");
+    await checkoutPaperFiles(c, papers, onProgress);
+    if (pulled || merged) await refreshStoredDatabase(c.root, true);
     const counts = (await git(c, ["rev-list", "--count", `${theirs}..HEAD`])).stdout.trim(); const push = Number(counts) > 0;
     if (push) {
-      try {
-        // Clones need not have an LFS pre-push hook installed. Upload explicitly first.
-        onProgress?.({ phase: "upload-attachments", message: "Uploading attachment objects…" });
-        await git(c, ["lfs", "push", remote, "HEAD"]);
-        onProgress?.({ phase: "push", message: "Pushing commits…" });
-        await git(c, ["push", remote, `HEAD:${remoteRef}`]);
-      }
-      catch (error) { throw new MyPubError("Upload failed; local commits and any integrated remote changes are retained. Synchronization is incomplete; retry mypub sync. " + String(error), "SYNC_UPLOAD_FAILED"); }
+      // Clones need not have an LFS pre-push hook installed. Upload explicitly first.
+      await uploadLfsObjects(c, remote, onProgress);
+      onProgress?.({ phase: "push", message: "Pushing commits…" });
+      try { await git(c, ["push", remote, `HEAD:${remoteRef}`]); }
+      catch (error) { throw new MyPubError("Git push failed after LFS upload. Local commits and uploaded objects are retained; retry mypub sync. " + String(error), "SYNC_UPLOAD_FAILED"); }
     }
     const commit = (await git(c, ["rev-parse", "HEAD"])).stdout.trim();
     await recordSuccessfulSync(c, branchName, remote, commit);

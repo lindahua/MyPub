@@ -106,7 +106,7 @@ export async function refreshStoredDatabase(root: string, saved = false, force =
   throw new MyPubError("Catalog changed repeatedly during database refresh; retry once external edits finish.", "CATALOG_CHANGED");
 }
 export async function pendingTransaction(root: string): Promise<boolean> { try { return (await readdir(join(root, "local/transactions"))).length > 0; } catch (e) { if ((e as NodeJS.ErrnoException).code === "ENOENT") return false; throw e; } }
-export async function writeState(root: string, before: Map<string, unknown>, after: CatalogState, binary = new Map<string, Buffer>()): Promise<void> {
+export async function writeState(root: string, before: Map<string, unknown>, after: CatalogState, binary = new Map<string, Buffer>(), removedBinary = new Set<string>()): Promise<void> {
   const files = catalogFiles(after); const operations: Operation[] = []; const id = uuid(); const directory = join(root, "local/transactions", id); const time = now();
   const m: Manifest = { schema_version: 2, id, state: "staging", created_at: time, updated_at: time, operations };
   await atomicWriteJson(join(directory, "manifest.json"), m);
@@ -115,6 +115,7 @@ export async function writeState(root: string, before: Map<string, unknown>, aft
     for (const [path, data] of binary) await stage(path, data);
     for (const [path, value] of files) if (!before.has(path) || fingerprint(before.get(path)) !== fingerprint(value)) await stage(path, Buffer.from(`${JSON.stringify(value, null, 2)}\n`));
     // Remove obsolete paths only after all new files are durably staged.
+    for (const path of removedBinary) if (!binary.has(path)) operations.push({ type: "delete", path });
     for (const path of before.keys()) if (!files.has(path)) operations.push({ type: "delete", path });
     // Library version/identity file is applied last on initialization.
     operations.sort((a, b) => Number(a.path === "catalog/library.json") - Number(b.path === "catalog/library.json") || Number(b.type === "delete") - Number(a.type === "delete"));

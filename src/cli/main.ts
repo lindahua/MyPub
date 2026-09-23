@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { downloadPapers, listDownloads, getDownload, verifyDownload, registerDownload } from "../core/papers.js";
 import { realpathSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
@@ -46,6 +47,10 @@ Usage: mypub [--root PATH] [--json] <command> [options]
   relation add SOURCE TARGET --type TYPE | remove SOURCE TARGET [--type TYPE]
   attachment add ID FILE --role ROLE [--label TEXT] [--primary]
   attachment list ID | fetch ID | open ID [ATTACHMENT_ID]
+  attachment download ID|--all [--missing] [--limit N] [--max-new N] [--concurrency N] [--preview] [--register] [--url URL]
+  attachment downloads | inspect DOWNLOAD_ID
+  attachment verify DOWNLOAD_ID [--accept-reason TEXT]
+  attachment register DOWNLOAD_ID
   review list [--state STATE] | show ID | accept|reject|defer ID [--proposal ID]
   review reopen ID [--proposal ID]
   gscholar update
@@ -125,7 +130,23 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     case "owner": { const sub = a.shift("action"); if (sub === "show") action = async () => (await c.read()).owner; else if (sub === "set") { const id = a.shift("author")!, profile = a.take("--profile-id"); action = () => configureOwner(c, id, profile); } else usage("owner action must be set or show"); break; }
     case "import": { const file = a.shift("file")!, provider = a.take("--provider"), coverage = a.takeFlag("--partial") ? "partial" : "complete"; action = () => importFile(c, file, provider, coverage); break; }
     case "relation": { const sub = a.shift("action"), source = a.shift("source")!, target = a.shift("target")!, type = a.take("--type") as RelationType | undefined, note = a.take("--note"); if (sub === "add") { if (!type) usage("relation add requires --type"); action = () => c.addRelation(source, target, type!, note); } else if (sub === "remove") action = () => c.removeRelation(source, target, type); else usage("invalid relation action"); break; }
-    case "attachment": { const sub = a.shift("action"), id = a.shift("publication")!;
+    case "attachment": { const sub = a.shift("action");
+      if (sub === "download") {
+        const all = a.takeFlag("--all"), missing = a.takeFlag("--missing"), preview = a.takeFlag("--preview"), register = a.takeFlag("--register");
+        const concurrency = Number(a.take("--concurrency") ?? 4), limitText = a.take("--limit"), maxNewText = a.take("--max-new"), sourceUrl = a.take("--url");
+        const refs = all ? undefined : [a.shift("publication")!];
+        if (preview && register) usage("--preview cannot be combined with --register");
+        action = async () => { const result = await downloadPapers(c, refs, { concurrency, ...(sourceUrl ? { sourceUrl } : {}), ...(limitText ? { limit: Number(limitText) } : {}), ...(maxNewText ? { maxNew: Number(maxNewText) } : {}), missing, preview, register, onProgress: message => process.stderr.write(`${message}\n`) }); if (result.some(r => r.error)) exitCode = 1; return result; }; break;
+      }
+      if (sub === "downloads") { action = () => listDownloads(c); break; }
+      if (["inspect", "verify", "register"].includes(sub ?? "")) {
+        const download = a.shift("download ID")!;
+        if (sub === "inspect") action = () => getDownload(c, download);
+        else if (sub === "verify") { const reason = a.take("--accept-reason"); action = () => verifyDownload(c, download, reason); }
+        else action = () => registerDownload(c, download);
+        break;
+      }
+      const id = a.shift("publication")!;
       if (sub === "add") { const file = a.shift("file")!, role = a.take("--role") as AttachmentRole | undefined, label = a.take("--label"), primary = a.takeFlag("--primary"); if (!role) usage("attachment add requires --role"); action = () => c.addAttachment(id, file, role!, label, primary); }
       else if (sub === "list") action = async () => (await c.get(id)).attachments;
       else if (sub === "fetch") action = async () => { const p = await c.get(id); for (const item of p.attachments) await run("git", ["lfs", "pull", "--include", item.path, "--exclude", ""], c.root); return { fetched: p.attachments.length }; };
@@ -162,7 +183,7 @@ export async function main(argv = process.argv.slice(2)): Promise<number> {
     case "status": { const details = a.takeFlag("--details"); action = async () => { const result = await status(c); const color = Boolean(process.stdout.isTTY) && !process.env.NO_COLOR && process.env.TERM !== "dumb"; return json ? result : formatStatus(result, c.root, details, color); }; break; }
     case "history": { const id = a.shift(); action = () => history(c, id); break; }
     case "commit": { const message = a.take("--message"); action = async () => { const result = await commit(c, message); return json ? result : result.state === "no-changes" ? "No local changes to commit." : `Committed locally: ${result.commit!.slice(0, 12)} — ${result.message}\nNothing was uploaded. Run mypub sync when ready to synchronize.`; }; break; }
-    case "sync": { const message = a.take("--message"); action = async () => { const result = await sync(c, message, json ? undefined : event => { process.stderr.write(`${event.message}\n`); }); if (result.state === "needs-review") exitCode = 4; return json ? result : ({ "needs-review": "Synchronization paused: conflicts need review. Run mypub conflicts. Your current catalog is preserved.", "up-to-date": "Already synchronized with the configured upstream.", pushed: "Uploaded local commits. Synchronized with the configured upstream.", pulled: "Downloaded and applied remote commits. Synchronized with the configured upstream.", merged: "Combined local and remote commits. Synchronized with the configured upstream." })[result.state]; }; break; }
+    case "sync": { const message = a.take("--message"); action = async () => { const result = await sync(c, message, event => { process.stderr.write(`${event.message}\n`); }); if (result.state === "needs-review") exitCode = 4; return json ? result : ({ "needs-review": "Synchronization paused: conflicts need review. Run mypub conflicts. Your current catalog is preserved.", "up-to-date": "Already synchronized with the configured upstream.", pushed: "Uploaded local commits. Synchronized with the configured upstream.", pulled: "Downloaded and applied remote commits. Synchronized with the configured upstream.", merged: "Combined local and remote commits. Synchronized with the configured upstream." })[result.state]; }; break; }
     case "conflicts": { const id = a.shift(); if (!id) action = () => listConflicts(c); else { const choice = a.take("--choice"), file = a.take("--file"); if (choice !== "ours" && choice !== "theirs") usage("choice must be ours or theirs"); action = () => resolveConflict(c, id, choice as "ours" | "theirs", file); } break; }
     case "export": { const format = a.take("--format") ?? "bibtex", dest = a.take("--output"), f = filters(a); if (!["bibtex", "csv", "json"].includes(format)) usage("format must be bibtex, csv, or json"); raw = !dest; action = async () => { const records = await c.list(f); const content = format === "bibtex" ? toBibtex(records) : format === "csv" ? toCsv(records) : `${JSON.stringify(nativeExport(await c.read(), records.map(p => p.id)), null, 2)}\n`; if (!dest) return content; await mkdir(dirname(resolve(dest)), { recursive: true }); await writeFile(resolve(dest), content); return { output: resolve(dest), count: records.length }; }; break; }
     case "validate": { const verify = !a.takeFlag("--skip-attachments"); action = async () => { const result = await c.validate(verify); exitCode = result.valid ? 0 : 4; return result; }; break; }

@@ -56,5 +56,8 @@ test("process adapter captures success, allowed failure, and hard failure", asyn
   const root = await mkdtemp(join(tmpdir(), "mypub-process-"));
   try {
     assert.match((await run(process.execPath, ["--version"], root)).stdout, /^v/); assert.notEqual((await run(process.execPath, ["--definitely-invalid"], root, true)).code, 0); await assert.rejects(run(process.execPath, ["--definitely-invalid"], root), errorCode("PROCESS_FAILED")); await assert.rejects(run("missing-mypub-executable", [], root), errorCode("PROCESS_FAILED"));
+    let streamedOut = "", streamedError = "";
+    const streamed = await run(process.execPath, ["-e", "process.stdout.write(process.env.MYPUB_PROCESS_TEST); process.stderr.write('progress')"], root, false, undefined, { env: { MYPUB_PROCESS_TEST: "configured" }, onStdout: chunk => { streamedOut += chunk; }, onStderr: chunk => { streamedError += chunk; } });
+    assert.equal(streamed.stdout, "configured"); assert.equal(streamed.stderr, "progress"); assert.equal(streamedOut, streamed.stdout); assert.equal(streamedError, streamed.stderr);
   } finally { await rm(root, { recursive: true, force: true }); }
 });

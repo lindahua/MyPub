@@ -279,11 +279,11 @@ The pair `(type, target_id)` is unique within a source record. `published_versio
 | `media_type` | required lowercase MIME type | Detected/declared media type such as `application/pdf`. |
 | `size_bytes` | required non-negative integer | Exact byte length of stored content. |
 | `storage` | required literal `git-lfs` | Storage backend for this schema version. |
-| `path` | required repository path | Exactly `attachments/<publication-id>/<attachment-id>/<safe-filename>`, where IDs match the containing records. |
+| `path` | required repository path | Either `attachments/<publication-id>/<attachment-id>/<safe-filename>` (including existing paper attachments, additional papers, and other media) or, for one paper-role PDF per publication, `catalog/paper_files/<year>/<title-stem>_<publication-uuid-prefix>.pdf`. The latter path matches the publication JSON’s derived year, stem, and collision-safe UUID suffix; it moves transactionally when those change. Paths must be unique across all attachments. |
 | `sha256` | required string | Lowercase 64-hex SHA-256 digest of the bytes. |
 | `source_url` | optional absolute URI | Location from which bytes were obtained; it does not prove continued availability. |
 
-Attachment manifests and LFS pointers change in one catalog transaction. A pointer file is not proof that bytes are locally available.
+Attachment manifests and LFS pointers change in one catalog transaction. A pointer file is not proof that bytes are locally available. Both managed path patterns use Git LFS; `catalog/paper_files/` contains PDFs, so catalog JSON scanning ignores them; attachment manifests index those paths.
 
 ## 5. Author identity records
 
@@ -844,7 +844,7 @@ Native export is a single lossless dependency-closed envelope for catalog record
 | `gscholar_entries` | required entry array | Referenced Scholar entries. |
 | `reviews` | required review array | Evidence referenced by included records, plus referenced review chains. |
 
-Managed attachment bytes are not embedded. Their manifests remain in publications; an export option may place verified bytes in a sibling `attachments/` tree using the same paths. Import always previews library-ID, UUID, key, normalized identifier, path, and attachment collisions. It never overwrites or silently merges destination records.
+Managed attachment bytes are not embedded. Their manifests remain in publications; an export option may place verified bytes using their repository-relative manifest paths, including `paper_files/`. Import always previews library-ID, UUID, key, normalized identifier, path, and attachment collisions. It never overwrites or silently merges destination records.
 
 A bare publication object or array may be accepted as a lossy convenience import, but it is not a native export and cannot claim to preserve referenced identities or evidence.
 
@@ -866,7 +866,7 @@ Structural validation checks each file against its record schema. Blocking seman
 - no repeated resolved author in a publication and no duplicate controlled role on a credit;
 - venue/event-year, archive timestamp, the prohibition on archived-publication Scholar links, merge tombstone, Scholar presence/capture, authors-completeness, matching-policy, and citation-observation conditional rules hold;
 - excluded Scholar entries have no confirmed incoming publication links, policy decision references resolve, and pending/rejected matches do not masquerade as confirmed associations;
-- attachment paths remain in their containing publication/attachment directories and size/hash match materialized bytes when verification is requested;
+- attachment paths follow the supported UUID or publication-derived paper-file layout, remain unique, and size/hash match materialized bytes when verification is requested;
 - review state agrees with proposal decisions and evidence remains immutable; and
 - no secret, credential, machine-absolute path, NaN/infinity, or unsupported unknown property occurs in shared catalog data.
 
@@ -875,3 +875,23 @@ Warnings identify usable but review-worthy states: unresolved author or venue li
 Auditing is distinct from these admission checks. Each normalized arXiv ID assigned to several retained publications produces a `duplicate_arxiv_id` finding with severity `error`, `blocks_write: false`, the normalized identifier, and all affected publication UUIDs. Include archived publications. These records remain valid to save, import, export, migrate, and synchronize. An audit error must be visible and require reviewed resolution, but must not be promoted into a uniqueness rejection by an importer, index, sync routine, or database constraint. Index arXiv IDs as a non-unique lookup returning all candidates. UUID collisions, dangling links, malformed identifiers, and duplicate DOI IDs remain blocking errors.
 
 The `mypub audit` command reports these findings alongside the structural, completeness, linked-endpoint, and cardinality checks in [AUDITING.md](AUDITING.md). Shared Scholar entries are audit-only errors; a publication may link multiple entries. `mypub validate` checks blocking format/reference constraints. Import/sync/migration admission must not be gated on a clean audit exit code. Audit reads current JSON without updating records or the index, with `--details` and `--json` output. `mypub audit acknowledge FINDING_FINGERPRINT --reason TEXT` is a separate explicit mutation that writes the accepted review described above. Default output omits acknowledged warnings from the actionable list and counts them separately; detailed and JSON output retain them with the acknowledging review ID. Exit codes are 0 (warnings allowed), 4 (audit errors), 1 (operationally incomplete), and 2 (usage). Accepted corrections, acknowledgements, and their evidence live in reviews and Git. Resolve a duplicate by supported identifier correction/removal, reviewed relation/ownership correction, or an explicit duplicate-record resolution, never by automatically merging equal IDs or suppressing one record.
+
+## 17. Machine-local staged PDF downloads
+
+`local/downloads/<download-id>/manifest.json` uses independent `format_version: 1`; it is ignored by Git and does not change catalog schema version 2. A staged file is always named `paper.pdf`, never a path supplied by a website. Before registration it is not an attachment. Per-publication `<publication-id>.lock` files in `local/downloads/` and per-stage `operation.lock` files serialize local operations using the existing process-lock convention.
+
+| Field | Form and meaning |
+| --- | --- |
+| `format_version` | Required integer `1`. |
+| `id`, `publication_id` | Required UUIDs; `id` matches the directory. |
+| `publication_revision` | Required lowercase SHA-256 canonical record fingerprint; binds verification to the reviewed record. |
+| `requested_url`, `resolved_url` | Required HTTP(S) URLs without embedded credentials; requested file location and final response location. |
+| `downloaded_at` | Required UTC timestamp. |
+| `sha256`, `size_bytes` | Required lowercase SHA-256 and nonnegative integer describing the exact staged bytes. |
+| `evidence` | Required textual discovery evidence, including available source-page metadata. |
+| `identity` | Required boolean indicating matching discovery-page metadata; not by itself a verified PDF. |
+| `state` | `downloaded`, `verified`, `needs_review`, `invalid`, or `registered`. |
+| `verification` | Present after verification: `checked_at` timestamp, `pdf_envelope` and `pdf_parsed` booleans, `pages` integer, `reason` string, and optional nonempty `accepted_reason`. Explicit acceptance cannot override failed PDF checks. |
+| `attachment_id` | UUID set after successful registration; the manifest remains as a local receipt after staged bytes are removed. |
+
+A changed hash or size prevents verification/registration. Changed publication content prevents automatic registration until reinspection. Registration writes a normal section 4.7 attachment and may create a normal pending review for a discovered `paper_url`; no new shared record fields are introduced. HTML error responses and invalid PDFs may remain staged as `invalid` for inspection. Incomplete transfers or directories with no completed manifest are not resumable stages. Staging receipts, rejected files, and incomplete directories are machine-local and may be removed manually when no download operation is running.

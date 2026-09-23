@@ -17,3 +17,4 @@ export * from "./core/history.js";
 export * from "./core/paths.js";
 export * from "./core/validation.js";
 export * from "./core/scholar-update.js";
+export * from "./core/papers.js";

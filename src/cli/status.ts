@@ -38,7 +38,7 @@ export function formatStatus(s: StatusResult, root: string, details = false, col
   if (details && s.git && s.dirty && changes.length) {
     lines.push("", "Uncommitted files:");
     for (const change of changes) {
-      const kind = change.path.startsWith("catalog/publications/") ? "publication" : change.path.startsWith("catalog/reviews/") ? "review" : change.path.startsWith("catalog/gscholar/") ? "Scholar" : change.path.startsWith("catalog/authors/") ? "author" : change.path.startsWith("catalog/venues/") ? "venue" : change.path.startsWith("attachments/") ? "attachment" : managedPath(change.path) ? "config" : "other";
+      const kind = change.path.startsWith("catalog/publications/") ? "publication" : change.path.startsWith("catalog/reviews/") ? "review" : change.path.startsWith("catalog/gscholar/") ? "Scholar" : change.path.startsWith("catalog/authors/") ? "author" : change.path.startsWith("catalog/venues/") ? "venue" : (change.path.startsWith("attachments/") || change.path.startsWith("catalog/paper_files/")) ? "attachment" : managedPath(change.path) ? "config" : "other";
       lines.push(`  ${emphasize(change.status.padEnd(10), change.status === "conflicted" ? 31 : 35)} ${kind.padEnd(12)} ${line(change.label ?? change.path)}`);
     }
   }

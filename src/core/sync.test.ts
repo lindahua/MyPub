@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import test from "node:test";
 import { Catalog } from "./catalog.js";
 import { commit, initializeGit, listConflicts, resolveConflict, status, sync } from "./sync.js";
 import { run } from "../adapters/process.js";
-import { atomicWriteJson } from "./utils.js";
+import { atomicWriteJson, fileExists } from "./utils.js";
 import { MyPubError } from "./errors.js";
 
 async function configureGit(root: string): Promise<void> { await run("git", ["config", "user.email", "tests@example.invalid"], root); await run("git", ["config", "user.name", "MyPub Tests"], root); }
@@ -106,20 +106,26 @@ async function remoteFixture(container: string): Promise<{ seed: Catalog; other:
   return { seed, other, remote };
 }
 
-test("sync fast-forwards without merge commits or attachment downloads and rejects invalid remote catalogs", async () => {
+test("sync fast-forwards, materializes main papers, and rejects invalid remote catalogs", async () => {
   const container = await mkdtemp(join(tmpdir(), "mypub-sync-ff-"));
   try {
     const { seed, other } = await remoteFixture(container);
     const p = await seed.add({ citation_key: "ff", title: "Remote Café 日本語", type: "other", authors: [] });
     const file = join(container, "paper.pdf"); await writeFile(file, "%PDF remote attachment");
     const attachment = await seed.addAttachment(p.id, file, "paper");
-    await commit(seed); await sync(seed);
+    const uploadProgress: string[] = []; await commit(seed); await sync(seed, undefined, event => uploadProgress.push(event.message));
+    assert.ok(uploadProgress.some(message => /Uploaded \[1\/1\] catalog\/paper_files\/.* — 22 B/.test(message)), JSON.stringify(uploadProgress));
     const remoteHead = (await run("git", ["rev-parse", "HEAD"], seed.root)).stdout.trim();
-    assert.equal((await sync(other)).state, "pulled");
+    const progress: Array<{ phase: string; message: string }> = [];
+    assert.equal((await sync(other, undefined, event => progress.push(event))).state, "pulled");
     assert.equal((await run("git", ["rev-parse", "HEAD"], other.root)).stdout.trim(), remoteHead);
-    const { readFile } = await import("node:fs/promises");
-    assert.match(await readFile(join(other.root, attachment.path), "utf8"), /^version https:\/\/git-lfs/);
-    // A metadata-only commit and push must work without materializing the remote attachment.
+    assert.equal(await readFile(join(other.root, attachment.path), "utf8"), "%PDF remote attachment");
+    assert.ok(progress.some(event => /Downloading 1 paper file \(22 B\)/.test(event.message)));
+    assert.ok(progress.some(event => /Download(?:ing|ed) \[1\/1\] catalog\/paper_files\/.* — 22 B/.test(event.message)), JSON.stringify(progress));
+    assert.ok(progress.some(event => event.message === "Paper files ready: 1/1."));
+    assert.ok(progress.findIndex(event => event.phase === "download-papers") < progress.findIndex(event => event.phase === "integrate"));
+    assert.ok(progress.findIndex(event => event.phase === "materialize-papers") > progress.findIndex(event => event.phase === "integrate"));
+    // A metadata-only commit and push reuses the materialized paper.
     await other.update(p.id, { notes: "Metadata only" }); await commit(other); await sync(other); await sync(seed);
     const before = (await run("git", ["rev-parse", "HEAD"], other.root)).stdout;
     const path = (await run("git", ["ls-files", "-z", "catalog/publications"], seed.root)).stdout.split("\0")[0]!;
@@ -129,6 +135,30 @@ test("sync fast-forwards without merge commits or attachment downloads and rejec
     assert.equal((await run("git", ["rev-parse", "HEAD"], other.root)).stdout, before);
     assert.equal((await other.validate(false)).valid, true);
   } finally { await rm(container, { recursive: true, force: true }); }
+});
+
+test("failed paper download preserves the active commit and retries from fetched Git metadata", async () => {
+  const container = await mkdtemp(join(tmpdir(), "mypub-sync-download-"));
+  let lfsHeld = false;
+  try {
+    const { seed, other, remote } = await remoteFixture(container);
+    const p = await seed.add({ citation_key: "remote-paper", title: "Remote Paper", type: "other", authors: [] });
+    const file = join(container, "paper.pdf"); await writeFile(file, "%PDF retryable paper");
+    const attachment = await seed.addAttachment(p.id, file, "paper"); await commit(seed); await sync(seed);
+    const before = (await run("git", ["rev-parse", "HEAD"], other.root)).stdout.trim();
+    const held = join(remote, "lfs-held"); await rename(join(remote, "lfs"), held); lfsHeld = true;
+    const phases: string[] = [];
+    await assert.rejects(sync(other, undefined, event => phases.push(event.phase)), errorCode("SYNC_DOWNLOAD_FAILED"));
+    assert.equal((await run("git", ["rev-parse", "HEAD"], other.root)).stdout.trim(), before);
+    assert.equal(await fileExists(join(other.root, attachment.path)), false);
+    assert.ok(phases.includes("download-papers")); assert.equal(phases.includes("integrate"), false);
+    await rm(join(remote, "lfs"), { recursive: true, force: true }); await rename(held, join(remote, "lfs")); lfsHeld = false;
+    assert.equal((await sync(other)).state, "pulled");
+    assert.equal(await readFile(join(other.root, attachment.path), "utf8"), "%PDF retryable paper");
+  } finally {
+    if (lfsHeld) { await rm(join(container, "remote.git/lfs"), { recursive: true, force: true }); await rename(join(container, "remote.git/lfs-held"), join(container, "remote.git/lfs")); }
+    await rm(container, { recursive: true, force: true });
+  }
 });
 
 test("commit rejects attachment manifest mismatches without creating a checkpoint", async () => {
@@ -158,6 +188,26 @@ test("failed upload retains local commits and retries without creating another c
     assert.equal((await sync(seed)).state, "pushed");
     assert.equal((await sync(seed)).state, "up-to-date");
     assert.equal((await run("git", ["rev-parse", "HEAD"], seed.root)).stdout.trim(), checkpoint.commit);
+  } finally { await rm(container, { recursive: true, force: true }); }
+});
+
+test("failed paper LFS upload leaves its commit pending and reuses it on retry", async () => {
+  const container = await mkdtemp(join(tmpdir(), "mypub-sync-paper-upload-"));
+  try {
+    const { seed, remote } = await remoteFixture(container);
+    const p = await seed.add({ citation_key: "upload-paper", title: "Upload Paper", type: "other", authors: [] });
+    const bytes = Buffer.from("%PDF upload retry"); const source = join(container, "upload.pdf"); await writeFile(source, bytes);
+    await seed.addAttachment(p.id, source, "paper"); const checkpoint = await commit(seed);
+    await rm(join(remote, "lfs"), { recursive: true, force: true }); await writeFile(join(remote, "lfs"), "blocked LFS storage");
+    const remoteBefore = (await run("git", ["rev-parse", "refs/heads/main"], remote)).stdout.trim();
+    const progress: string[] = [];
+    await assert.rejects(sync(seed, undefined, event => progress.push(event.message)), errorCode("SYNC_UPLOAD_FAILED"));
+    assert.ok(progress.some(message => /Uploading 1 paper file, 17 B; 1 LFS file total/.test(message)));
+    assert.equal((await run("git", ["rev-parse", "HEAD"], seed.root)).stdout.trim(), checkpoint.commit);
+    assert.equal((await run("git", ["rev-parse", "refs/heads/main"], remote)).stdout.trim(), remoteBefore);
+    assert.equal((await status(seed)).pending_upload, true);
+    await rm(join(remote, "lfs"));
+    assert.equal((await sync(seed)).state, "pushed");
   } finally { await rm(container, { recursive: true, force: true }); }
 });
 
@@ -224,9 +274,8 @@ test("unchanged sync fetches upstream but skips catalog and attachment validatio
     assert.match(readable.stdout, /Already synchronized/);
     const json = await run(process.execPath, [cli, "--root", seed.root, "--json", "sync"], seed.root);
     assert.equal(JSON.parse(json.stdout).state, "up-to-date");
-    assert.doesNotMatch(json.stderr, /Checking local|Fetching upstream/);
+    assert.match(json.stderr, /Checking local state/); assert.match(json.stderr, /Fetching upstream/);
 
-    const { readFile } = await import("node:fs/promises");
     const commands: string[][] = (await readFile(trace, "utf8")).trim().split("\n").map(row => JSON.parse(row)).filter(row => row.event === "start").map(row => row.argv);
     assert.ok(commands.some(argv => argv.includes("fetch")));
     assert.ok(commands.every(argv => !argv.includes("cat-file") && !argv.includes("show") && !argv.includes("push")));
