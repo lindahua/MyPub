@@ -130,7 +130,18 @@ test("file opening rejects LFS pointers, missing binaries and escaping symlinks;
     /@article\{one/,
   );
   assert.ok(
-    (await service.action("attachment", library, paper.id, a.id)).endsWith(a.path),
+    (await service.action("attachment", library, paper.id, a.id)).endsWith(
+      a.path,
+    ),
+  );
+  assert.ok(
+    (await service.action("paper-pdf", library, paper.id, a.id)).endsWith(
+      a.path,
+    ),
+  );
+  await assert.rejects(
+    service.action("paper-pdf", library, paper.id),
+    /not a paper PDF/,
   );
   await writeFile(
     join(root, a.path),
@@ -140,6 +151,10 @@ test("file opening rejects LFS pointers, missing binaries and escaping symlinks;
   assert.equal(service.state.snapshot?.availability[a.id], "not-downloaded");
   await assert.rejects(
     service.action("attachment", library, paper.id, a.id),
+    /not available/,
+  );
+  await assert.rejects(
+    service.action("paper-pdf", library, paper.id, a.id),
     /not available/,
   );
   await rm(join(root, a.path));

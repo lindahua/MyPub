@@ -7,7 +7,7 @@ import type {
 } from "../core/types.js";
 import { publicationDate, publicationYear } from "../core/dates.js";
 import { scholarEntryIds } from "../core/scholar-links.js";
-import type { Collection, Snapshot } from "./types.js";
+import type { Availability, Collection, Snapshot } from "./types.js";
 export type Value = string | number | null | string[];
 export interface Row {
   id: string;
@@ -69,6 +69,22 @@ export const searchMatches = (text: string, query: string): boolean =>
   );
 export const yearOf = (p: Publication): number | null =>
   publicationYear(p) ?? null;
+export function paperPdfAction(
+  publication: Publication,
+  availability: Record<string, Availability>,
+): { id: string } | null {
+  const localPdfs = publication.attachments.filter(
+    (attachment) =>
+      attachment.role === "paper" &&
+      attachment.media_type === "application/pdf" &&
+      availability[attachment.id] === "local",
+  );
+  const selected =
+    localPdfs.find(
+      (attachment) => attachment.id === publication.primary_attachment_id,
+    ) ?? localPdfs[0];
+  return selected ? { id: selected.id } : null;
+}
 export function resolved<T extends { id: string; merged_into?: string }>(
   map: Map<string, T>,
   id?: string,

@@ -5,6 +5,7 @@ import {
   emptyGroup,
   filterError,
   newRule,
+  paperPdfAction,
   sortRows,
 } from "./model.js";
 import type { Snapshot } from "./types.js";
@@ -27,6 +28,77 @@ const paper = (id: string, patch: Partial<Publication> = {}): Publication => ({
   relations: [],
   attachments: [],
   ...patch,
+});
+test("paper PDF action requires a registered local paper PDF and prefers the primary", () => {
+  const attachments: Publication["attachments"] = [
+    {
+      id: "supplement",
+      role: "supplement",
+      original_filename: "extra.pdf",
+      media_type: "application/pdf",
+      size_bytes: 1,
+      storage: "git-lfs",
+      path: "attachments/extra.pdf",
+      sha256: "a".repeat(64),
+    },
+    {
+      id: "other-paper",
+      role: "paper",
+      original_filename: "other.pdf",
+      media_type: "application/pdf",
+      size_bytes: 1,
+      storage: "git-lfs",
+      path: "attachments/other.pdf",
+      sha256: "b".repeat(64),
+    },
+    {
+      id: "primary",
+      role: "paper",
+      original_filename: "main.pdf",
+      media_type: "application/pdf",
+      size_bytes: 1,
+      storage: "git-lfs",
+      path: "attachments/main.pdf",
+      sha256: "c".repeat(64),
+    },
+  ];
+  const publication = paper("paper", {
+    attachments,
+    primary_attachment_id: "primary",
+    paper_url: "https://example.org/paper.pdf",
+  });
+  assert.deepEqual(
+    paperPdfAction(publication, {
+      supplement: "local",
+      "other-paper": "local",
+      primary: "local",
+    }),
+    { id: "primary" },
+  );
+  assert.deepEqual(
+    paperPdfAction(publication, {
+      supplement: "local",
+      "other-paper": "local",
+      primary: "not-downloaded",
+    }),
+    { id: "other-paper" },
+  );
+  assert.equal(
+    paperPdfAction(publication, {
+      supplement: "local",
+      "other-paper": "missing",
+      primary: "not-downloaded",
+    }),
+    null,
+  );
+  assert.equal(
+    paperPdfAction(paper("url-only", { paper_url: "https://example.org/paper.pdf" }), {}),
+    null,
+  );
+  assert.equal(
+    paperPdfAction(paper("none", { attachments }), { supplement: "local" }),
+    null,
+  );
 });
 function fixture(): ViewModel {
   const snapshot: Snapshot = {

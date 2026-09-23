@@ -553,6 +553,16 @@ small {
   font-size: 12px;
   align-items: center;
 }
+.show-pdf {
+  color: var(--accent);
+  border-color: var(--accent);
+  width: 30px;
+  height: 28px;
+  padding: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .tag,
 .tags span {
   border: 1px solid var(--line);
@@ -909,6 +919,26 @@ summary {
 .detail-pane-header button {
   font-size: 22px;
   line-height: 1;
+}
+.pdf-pane .detail-pane-header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pdf-pane-content {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.pdf-pane-content iframe {
+  flex: 1;
+  width: 100%;
+  border: 0;
+}
+.pdf-pane-loading,
+.pdf-pane-error {
+  padding: 22px;
 }
 .detail-pane-content {
   overflow: auto;

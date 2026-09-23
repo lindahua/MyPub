@@ -30,12 +30,17 @@ export interface DesktopAPI {
     publicationId: string,
     attachmentId: string,
   ): Promise<void>;
+  loadPaperPdf(
+    libraryId: string,
+    publicationId: string,
+    attachmentId: string,
+  ): Promise<Uint8Array>;
   openURL(url: string): Promise<void>;
   onState(callback: (state: DesktopState) => void): () => void;
 }
 export type WorkerCommand = {
   id: number;
-  action: "citation" | "attachment";
+  action: "citation" | "attachment" | "paper-pdf";
   libraryId: string;
   publicationId: string;
   attachmentId?: string;

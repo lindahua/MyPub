@@ -20,7 +20,7 @@ Revised 7 September 2026 with the following user decisions. They are implemented
 
 Build a reusable TypeScript core and a command-line interface over a portable, versioned publication catalog. Provide an Electron viewer over the same local catalog. Store curated metadata as one readable JSON file per publication and synchronize through a private Git repository. Store publication PDFs and other attachments under the same repository layout using Git LFS, with selective downloads on each computer. Use external sources to propose metadata changes and refresh a local mirror of your Google Scholar profile and its dated citation counts. Your accepted records remain authoritative. Publications are the only publication-level bibliographic entity; optional relations connect related publications without a parent “Work” layer. Shared author records identify people, while each publication stores their ordered credits, publication-specific names, and authorship roles. Shared venue records identify journals, conference/workshop series, and repositories; publications link to them while preserving their own bibliographic venue wording.
 
-The core runs locally through a CLI, an importable TypeScript API and the Electron viewer. The viewer uses the same catalog read/validation operations from a background worker. A hosted browser interface, HTTP server and embedded attachment previews remain deferred; the core has no dependency on Electron or a UI framework.
+The core runs locally through a CLI, an importable TypeScript API and the Electron viewer. The viewer uses the same catalog read/validation operations from a background worker. Publication PDFs can be previewed in the viewer's right pane; other embedded attachment previews remain deferred. A hosted browser interface and HTTP server remain deferred; the core has no dependency on Electron or a UI framework.
 
 ## 1. Scope and chosen direction
 
@@ -527,7 +527,7 @@ Find or create a venue identity, then link it to a publication while keeping the
 
 ### Attach files
 
-Supply a publication ID, local file path, role, and optional label to the CLI. The core copies the original into its managed attachment directory and records its size and hash. Select a primary PDF for an open-paper operation. Multiple PDFs and videos are supported. Drag-and-drop and embedded previews belong to the later Electron phase.
+Supply a publication ID, local file path, role, and optional label to the CLI. The core copies the original into its managed attachment directory and records its size and hash. Select a primary PDF for an open-paper operation. Multiple PDFs and videos are supported. The Electron viewer previews paper PDFs in its right pane; drag-and-drop and other embedded attachment previews remain later work.
 
 ### Switch computers
 
@@ -765,7 +765,7 @@ Pin dependencies and a supported Node.js LTS version. Compile TypeScript for dis
 
 Electron's main process connects a background core worker through a narrow IPC adapter, with a preload bridge exposing specific operations to the renderer. Keep filesystem and Git operations out of the renderer, retain context isolation, and validate IPC inputs. This follows Electron's main/renderer separation and avoids a required HTTP server. [Electron process model](https://www.electronjs.org/docs/latest/tutorial/process-model) · [Electron context isolation](https://www.electronjs.org/docs/latest/tutorial/context-isolation)
 
-The implemented Electron viewer provides Overview, Publications, Authors, Venues and Google Scholar pages with folder selection and a right-side detail pane. Review/Sync editing screens, embedded previews and signed installers remain later work.
+The implemented Electron viewer provides Overview, Publications, Authors, Venues and Google Scholar pages with folder selection, a right-side detail pane, and a right-side paper PDF preview. Review/Sync editing screens, other embedded previews and signed installers remain later work.
 
 | Delivery step | Result |
 | --- | --- |
@@ -773,8 +773,8 @@ The implemented Electron viewer provides Overview, Publications, Authors, Venues
 | 2. Core and CLI MVP | Import, review, edit, search/filter, optional publication relations, attachment management and external opening, and BibTeX/CSV export through reusable operations |
 | 3. Travel-ready synchronization | Private Git/LFS remote setup, sync status, conflict resolution, selective attachment downloads, offline pinning, and complete backup/restore on two computers |
 | 4. Scholar reconciliation | Bibliographic cross-checking, batch citation snapshot import, mapping review, and dated counts |
-| Electron viewer: implemented | Reuse core snapshots through a worker and IPC; five pages, filters, a right-side detail pane, local file opening and refresh |
-| Later desktop workflows | Forms, review/conflict screens, drag-and-drop, embedded previews and signed installers |
+| Electron viewer: implemented | Reuse core snapshots through a worker and IPC; five pages, filters, a right-side detail pane, paper PDF preview, local file opening and refresh |
+| Later desktop workflows | Forms, review/conflict screens, drag-and-drop, other embedded previews and signed installers |
 | Later, if useful | Citation history charts, generated homepage/CV lists, attachment text search, thumbnails, and assisted capture |
 
 The first implementation phase covers steps 1–4 as a library and CLI. The approved Electron viewer extends this implementation; forms and mutation workflows remain a later phase. The deliverable is the TypeScript library and CLI, including the author, venue, and Google Scholar additions described here. Treat scheduled scraping, multiuser collaboration, a PDF annotation editor, mobile editing, and a hosted write service as separate scope decisions.
@@ -884,7 +884,7 @@ Publications support an optional plain-text `abstract`, separate from private no
 
 ### Publication landing pages and paper files
 
-A publication may have an `official_url` to its official title/authors/abstract page and a `paper_url` directly to its paper file (normally PDF). Both are optional and refer to this publication, not another version published at a different venue. Additional resources remain in `extra_urls`. Core add/update and reviewed import preserve the two roles; native JSON, CSV and BibTeX export them, and expanded desktop details label them “Official page” and “Paper”. arXiv lookup supplies its canonical abstract and PDF links. DOI lookup uses the supplied landing-page URL; it does not guess a PDF URL. Existing links are not automatically reclassified. Remote paper URLs are independent of managed, downloaded attachments.
+A publication may have an `official_url` to its official title/authors/abstract page and a `paper_url` directly to its paper file (normally PDF). Both are optional and refer to this publication, not another version published at a different venue. Additional resources remain in `extra_urls`. Core add/update and reviewed import preserve the two roles; native JSON, CSV and BibTeX export them, and expanded desktop details label them “Official page” and “Paper”. Publication list rows offer an accessible PDF icon button only when a registered paper-role PDF is available locally; it opens a PDF preview in the right pane, choosing the primary local paper PDF first. A `paper_url` alone never enables this button. The preview reads the local attachment through catalog validation. arXiv lookup supplies its canonical abstract and PDF links. DOI lookup uses the supplied landing-page URL; it does not guess a PDF URL. Existing links are not automatically reclassified. Remote paper URLs are independent of managed, downloaded attachments.
 
 The standard build rebuilds the TypeScript core/CLI and bundled Electron renderer/preload together. This prevents a current schema reader from being paired with stale publication-detail UI code. Running viewers must be restarted after a rebuild.
 

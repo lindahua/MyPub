@@ -16,6 +16,7 @@ import {
   fieldsFor,
   filterError,
   newRule,
+  paperPdfAction,
   resolved,
   sortRows,
   yearOf,
@@ -119,6 +120,7 @@ interface Context {
   visit: (page: Page, patch?: Partial<View>) => void;
   perform: (action: () => Promise<unknown>, message?: string) => void;
   toggle: (id: string) => void;
+  showPdf: (id: string) => void;
   expanded: string[];
 }
 const UI = createContext<Context>(null!);
@@ -1185,9 +1187,10 @@ function CitationHistory({ entry }: { entry: ScholarEntry }) {
   );
 }
 function Entry({ row, collection }: { row: Row; collection: Collection }) {
-  const { model, toggle, expanded } = useUI();
+  const { model, toggle, expanded, showPdf } = useUI();
   const open = expanded.includes(row.id),
     p = model.publications.get(row.id),
+    pdf = p ? paperPdfAction(p, model.snapshot.availability) : null,
     entry =
       collection === "scholar"
         ? model.scholar.get(row.id)
@@ -1263,6 +1266,31 @@ function Entry({ row, collection }: { row: Row; collection: Collection }) {
                     : "Files unavailable locally"}
                 </span>
               )}
+              {pdf && (
+                <button
+                  id={`pdf-${p.id}`}
+                  className="show-pdf"
+                  aria-label={`Show PDF for ${p.title}`}
+                  title="Show PDF"
+                  onClick={() => showPdf(p.id)}
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="18"
+                    height="18"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M6 2.75h8l4 4V21.25H6a2 2 0 0 1-2-2V4.75a2 2 0 0 1 2-2Z" />
+                    <path d="M14 2.75v4h4M8 12h6M8 16h8" />
+                  </svg>
+                </button>
+              )}
               {p.tags.map((t) => (
                 <span className="tag" key={t}>
                   {t}
@@ -1337,6 +1365,85 @@ function DetailPane({
       </header>
       <div className="detail-pane-content">
         <RecordDetails collection={collection} id={id} />
+      </div>
+    </aside>
+  );
+}
+function PdfPane({
+  publication,
+  libraryId,
+  attachmentId,
+  onClose,
+}: {
+  publication: Publication;
+  libraryId: string;
+  attachmentId: string;
+  onClose: (id: string | null) => void;
+}) {
+  const [source, setSource] = useState("");
+  const [error, setError] = useState("");
+  const closeButton = useRef<HTMLButtonElement>(null);
+  function close() {
+    onClose(null);
+    document
+      .getElementById(`pdf-${publication.id}`)
+      ?.focus({ preventScroll: true });
+  }
+  useEffect(() => {
+    let live = true;
+    let objectUrl = "";
+    setSource("");
+    setError("");
+    void window.mypub
+      .loadPaperPdf(libraryId, publication.id, attachmentId)
+      .then((bytes) => {
+        if (!live) return;
+        objectUrl = URL.createObjectURL(
+          new Blob([Uint8Array.from(bytes).buffer], {
+            type: "application/pdf",
+          }),
+        );
+        setSource(objectUrl);
+      })
+      .catch((cause) => {
+        if (live) setError(String(cause));
+      });
+    return () => {
+      live = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [libraryId, publication.id, attachmentId]);
+  useEffect(() => {
+    closeButton.current?.focus({ preventScroll: true });
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !event.defaultPrevented) {
+        event.preventDefault();
+        close();
+      }
+    };
+    window.addEventListener("keydown", escape);
+    return () => window.removeEventListener("keydown", escape);
+  }, [publication.id, onClose]);
+  return (
+    <aside className="detail-pane pdf-pane" aria-label="Paper PDF pane">
+      <header className="detail-pane-header">
+        <span title={publication.title}>PDF · {publication.title}</span>
+        <button ref={closeButton} aria-label="Close PDF pane" onClick={close}>
+          ×
+        </button>
+      </header>
+      <div className="pdf-pane-content">
+        {error ? (
+          <div className="pdf-pane-error" role="alert">
+            <p>{error}</p>
+          </div>
+        ) : source ? (
+          <iframe title={`PDF preview of ${publication.title}`} src={source} />
+        ) : (
+          <p className="pdf-pane-loading" role="status">
+            Loading PDF…
+          </p>
+        )}
       </div>
     </aside>
   );
@@ -2229,7 +2336,8 @@ function App() {
     error: null,
   });
   const [view, setView] = useState<View>(() => freshView("overview")),
-    [message, setMessage] = useState("");
+    [message, setMessage] = useState(""),
+    [pdfId, setPdfId] = useState<string | null>(null);
   const history = useRef<Array<{ view: View; scroll: number }>>([]),
     future = useRef<Array<{ view: View; scroll: number }>>([]);
   const main = useRef<HTMLElement>(null),
@@ -2254,6 +2362,7 @@ function App() {
     if (desktop.root !== library.current) {
       library.current = desktop.root ?? "";
       setView(freshView("overview"));
+      setPdfId(null);
       history.current = [];
       future.current = [];
     }
@@ -2280,12 +2389,14 @@ function App() {
     }));
   }
   function visit(page: Page, patch: Partial<View> = {}) {
+    setPdfId(null);
     history.current.push({ view, scroll: main.current?.scrollTop ?? 0 });
     future.current = [];
     scrollRestore.current = 0;
     setView({ ...freshView(page), ...patch });
   }
   function travel(back: boolean) {
+    setPdfId(null);
     const source = back ? history : future,
       destination = back ? future : history;
     const target = source.current.pop();
@@ -2334,6 +2445,11 @@ function App() {
       setMessage(String(e));
     }
   }
+  const pdfPublication = pdfId ? model?.publications.get(pdfId) : undefined;
+  const pdfAction =
+    pdfPublication && model
+      ? paperPdfAction(pdfPublication, model.snapshot.availability)
+      : null;
   const context: Context | null = model
     ? {
         model,
@@ -2341,13 +2457,16 @@ function App() {
         visit,
         perform,
         expanded: view.expanded,
-        toggle: (id) =>
+        toggle: (id) => {
+          setPdfId(null);
           setView((v) => ({
             ...v,
             expanded: v.expanded.includes(id)
               ? v.expanded.filter((x) => x !== id)
               : [id],
-          })),
+          }));
+        },
+        showPdf: setPdfId,
       }
     : null;
   return (
@@ -2459,7 +2578,7 @@ function App() {
           </div>
         )}
         <div
-          className={`content-workspace ${context && view.expanded.length ? "has-detail-pane" : ""}`}
+          className={`content-workspace ${context && (view.expanded.length || pdfAction) ? "has-detail-pane" : ""}`}
         >
           <main className="main" ref={main}>
             {context ? (
@@ -2534,16 +2653,29 @@ function App() {
               </div>
             )}
           </main>
-          {context && view.expanded[0] && (
+          {context && pdfPublication && pdfAction ? (
             <UI.Provider value={context}>
-              <DetailPane
-                key={view.expanded[0]}
-                collection={
-                  view.page === "overview" ? "publications" : view.page
-                }
-                id={view.expanded[0]}
+              <PdfPane
+                key={pdfId}
+                publication={pdfPublication}
+                libraryId={model!.snapshot.state.library.id}
+                attachmentId={pdfAction.id}
+                onClose={setPdfId}
               />
             </UI.Provider>
+          ) : (
+            context &&
+            view.expanded[0] && (
+              <UI.Provider value={context}>
+                <DetailPane
+                  key={view.expanded[0]}
+                  collection={
+                    view.page === "overview" ? "publications" : view.page
+                  }
+                  id={view.expanded[0]}
+                />
+              </UI.Provider>
+            )
           )}
         </div>
         <footer className="app-footer">

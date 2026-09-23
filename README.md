@@ -147,7 +147,7 @@ npm run coverage
 
 The coverage command enforces minimum aggregate thresholds of 90% for lines and 80% for functions.
 
-The Electron viewer is available with `npm run desktop`. Embedded graphical previews, browser capture, desktop editing, and hosted services remain outside this viewer phase. See [DESIGN.md](DESIGN.md) for architecture and requirements.
+The Electron viewer is available with `npm run desktop`. It previews publication PDFs in its right pane. Browser capture, desktop editing, and hosted services remain outside this viewer phase. See [DESIGN.md](DESIGN.md) for architecture and requirements.
 
 ## Local configuration
 
@@ -196,7 +196,7 @@ mypub-view --help
 
 The light-themed Electron app opens the configured `repo_path`, or lets you choose a library folder. It has Overview, Publications, Authors, Venues and Google Scholar pages. Group publications by year or venue, use the left navigator, combine conditions with the Filter builder, and click any entry to open its details in a pane on the right. Selecting another record replaces the pane contents. Close it with the × button, Escape, or the selected row; the list and details scroll independently. On narrow windows the pane overlays the right side of the list. The overview shows the most cited papers, using observed Scholar counts rather than inferred totals.
 
-Search across the library with Command/Ctrl+K. Back/forward buttons (or Alt+Left/Right) restore the preceding view. The filter builder supports AND/OR groups, identity selectors, author roles, numeric ranges, missing values and constraints on a linked publication. Unknown citation counts are distinct from zero. The viewer can copy BibTeX and open local PDFs/images/text/videos or HTTP(S) links. Unmaterialized LFS attachments must first be fetched through the CLI.
+Search across the library with Command/Ctrl+K. Back/forward buttons (or Alt+Left/Right) restore the preceding view. The filter builder supports AND/OR groups, identity selectors, author roles, numeric ranges, missing values and constraints on a linked publication. Unknown citation counts are distinct from zero. Publication rows show a PDF icon button only when a registered paper PDF is available locally; it prefers the primary paper PDF and previews it in the right pane. A `paper_url` alone does not show the button. The viewer can copy BibTeX and open other local files or HTTP(S) links. Unmaterialized LFS attachments must first be fetched through the CLI.
 
 Catalog and database changes refresh automatically, including CLI edits and SQLite replacement. Filters and the selected detail pane remain in place. A failed refresh shows the last valid snapshot with an error; Retry rechecks the catalog. All metadata remains in the canonical JSON files. No automatic remote sync, Scholar capture or publication edit is performed by the viewer.
 

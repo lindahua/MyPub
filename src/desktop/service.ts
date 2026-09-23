@@ -206,7 +206,7 @@ export class LibraryService {
     }
   }
   async action(
-    action: "citation" | "attachment",
+    action: "citation" | "attachment" | "paper-pdf",
     libraryId: string,
     publicationId: string,
     attachmentId?: string,
@@ -216,7 +216,7 @@ export class LibraryService {
     );
   }
   private async actionNow(
-    action: "citation" | "attachment",
+    action: "citation" | "attachment" | "paper-pdf",
     libraryId: string,
     publicationId: string,
     attachmentId?: string,
@@ -232,6 +232,12 @@ export class LibraryService {
     const attachment = publication.attachments.find(
       (a) => a.id === attachmentId,
     );
+    if (
+      action === "paper-pdf" &&
+      (attachment?.role !== "paper" ||
+        attachment.media_type !== "application/pdf")
+    )
+      throw new Error("This attachment is not a paper PDF.");
     if (
       !attachment ||
       (await attachmentAvailability(this.catalog.root, attachment)) !== "local"

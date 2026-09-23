@@ -8,6 +8,8 @@ const api: DesktopAPI = {
     ipcRenderer.invoke("mypub:citation", library, publication),
   openAttachment: (library, publication, attachment) =>
     ipcRenderer.invoke("mypub:attachment", library, publication, attachment),
+  loadPaperPdf: (library, publication, attachment) =>
+    ipcRenderer.invoke("mypub:paper-pdf", library, publication, attachment),
   openURL: (url) => ipcRenderer.invoke("mypub:url", url),
   onState: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, state: DesktopState) =>

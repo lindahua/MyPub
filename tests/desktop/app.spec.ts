@@ -2,6 +2,7 @@ import { test, expect, _electron as electron } from "@playwright/test";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
+import { PDFDocument } from "pdf-lib";
 import { importScholarSnapshot } from "../../dist/core/scholar.js";
 import { Catalog, publicationFromInput } from "../../dist/core/catalog.js";
 import {
@@ -41,6 +42,17 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
         tags: [i % 2 ? "video" : "geometry"],
       }),
     );
+  const pdf = await PDFDocument.create();
+  pdf.addPage([400, 550]);
+  const pdfSource = join(root, "preview.pdf");
+  await writeFile(pdfSource, await pdf.save());
+  await catalog.addAttachment(
+    publications[7]!.id,
+    pdfSource,
+    "paper",
+    undefined,
+    true,
+  );
   await configureOwner(catalog, author.id, "profile");
   const capture = join(root, "capture.json");
   await writeFile(
@@ -120,9 +132,28 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
       .getByRole("button", { name: "2025 4", exact: true })
       .click();
     await expect(page.locator("article.entry")).toHaveCount(4);
+    await expect(
+      page.getByRole("button", {
+        name: "Show PDF for Visual learning paper 01",
+        exact: true,
+      }),
+    ).toHaveCount(0);
+    const pdfButton = page.getByRole("button", {
+      name: "Show PDF for Visual learning paper 07",
+      exact: true,
+    });
+    await expect(pdfButton.locator("svg")).toBeVisible();
+    await expect(pdfButton).toHaveText("");
+    await pdfButton.click();
+    const pdfPane = page.getByRole("complementary", { name: "Paper PDF pane" });
+    await expect(pdfPane).toBeVisible();
+    await expect(pdfPane.locator("iframe")).toHaveAttribute("src", /^blob:/);
+    await pdfPane.getByRole("button", { name: "Close PDF pane" }).click();
+    await expect(pdfPane).toHaveCount(0);
+    await expect(pdfButton).toBeFocused();
     const title = page.getByRole("button", {
       name: "Visual learning paper 07",
-      exact: false,
+      exact: true,
     });
     await title.click();
     await expect(title).toHaveAttribute("aria-expanded", "true");
@@ -151,7 +182,7 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
     );
     const other = page.getByRole("button", {
       name: "Visual learning paper 01",
-      exact: false,
+      exact: true,
     });
     await other.click();
     await expect(title).toHaveAttribute("aria-expanded", "false");
@@ -175,7 +206,7 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
     await page.getByRole("textbox", { name: "Filter value" }).fill("video");
     await expect(page.locator("article.entry")).toHaveCount(2);
     await page.getByRole("button", { name: "Clear all", exact: true }).click();
-    const target = publications[7]!;
+    const target = publications[8]!;
     const snapshot = await catalog.snapshot();
     const path = join(root, snapshot.paths[target.id]!);
     const original = await readFile(path, "utf8");
@@ -189,7 +220,7 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
     await expect(
       page.getByRole("button", {
         name: "Externally updated paper",
-        exact: false,
+        exact: true,
       }),
     ).toBeVisible({ timeout: 15000 });
     await writeFile(path, "{");

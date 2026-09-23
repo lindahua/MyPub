@@ -12,6 +12,7 @@ import {
   shell,
 } from "electron";
 import { Worker } from "node:worker_threads";
+import { readFile, stat } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import {
@@ -118,7 +119,7 @@ function stringArg(value: unknown): string {
   return value;
 }
 function action(
-  action: "citation" | "attachment",
+  action: "citation" | "attachment" | "paper-pdf",
   libraryId: unknown,
   publicationId: unknown,
   attachmentId?: unknown,
@@ -142,6 +143,15 @@ function action(
       ...(attachmentId ? { attachmentId: stringArg(attachmentId) } : {}),
     });
   });
+}
+const maxPdfBytes = 100 * 1024 * 1024;
+function assertPdf(bytes: Uint8Array): Uint8Array {
+  if (
+    bytes.length < 5 ||
+    new TextDecoder().decode(bytes.subarray(0, 5)) !== "%PDF-"
+  )
+    throw new Error("The paper source did not return a PDF.");
+  return bytes;
 }
 function setupIPC(): void {
   const handle = (channel: string, callback: (...args: unknown[]) => unknown) =>
@@ -168,6 +178,22 @@ function setupIPC(): void {
     const path = await action("attachment", library, publication, attachment);
     const error = await shell.openPath(path);
     if (error) throw new Error(error);
+  });
+  handle("mypub:paper-pdf", async (library, publication, attachment) => {
+    const attachmentId = stringArg(attachment);
+    const source = await action(
+      "paper-pdf",
+      library,
+      publication,
+      attachmentId,
+    );
+    const info = await stat(source);
+    if (!info.isFile() || info.size > maxPdfBytes)
+      throw new Error("The paper PDF is too large to preview.");
+    const bytes = await readFile(source);
+    if (bytes.length > maxPdfBytes)
+      throw new Error("The paper PDF is too large to preview.");
+    return assertPdf(bytes);
   });
   handle("mypub:url", async (value) => {
     const url = new URL(stringArg(value));
