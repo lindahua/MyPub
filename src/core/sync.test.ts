@@ -114,14 +114,16 @@ test("sync fast-forwards, materializes main papers, and rejects invalid remote c
     const file = join(container, "paper.pdf"); await writeFile(file, "%PDF remote attachment");
     const attachment = await seed.addAttachment(p.id, file, "paper");
     const uploadProgress: string[] = []; await commit(seed); await sync(seed, undefined, event => uploadProgress.push(event.message));
-    assert.ok(uploadProgress.some(message => /Uploaded \[1\/1\] catalog\/paper_files\/.* — 22 B/.test(message)), JSON.stringify(uploadProgress));
+    assert.ok(uploadProgress.includes("Uploading attachments: 100%"), JSON.stringify(uploadProgress));
+    assert.ok(uploadProgress.every(message => !/Uploading \[/.test(message)), JSON.stringify(uploadProgress));
     const remoteHead = (await run("git", ["rev-parse", "HEAD"], seed.root)).stdout.trim();
     const progress: Array<{ phase: string; message: string }> = [];
     assert.equal((await sync(other, undefined, event => progress.push(event))).state, "pulled");
     assert.equal((await run("git", ["rev-parse", "HEAD"], other.root)).stdout.trim(), remoteHead);
     assert.equal(await readFile(join(other.root, attachment.path), "utf8"), "%PDF remote attachment");
     assert.ok(progress.some(event => /Downloading 1 paper file \(22 B\)/.test(event.message)));
-    assert.ok(progress.some(event => /Download(?:ing|ed) \[1\/1\] catalog\/paper_files\/.* — 22 B/.test(event.message)), JSON.stringify(progress));
+    assert.ok(progress.some(event => event.message === "Downloading papers: 100%"), JSON.stringify(progress));
+    assert.ok(progress.every(event => !/Downloading \[|Downloaded \[|Materializing \[/.test(event.message)), JSON.stringify(progress));
     assert.ok(progress.some(event => event.message === "Paper files ready: 1/1."));
     assert.ok(progress.findIndex(event => event.phase === "download-papers") < progress.findIndex(event => event.phase === "integrate"));
     assert.ok(progress.findIndex(event => event.phase === "materialize-papers") > progress.findIndex(event => event.phase === "integrate"));

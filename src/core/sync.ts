@@ -11,6 +11,7 @@ import { loadState, recoverTransactions, refreshStoredDatabase } from "./storage
 import { assertUnchangedEvidence, validateState } from "./validation.js";
 import { ensureLocalIgnored } from "../adapters/database.js";
 import { assertLibrary, validUuid, validRepositoryPath } from "./schemas.js";
+import { LfsProgressTracker } from "./lfs-progress.js";
 
 // Git integration skips automatic smudging. Sync fetches and materializes only the
 // main paper collection explicitly, after validating the incoming catalog.
@@ -28,24 +29,23 @@ async function lfsFiles(c: Catalog, revision: string, include?: string): Promise
   const parsed = JSON.parse((await git(c, args)).stdout) as { files?: LfsFile[] | null };
   return Array.isArray(parsed.files) ? parsed.files : [];
 }
-async function lfsTransfer(c: Catalog, args: string[], phase: string, onProgress?: ProgressHandler): Promise<Set<string>> {
-  if (!onProgress) { await git(c, args); return new Set(); }
+async function lfsTransfer(c: Catalog, args: string[], phase: string, direction: "checkout" | "download" | "upload", files: LfsFile[], onProgress?: ProgressHandler): Promise<void> {
+  if (!onProgress) { await git(c, args); return; }
   await mkdir(c.localDir, { recursive: true });
   const progressPath = join(c.localDir, `lfs-progress-${uuid()}.log`); await writeFile(progressPath, "");
-  let offset = 0, polling = false, pollError: unknown; const reported = new Map<string, number>(), completed = new Set<string>();
+  let offset = 0, polling = false, pollError: unknown;
+  const tracker = new LfsProgressTracker(direction, files.map(file => file.name));
+  const label = direction === "upload" ? "Uploading attachments" : direction === "download" ? "Downloading papers" : "Materializing papers";
+  const report = (percent: number | undefined) => {
+    if (percent !== undefined) onProgress({ phase, message: `${label}: ${percent}%`, current: percent, total: 100 });
+  };
   const poll = async (): Promise<void> => {
     if (polling) return; polling = true;
     try {
       const data = await readFile(progressPath, "utf8"); const end = data.lastIndexOf("\n");
       if (end < offset) return;
       for (const line of data.slice(offset, end + 1).split("\n")) {
-        const match = /^(checkout|download|upload) (\d+)\/(\d+) (\d+)\/(\d+) (.+)$/.exec(line); if (!match) continue;
-        const [, direction, currentText, totalText, bytesText, sizeText, name] = match;
-        const current = Number(currentText), total = Number(totalText), bytes = Number(bytesText), size = Number(sizeText);
-        const percent = size > 0 ? Math.min(100, Math.floor(bytes * 100 / size)) : 100; const bucket = percent === 100 ? 20 : Math.floor(percent / 5);
-        const key = `${direction}:${name}`; if ((reported.get(key) ?? -1) >= bucket) continue; reported.set(key, bucket); if (percent === 100) completed.add(name!);
-        const verb = direction === "upload" ? "Uploading" : direction === "download" ? "Downloading" : "Materializing";
-        onProgress({ phase, message: `${verb} [${current}/${total}] ${name} — ${formatBytes(bytes)} / ${formatBytes(size)} (${percent}%)`, current, total });
+        report(tracker.accept(line));
       }
       offset = end + 1;
     } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") pollError ??= error; }
@@ -55,7 +55,7 @@ async function lfsTransfer(c: Catalog, args: string[], phase: string, onProgress
   try { await git(c, args, false, undefined, { env: { GIT_LFS_PROGRESS: progressPath, GIT_LFS_FORCE_PROGRESS: "1" } }); }
   finally { clearInterval(timer); while (polling) await new Promise(resolve => setTimeout(resolve, 10)); await poll(); await rm(progressPath, { force: true }); }
   if (pollError) throw pollError;
-  return completed;
+  report(tracker.finish());
 }
 async function fetchPaperFiles(c: Catalog, remote: string, revision: string, onProgress?: ProgressHandler): Promise<LfsFile[]> {
   const files = await lfsFiles(c, revision, "catalog/paper_files/**");
@@ -64,8 +64,7 @@ async function fetchPaperFiles(c: Catalog, remote: string, revision: string, onP
   const totalBytes = missing.reduce((sum, file) => sum + file.size, 0);
   onProgress?.({ phase: "download-papers", message: `Downloading ${missing.length} paper file${missing.length === 1 ? "" : "s"} (${formatBytes(totalBytes)})…`, current: 0, total: missing.length });
   try {
-    const completed = await lfsTransfer(c, ["lfs", "fetch", `--include=catalog/paper_files/**`, "--exclude=", remote, revision], "download-papers", onProgress);
-    missing.forEach((file, index) => { if (!completed.has(file.name)) onProgress?.({ phase: "download-papers", message: `Downloaded [${index + 1}/${missing.length}] ${file.name} — ${formatBytes(file.size)}`, current: index + 1, total: missing.length }); });
+    await lfsTransfer(c, ["lfs", "fetch", `--include=catalog/paper_files/**`, "--exclude=", remote, revision], "download-papers", "download", missing, onProgress);
   } catch (error) {
     throw new MyPubError("Paper download failed before catalog integration. The active catalog was preserved; retry mypub sync. " + String(error), "SYNC_DOWNLOAD_FAILED");
   }
@@ -75,7 +74,7 @@ async function fetchPaperFiles(c: Catalog, remote: string, revision: string, onP
 async function checkoutPaperFiles(c: Catalog, files: LfsFile[], onProgress?: ProgressHandler): Promise<void> {
   if (!files.length) return;
   onProgress?.({ phase: "materialize-papers", message: `Materializing ${files.length} paper file${files.length === 1 ? "" : "s"} in the catalog…`, current: 0, total: files.length });
-  try { await lfsTransfer(c, ["lfs", "checkout", "catalog/paper_files/**"], "materialize-papers", onProgress); }
+  try { await lfsTransfer(c, ["lfs", "checkout", "catalog/paper_files/**"], "materialize-papers", "checkout", files, onProgress); }
   catch (error) { throw new MyPubError("Paper materialization failed after Git synchronization. Commits are retained and downloaded LFS objects are reusable; retry mypub sync. " + String(error), "SYNC_DOWNLOAD_FAILED"); }
   onProgress?.({ phase: "materialize-papers", message: `Paper files ready: ${files.length}/${files.length}.`, current: files.length, total: files.length });
 }
@@ -88,8 +87,7 @@ async function uploadLfsObjects(c: Catalog, remote: string, onProgress?: Progres
   const detail = papers.length ? `${papers.length} paper file${papers.length === 1 ? "" : "s"}, ${formatBytes(bytes)}; ${pending.length} LFS file${pending.length === 1 ? "" : "s"} total` : `${pending.length} LFS file${pending.length === 1 ? "" : "s"}`;
   onProgress?.({ phase: "upload-attachments", message: `Uploading ${detail}…`, current: 0, total: pending.length });
   try {
-    const completed = await lfsTransfer(c, ["lfs", "push", remote, "HEAD"], "upload-attachments", onProgress);
-    pending.forEach((file, index) => { if (!completed.has(file.name)) onProgress?.({ phase: "upload-attachments", message: `Uploaded [${index + 1}/${pending.length}] ${file.name} — ${formatBytes(file.size)}`, current: index + 1, total: pending.length }); });
+    await lfsTransfer(c, ["lfs", "push", remote, "HEAD"], "upload-attachments", "upload", pending, onProgress);
   }
   catch (error) { throw new MyPubError("LFS upload failed. Local commits and paper files are retained; retry mypub sync. " + String(error), "SYNC_UPLOAD_FAILED"); }
   onProgress?.({ phase: "upload-attachments", message: `LFS uploads complete: ${pending.length}/${pending.length}.`, current: pending.length, total: pending.length });
