@@ -37,7 +37,7 @@ async function lfsTransfer(c: Catalog, args: string[], phase: string, direction:
   const tracker = new LfsProgressTracker(direction, files.map(file => file.name));
   const label = direction === "upload" ? "Uploading attachments" : direction === "download" ? "Downloading papers" : "Materializing papers";
   const report = (percent: number | undefined) => {
-    if (percent !== undefined) onProgress({ phase, message: `${label}: ${percent}%`, current: percent, total: 100 });
+    if (percent !== undefined) onProgress({ phase, message: `${label}: ${percent}%`, current: percent, total: 100, percent });
   };
   const poll = async (): Promise<void> => {
     if (polling) return; polling = true;

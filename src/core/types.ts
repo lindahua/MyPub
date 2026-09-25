@@ -82,7 +82,7 @@ export interface ValidationIssue { severity: "error" | "warning"; code: string; 
 export interface ValidationResult { valid: boolean; issues: ValidationIssue[]; publication_count: number; }
 export interface AuditFinding { severity: "error"; blocks_write: false; code: "duplicate_arxiv_id"; identifier: string; publication_ids: string[]; }
 export interface ImportResult { source_review_id: string; review_ids: string[]; created: number; matched: number; duplicates: number; }
-export interface ProgressEvent { phase: string; message: string; current?: number; total?: number; }
+export interface ProgressEvent { phase: string; message: string; current?: number; total?: number; percent?: number; }
 export type ProgressHandler = (event: ProgressEvent) => void;
 export interface SyncConflict {
   schema_version: 2; id: string; kind: "record" | "path" | "identifier" | "key" | "reference" | "attachment";
