@@ -3,6 +3,7 @@ import type { DesktopAPI, DesktopState } from "./types.js";
 const api: DesktopAPI = {
   state: () => ipcRenderer.invoke("mypub:get"),
   chooseLibrary: () => ipcRenderer.invoke("mypub:choose"),
+  quit: () => ipcRenderer.invoke("mypub:quit"),
   retry: () => ipcRenderer.invoke("mypub:retry"),
   copyCitation: (library, publication) =>
     ipcRenderer.invoke("mypub:citation", library, publication),

@@ -23,6 +23,7 @@ export interface DesktopState {
 export interface DesktopAPI {
   state(): Promise<DesktopState>;
   chooseLibrary(): Promise<void>;
+  quit(): Promise<void>;
   retry(): Promise<void>;
   copyCitation(libraryId: string, publicationId: string): Promise<void>;
   openAttachment(

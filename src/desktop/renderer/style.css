@@ -183,6 +183,17 @@ small {
 .library-status .bad {
   color: var(--danger);
 }
+.quit-button {
+  margin: 18px 9px 0;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+.quit-button:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(0.92);
+}
 .workspace {
   display: flex;
   flex-direction: column;

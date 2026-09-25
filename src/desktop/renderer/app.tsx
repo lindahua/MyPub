@@ -2572,6 +2572,13 @@ function App() {
             Refresh
           </button>
         </div>
+        <button
+          className="quit-button"
+          aria-label="Quit application"
+          onClick={() => void window.mypub.quit().catch(error => setMessage(String(error)))}
+        >
+          Quit MyPub
+        </button>
       </aside>
       <div className="workspace">
         <header className="topbar">

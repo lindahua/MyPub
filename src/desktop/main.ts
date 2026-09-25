@@ -180,6 +180,7 @@ function setupIPC(): void {
     });
   handle("mypub:get", () => current);
   handle("mypub:choose", chooseLibrary);
+  handle("mypub:quit", () => app.quit());
   handle("mypub:retry", () => {
     if (worker) worker.postMessage({ action: "refresh" });
     else if (current.root) openLibrary(current.root);

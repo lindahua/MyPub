@@ -11,6 +11,36 @@ import {
   configureOwner,
 } from "../../dist/core/identities.js";
 
+test("Quit button uses the theme color and closes the application", async () => {
+  const root = await mkdtemp(join(tmpdir(), "mypub-quit-"));
+  const catalog = new Catalog({ root });
+  await catalog.initialize("Quit test library");
+  const app = await electron.launch({
+    args: [resolve("dist/desktop/main.js"), "--root", root],
+  });
+  try {
+    const page = await app.firstWindow();
+    const quit = page.getByRole("button", { name: "Quit application" });
+    await expect(quit).toBeVisible();
+    const colors = await quit.evaluate((button) => {
+      const sample = document.createElement("span");
+      sample.style.background = "var(--accent)";
+      document.body.append(sample);
+      const actual = getComputedStyle(button).backgroundColor;
+      const expected = getComputedStyle(sample).backgroundColor;
+      sample.remove();
+      return { actual, expected };
+    });
+    expect(colors.actual).toBe(colors.expected);
+    const closed = app.waitForEvent("close");
+    await quit.click();
+    await closed;
+  } finally {
+    await app.close().catch(() => {});
+    await rm(root, { recursive: true, force: true });
+  }
+});
+
 test("Electron loads SQLite, supports browsing/filters/right detail pane and refresh recovery", async () => {
   const root = await mkdtemp(join(tmpdir(), "mypub-electron-"));
   const catalog = new Catalog({ root });
