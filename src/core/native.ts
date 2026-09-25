@@ -22,14 +22,15 @@ export function nativeExport(s: CatalogState, publicationIds: string[]): NativeE
   // Include decisions about selected records, including rejected candidate pairs.
   let size = -1; while (size !== included.size) { size = included.size; for (const r of s.reviews) if (r.targets.some(t => t.entity_id && included.has(t.entity_id))) include(r.id); }
   const { id, name, schema_version } = s.library;
-  return clean({ format: "mypub-native", format_version: 1, exported_at: now(), source_library: { id, name, schema_version }, selection: { publication_ids: publicationIds }, publications: s.publications.filter(r => included.has(r.id)), authors: s.authors.filter(r => included.has(r.id)), venues: s.venues.filter(r => included.has(r.id)), gscholar_profile: profile ? s.gscholar_profile ?? null : null, gscholar_entries: s.gscholar_entries.filter(r => included.has(r.id)), reviews: s.reviews.filter(r => included.has(r.id)) });
+  return clean({ format: "mypub-native", format_version: 1, exported_at: now(), source_library: { id, name, schema_version }, selection: { publication_ids: publicationIds }, publications: s.publications.filter(r => included.has(r.id)), authors: s.authors.filter(r => included.has(r.id)), venues: s.venues.filter(r => included.has(r.id)), gscholar_profile: profile ? s.gscholar_profile ?? null : null, gscholar_entries: s.gscholar_entries.filter(r => included.has(r.id)), reviews: s.reviews.filter(r => included.has(r.id)), todos: s.todos.filter(t => t.publication_id ? included.has(t.publication_id) : publicationIds.length === s.publications.length) });
 }
 export function parseNative(value: unknown): NativeExport {
   if (!value || typeof value !== "object") throw new MyPubError("Invalid native envelope", "IMPORT_INVALID");
   const e = value as NativeExport;
-  const keys = ["format", "format_version", "exported_at", "source_library", "selection", "publications", "authors", "venues", "gscholar_profile", "gscholar_entries", "reviews"];
-  if (Object.keys(e).some(k => !keys.includes(k)) || keys.some(k => !Object.hasOwn(e, k)) || e.format !== "mypub-native" || e.format_version !== 1 || !validTimestamp(e.exported_at) || !e.source_library || !validUuid(e.source_library.id) || e.source_library.schema_version !== 2 || !e.source_library.name || !Array.isArray(e.selection?.publication_ids)) throw new MyPubError("Unsupported or malformed native envelope", "IMPORT_INVALID");
+  const keys = ["format", "format_version", "exported_at", "source_library", "selection", "publications", "authors", "venues", "gscholar_profile", "gscholar_entries", "reviews", "todos"];
+  if (Object.keys(e).some(k => !keys.includes(k)) || keys.filter(k => k !== "todos").some(k => !Object.hasOwn(e, k)) || e.format !== "mypub-native" || e.format_version !== 1 || !validTimestamp(e.exported_at) || !e.source_library || !validUuid(e.source_library.id) || e.source_library.schema_version !== 2 || !e.source_library.name || !Array.isArray(e.selection?.publication_ids)) throw new MyPubError("Unsupported or malformed native envelope", "IMPORT_INVALID");
   for (const [collection, kind] of [["publications", "publication"], ["authors", "author"], ["venues", "venue"], ["gscholar_entries", "gscholar_entry"], ["reviews", "review"]] as const) { if (!Array.isArray(e[collection])) throw new MyPubError(`Missing ${collection}`, "IMPORT_INVALID"); e[collection].forEach(r => assertRecord(kind, r)); }
+  if (e.todos !== undefined) { if (!Array.isArray(e.todos)) throw new MyPubError("Invalid todos", "IMPORT_INVALID"); e.todos.forEach(r => assertRecord("todo", r)); }
   if (e.gscholar_profile !== null) assertRecord("gscholar_profile", e.gscholar_profile);
   if (new Set(e.selection.publication_ids).size !== e.selection.publication_ids.length || e.selection.publication_ids.some(id => !e.publications.some(p => p.id === id))) throw new MyPubError("Invalid native selection", "IMPORT_INVALID");
   return e;
@@ -40,6 +41,7 @@ export function applyNative(s: CatalogState, value: unknown): void {
     const rows = s[collection] as Array<{ id: string }>;
     for (const r of e[collection]) { const old = rows.find(x => x.id === r.id); if (old && fingerprint(old) !== fingerprint(r)) throw new MyPubError(`Native import UUID collision: ${r.id}`, "IMPORT_COLLISION"); if (!old) rows.push(clean(r)); }
   }
+  for (const r of e.todos ?? []) { const old = s.todos.find(x => x.id === r.id); if (old && fingerprint(old) !== fingerprint(r)) throw new MyPubError(`Native import UUID collision: ${r.id}`, "IMPORT_COLLISION"); if (!old) s.todos.push(clean(r)); }
   if (e.gscholar_profile) {
     if (s.gscholar_profile && fingerprint(s.gscholar_profile) !== fingerprint(e.gscholar_profile)) throw new MyPubError("Scholar profile collision", "IMPORT_COLLISION");
     s.gscholar_profile = clean(e.gscholar_profile);

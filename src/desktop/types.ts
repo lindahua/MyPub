@@ -36,6 +36,8 @@ export interface DesktopAPI {
     attachmentId: string,
   ): Promise<Uint8Array>;
   openURL(url: string): Promise<void>;
+  addTodo(libraryId: string, title: string, publicationId?: string): Promise<void>;
+  setTodoCompleted(libraryId: string, todoId: string, completed: boolean): Promise<void>;
   onState(callback: (state: DesktopState) => void): () => void;
 }
 export type WorkerCommand = {
@@ -44,5 +46,6 @@ export type WorkerCommand = {
   libraryId: string;
   publicationId: string;
   attachmentId?: string;
-};
+} | { id: number; action: "todo-add"; libraryId: string; title: string; publicationId?: string }
+  | { id: number; action: "todo-set"; libraryId: string; todoId: string; completed: boolean };
 export type WorkerResponse = { id: number; result?: string; error?: string };

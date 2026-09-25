@@ -25,6 +25,7 @@ export function catalogFiles(s: CatalogState): Map<string, unknown> {
   for (const v of s.venues) rows.push({ directory: "catalog/venues", stem: slug(v.preferred_name, "venue"), id: v.id.replaceAll("-", ""), value: v, length: 8 });
   for (const g of s.gscholar_entries) rows.push({ directory: `catalog/gscholar/entries/${g.year ?? "unknown_year"}`, stem: slug(g.title, "gscholar_entry"), id: g.id.replaceAll("-", ""), value: g, length: 8 });
   for (const r of s.reviews) rows.push({ directory: "catalog/reviews", stem: slug(r.summary, "review"), id: r.id.replaceAll("-", ""), value: r, length: 8 });
+  for (const t of s.todos) rows.push({ directory: "catalog/todos", stem: slug(t.title, "todo"), id: t.id.replaceAll("-", ""), value: t, length: 8 });
   for (;;) {
     const groups = new Map<string, typeof rows>();
     for (const r of rows) { const key = portable(`${r.directory}/${r.stem}_${r.id.slice(0, r.length)}.json`); groups.set(key, [...(groups.get(key) ?? []), r]); }

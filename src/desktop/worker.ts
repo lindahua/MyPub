@@ -21,6 +21,12 @@ port.on(
       return;
     }
     if (!("id" in message)) return;
+    if (message.action === "todo-add" || message.action === "todo-set") {
+      void service.todoAction(message)
+        .then((result) => port.postMessage({ id: message.id, result }))
+        .catch((error) => port.postMessage({ id: message.id, error: String(error) }));
+      return;
+    }
     void service
       .action(
         message.action,

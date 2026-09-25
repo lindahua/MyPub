@@ -51,7 +51,7 @@ export class Catalog {
       if (await fileExists(join(this.catalogDir, "library.json"))) { await refreshStoredDatabase(this.root); return (await loadState(this.root)).state.library; }
       // An existing catalog tree without a library must not be overwritten.
       const { jsonFiles } = await import("./paths.js"); if ((await jsonFiles(this.catalogDir)).length) throw new MyPubError("Catalog directory contains records without a library", "CATALOG_EXISTS");
-      const time = now(); const s: CatalogState = { library: { schema_version: 2, id: uuid(), name, created_at: time, updated_at: time }, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [] };
+      const time = now(); const s: CatalogState = { library: { schema_version: 2, id: uuid(), name, created_at: time, updated_at: time }, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [], todos: [] };
       this.assertValid(s); await mkdir(this.attachmentsDir, { recursive: true });
       for (const [file, content] of [[".gitattributes", "attachments/** filter=lfs diff=lfs merge=lfs -text\n"], [".gitignore", "local/\n"]]) if (!await fileExists(join(this.root, file!))) await writeFile(join(this.root, file!), content!, "utf8");
       await writeState(this.root, new Map(), s); return s.library;
@@ -91,7 +91,7 @@ export class Catalog {
     return withLock(join(this.localDir, "write.lock"), async () => {
       await recoverTransactions(this.root); const loaded = await loadState(this.root); const before = clean(loaded.state); const originalFiles = new Map([...loaded.files].map(([path, value]) => [path, clean(value)])); const binaries = new Map<string, Buffer>(); const removedBinaries = new Set<string>();
       const result = await action(loaded.state, binaries); await movePaperFiles(this.root, loaded.state, binaries, removedBinaries); this.assertValid(loaded.state); assertUnchangedEvidence(before, loaded.state);
-      for (const collection of ["publications", "authors", "venues", "gscholar_entries", "reviews"] as const) for (const old of before[collection]) {
+      for (const collection of ["publications", "authors", "venues", "gscholar_entries", "reviews", "todos"] as const) for (const old of before[collection]) {
         const next = loaded.state[collection].find((r) => r.id === old.id); if (!next) throw new MyPubError("Retain records; archive rather than delete", "RECORD_DELETION");
         if (old.created_at !== next.created_at || Date.parse(next.updated_at) < Date.parse(old.updated_at)) throw new MyPubError("Record lifecycle timestamps are immutable/monotonic", "TIMESTAMP_INVALID");
       }
@@ -115,6 +115,28 @@ export class Catalog {
     if (!existing.split(/\r?\n/).includes(PAPER_LFS_RULE)) await writeFile(path, `${existing.replace(/[^\n]$/, "$&\n")}${PAPER_LFS_RULE}\n`, "utf8");
   }
   async library(): Promise<Library> { return (await this.read()).library; }
+  async addTodo(title: string, publicationId?: string) {
+    return this.change(s => {
+      const cleanTitle = title.trim();
+      if (!cleanTitle || cleanTitle.length > 500) throw new MyPubError("To-Do title must contain 1–500 characters", "SCHEMA_INVALID");
+      if (publicationId && !s.publications.some(p => p.id === publicationId)) throw new MyPubError("Publication not found", "NOT_FOUND");
+      const time = now();
+      const todo = { schema_version: 2 as const, id: uuid(), title: cleanTitle, ...(publicationId ? { publication_id: publicationId } : {}), created_at: time, updated_at: time };
+      s.todos.push(todo);
+      return todo;
+    });
+  }
+  async setTodoCompleted(id: string, completed: boolean) {
+    return this.change(s => {
+      const todo = s.todos.find(t => t.id === id);
+      if (!todo) throw new MyPubError("To-Do item not found", "NOT_FOUND");
+      if (completed === Boolean(todo.completed_at)) return todo;
+      touch(todo);
+      if (completed) todo.completed_at = now();
+      else delete todo.completed_at;
+      return todo;
+    });
+  }
   async list(filters: SearchFilters = {}): Promise<Publication[]> {
     return this.withDatabase(db => listDatabase(db, filters));
   }

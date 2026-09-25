@@ -162,7 +162,7 @@ function populate(db: DatabaseSync, state: CatalogState, files: Map<string, unkn
 }
 
 export function readDatabaseState(db: DatabaseSync): CatalogState {
-  const state: CatalogState = { library: undefined!, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [] };
+  const state: CatalogState = { library: undefined!, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [], todos: [] };
   for (const row of db.prepare("SELECT kind,json FROM records ORDER BY path").all()) {
     const value = JSON.parse(row.json as string) as never;
     const kind = row.kind as keyof CatalogState;

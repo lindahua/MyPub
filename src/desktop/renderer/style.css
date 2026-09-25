@@ -205,7 +205,7 @@ small {
   border: 0;
   background: transparent;
 }
-.topbar input {
+.topbar > input {
   width: min(580px, 80%);
   background: var(--bg);
 }
@@ -216,6 +216,21 @@ small {
   margin-left: auto;
   white-space: nowrap;
 }
+.todo-anchor { position: relative; margin-left: auto; flex: none; }
+.todo-trigger { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.todo-badge { display: inline-grid; place-items: center; min-width: 21px; height: 21px; padding: 0 5px; border-radius: 99px; background: #dae8fa; color: #184c83; font-size: 11px; font-weight: 700; }
+.todo-dropdown { position: absolute; right: 0; top: calc(100% + 9px); z-index: 30; width: min(400px, calc(100vw - 34px)); max-height: min(550px, calc(100vh - 115px)); display: flex; flex-direction: column; gap: 12px; padding: 16px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 12px 34px #263b5630; }
+.todo-dropdown-head { display: flex; justify-content: space-between; align-items: baseline; }
+.todo-dropdown-head small, .todo-empty { color: var(--muted); }
+.todo-list { overflow-y: auto; min-height: 40px; }
+.todo-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-top: 1px solid var(--line); line-height: 1.35; }
+.todo-item input[type="checkbox"] { width: 16px; height: 16px; margin-top: 3px; padding: 0; flex: none; }
+.todo-item > div { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.todo-publication { display: block; padding: 2px 0 0; text-align: left; font-size: 11px; }
+.todo-completed { color: var(--muted); text-decoration: line-through; }
+.todo-show-completed { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.todo-add { display: flex; gap: 7px; }
+.todo-add input { min-width: 0; flex: 1; }
 .main {
   padding: 32px 36px 50px;
   overflow: auto;

@@ -14,7 +14,7 @@ export async function loadState(root: string): Promise<LoadedState> {
   const library = await readJson<unknown>(join(root, "catalog/library.json"));
   if (typeof library === "object" && library !== null && "schema_version" in library && library.schema_version !== 2) throw new MyPubError("Only catalog schema version 2 is supported; this operation will not modify an older/newer catalog", "UNSUPPORTED_SCHEMA");
   assertLibrary(library);
-  const s: CatalogState = { library, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [] };
+  const s: CatalogState = { library, owner: { schema_version: 2 }, publications: [], authors: [], venues: [], gscholar_entries: [], reviews: [], todos: [] };
   const files = new Map<string, unknown>();
   for (const file of await jsonFiles(join(root, "catalog"))) {
     const path = relative(root, file).split("\\").join("/"); const value = await readJson<unknown>(file); files.set(path, value);
@@ -22,7 +22,7 @@ export async function loadState(root: string): Promise<LoadedState> {
     if (path === "catalog/config/author.json") { assertRecord("owner", value); s.owner = value as CatalogState["owner"]; }
     else if (path === "catalog/gscholar/profile.json") { assertRecord("gscholar_profile", value); s.gscholar_profile = value as NonNullable<CatalogState["gscholar_profile"]>; }
     else {
-      const group = ([ ["publications", "publication"], ["authors", "author"], ["venues", "venue"], ["gscholar/entries", "gscholar_entry"], ["reviews", "review"] ] as const).find(([prefix]) => path.startsWith(`catalog/${prefix}/`));
+      const group = ([ ["publications", "publication"], ["authors", "author"], ["venues", "venue"], ["gscholar/entries", "gscholar_entry"], ["reviews", "review"], ["todos", "todo"] ] as const).find(([prefix]) => path.startsWith(`catalog/${prefix}/`));
       if (!group) throw new MyPubError(`Unsupported catalog JSON path: ${path}`, "SCHEMA_INVALID");
       assertRecord(group[1], value);
       const collection = group[0] === "gscholar/entries" ? "gscholar_entries" : group[0];

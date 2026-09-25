@@ -53,6 +53,7 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
     undefined,
     true,
   );
+  await catalog.addTodo("Review final publisher PDF", publications[7]!.id);
   await configureOwner(catalog, author.id, "profile");
   const capture = join(root, "capture.json");
   await writeFile(
@@ -87,6 +88,17 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
       page.getByRole("heading", { name: "Most cited papers" }),
     ).toBeVisible();
     await expect(page.locator(".metrics strong").first()).toHaveText("12");
+    const todoButton = page.getByRole("button", { name: "To-Do, 1 pending items" });
+    await expect(todoButton).toBeVisible();
+    await todoButton.click();
+    const todoDialog = page.getByRole("dialog", { name: "To-Do items" });
+    await expect(todoDialog).toContainText("Review final publisher PDF");
+    expect(await todoDialog.locator(".todo-item > div").first().evaluate(el => el.getBoundingClientRect().width)).toBeGreaterThan(250);
+    await todoDialog.getByRole("checkbox", { name: "Complete Review final publisher PDF" }).click();
+    await expect(page.getByRole("button", { name: "To-Do, 0 pending items" })).toBeVisible();
+    await todoDialog.getByRole("checkbox", { name: "Show completed" }).check();
+    await expect(todoDialog).toContainText("Review final publisher PDF");
+    await page.getByRole("button", { name: "To-Do, 0 pending items" }).click();
     await expect(
       page.getByRole("img", {
         name: "Overall publication-type breakdown: Workshop: 12. Total: 12.",

@@ -21,7 +21,7 @@ export function resolveIdentity<T extends { id: string; merged_into?: string }>(
 export function validateState(s: CatalogState): ValidationResult {
   const issues: ValidationIssue[] = [];
   const issue = (code: string, message: string, entity_id?: string, severity: "error" | "warning" = "error"): void => { issues.push({ code, message, severity, ...(entity_id ? { entity_id } : {}) }); };
-  const collections = { publication: s.publications, author: s.authors, venue: s.venues, gscholar_entry: s.gscholar_entries, review: s.reviews };
+  const collections = { publication: s.publications, author: s.authors, venue: s.venues, gscholar_entry: s.gscholar_entries, review: s.reviews, todo: s.todos };
   issues.push(...recordIssues("library", s.library), ...recordIssues("owner", s.owner));
   if (s.gscholar_profile) issues.push(...recordIssues("gscholar_profile", s.gscholar_profile));
   for (const [kind, rows] of Object.entries(collections)) for (const row of rows) issues.push(...recordIssues(kind as keyof typeof collections, row));
@@ -37,6 +37,7 @@ export function validateState(s: CatalogState): ValidationResult {
   unique(s.venues.map((r) => [r.venue_key, r.id]), "DUPLICATE_VENUE_KEY");
   unique(s.publications.filter((p) => p.identifiers.doi).map((p) => [normalizeDoi(p.identifiers.doi!), p.id]), "DUPLICATE_IDENTIFIER");
   unique(s.gscholar_entries.map((g) => [g.scholar_id.startsWith(`${g.profile_id}:`) ? g.scholar_id : `${g.profile_id}:${g.scholar_id}`, g.id]), "DUPLICATE_SCHOLAR_ID");
+  for (const t of s.todos) reference(t.publication_id, "publication", t.id);
   const external: Array<[string, string]> = [];
   for (const a of s.authors) {
     if (a.aliases.includes(a.preferred_name)) issue("IDENTITY_ALIAS", "Alias repeats preferred name", a.id);

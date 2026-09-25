@@ -180,9 +180,9 @@ async function revisionRecords(c: Catalog, revision: string): Promise<Records> {
 }
 
 function stateFromRecords(records: Records): CatalogState {
-  const s: CatalogState = { library: records.get("catalog/library.json") as CatalogState["library"], owner: records.get("catalog/config/author.json") as CatalogState["owner"], publications: [], authors: [], venues: [], reviews: [], gscholar_entries: [] };
+  const s: CatalogState = { library: records.get("catalog/library.json") as CatalogState["library"], owner: records.get("catalog/config/author.json") as CatalogState["owner"], publications: [], authors: [], venues: [], reviews: [], gscholar_entries: [], todos: [] };
   if (records.has("catalog/gscholar/profile.json")) s.gscholar_profile = records.get("catalog/gscholar/profile.json") as NonNullable<CatalogState["gscholar_profile"]>;
-  for (const [key, value] of records) { const group = key.split(":")[0]; if (["publications", "authors", "venues", "reviews", "gscholar_entry"].includes(group!)) (s[group === "gscholar_entry" ? "gscholar_entries" : group as "publications"] as unknown[]).push(value); }
+  for (const [key, value] of records) { const group = key.split(":")[0]; if (["publications", "authors", "venues", "reviews", "gscholar_entry", "todos"].includes(group!)) (s[group === "gscholar_entry" ? "gscholar_entries" : group as "publications"] as unknown[]).push(value); }
   return s;
 }
 const equal = (a: unknown, b: unknown): boolean => a === undefined || b === undefined ? a === b : fingerprint(a) === fingerprint(b);
@@ -301,7 +301,7 @@ export async function sync(c: Catalog, message = "mypub: merge synchronized cata
         catch {
           const decision = saved.find(x => x.details?.key === key && x.details?.ours_commit === ours && x.details?.theirs_commit === theirs && Object.hasOwn(x.details, "resolution"));
           if (decision) { if (decision.details!.resolution !== null) result.set(key, decision.details!.resolution); continue; }
-          conflicts.push({ schema_version: 2, id: uuid(), kind: "record", ...(key.includes(":") ? { record_id: key.split(":")[1]!, record_type: ({ publications: "publication", authors: "author", venues: "venue", gscholar_entry: "gscholar_entry", reviews: "review" } as const)[key.split(":")[0] as "publications"] } : { path: key, record_type: key === "catalog/library.json" ? "library" : key === "catalog/config/author.json" ? "owner" : "gscholar_profile" }), base: b.get(key) ?? null, ours: o.get(key) ?? null, theirs: t.get(key) ?? null, details: { key, base_commit: base, ours_commit: ours, theirs_commit: theirs }, created_at: now() });
+          conflicts.push({ schema_version: 2, id: uuid(), kind: "record", ...(key.includes(":") ? { record_id: key.split(":")[1]!, record_type: ({ publications: "publication", authors: "author", venues: "venue", gscholar_entry: "gscholar_entry", reviews: "review", todos: "todo" } as const)[key.split(":")[0] as "publications"] } : { path: key, record_type: key === "catalog/library.json" ? "library" : key === "catalog/config/author.json" ? "owner" : "gscholar_profile" }), base: b.get(key) ?? null, ours: o.get(key) ?? null, theirs: t.get(key) ?? null, details: { key, base_commit: base, ours_commit: ours, theirs_commit: theirs }, created_at: now() });
         }
       }
       const persist = async (): Promise<SyncResult> => { await rm(join(c.localDir, "conflicts"), { recursive: true, force: true }); for (const conflict of [...conflicts, ...saved.filter(x => x.details?.ours_commit === ours && x.details?.theirs_commit === theirs && Object.hasOwn(x.details, "resolution"))]) await atomicWriteJson(join(c.localDir, "conflicts", `${conflict.id}.json`), conflict); return { state: "needs-review", conflicts }; };

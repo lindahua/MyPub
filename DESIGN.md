@@ -866,6 +866,8 @@ Implemented views: publication year/venue grouping with a left navigator; a sing
 
 The viewer opens supported local PDF, image, text and video files through explicit clicks and copies BibTeX using the existing exporter. Refreshes and citation/attachment actions share a service queue so background refresh cannot contend with user actions for the catalog lock; awaiting a refresh waits for its own fresh inspection. Closed services reject queued actions. It rejects LFS pointers, missing files, unsupported executable types and paths resolving outside the library. External URLs are restricted to HTTP(S). Downloads, edits, imports, decisions and synchronization remain CLI operations.
 
+The viewer also has a top-bar To-Do button with a badge counting pending items in the open catalog. Its dropdown lists pending items, can show completed items, adds a plain-text task, toggles completion, and opens a linked publication when present. To-Do records live in `catalog/todos/` as shared JSON, so Git commit/sync carries them across computers. The badge is a task count, not a scheduled notification; the user must open MyPub to see it. Ordinary publication editing remains CLI-only.
+
 Remaining refinements from the reviewed draft: optional table/density/theme switches, saved views, separate quick multi-select facets with facet counts, family-name alphabetical navigation, separate unresolved-venue directory, and signed installers. The general condition builder already covers combined year/venue/author/type/tag and Scholar constraints. No new on-disk GUI preference schema is introduced; browsing preferences remain in memory. The original clickable mockup is retained only as review context.
 
 ### arXiv version history and publication dates

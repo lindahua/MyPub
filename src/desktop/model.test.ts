@@ -227,6 +227,7 @@ function fixture(): ViewModel {
         },
       ],
       reviews: [],
+      todos: [],
     },
   };
   return new ViewModel(snapshot);

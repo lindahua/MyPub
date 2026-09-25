@@ -2337,12 +2337,17 @@ function App() {
   });
   const [view, setView] = useState<View>(() => freshView("overview")),
     [message, setMessage] = useState(""),
-    [pdfId, setPdfId] = useState<string | null>(null);
+    [pdfId, setPdfId] = useState<string | null>(null),
+    [todoOpen, setTodoOpen] = useState(false),
+    [todoTitle, setTodoTitle] = useState(""),
+    [showCompletedTodos, setShowCompletedTodos] = useState(false),
+    [todoBusy, setTodoBusy] = useState(false);
   const history = useRef<Array<{ view: View; scroll: number }>>([]),
     future = useRef<Array<{ view: View; scroll: number }>>([]);
   const main = useRef<HTMLElement>(null),
     scrollRestore = useRef<number | null>(null),
-    library = useRef("");
+    library = useRef(""),
+    todoMenu = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true,
       received = false;
@@ -2363,10 +2368,26 @@ function App() {
       library.current = desktop.root ?? "";
       setView(freshView("overview"));
       setPdfId(null);
+      setTodoOpen(false);
       history.current = [];
       future.current = [];
     }
   }, [desktop.root]);
+  useEffect(() => {
+    if (!todoOpen) return;
+    const closeOutside = (event: PointerEvent) => {
+      if (!todoMenu.current?.contains(event.target as Node)) setTodoOpen(false);
+    };
+    const closeEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setTodoOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    document.addEventListener("keydown", closeEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeEscape);
+    };
+  }, [todoOpen]);
   const model = useMemo(
     () => (desktop.snapshot ? new ViewModel(desktop.snapshot) : null),
     [desktop.snapshot],
@@ -2445,6 +2466,36 @@ function App() {
       setMessage(String(e));
     }
   }
+  async function addTodo(event: React.FormEvent) {
+    event.preventDefault();
+    const libraryId = desktop.snapshot?.state.library.id;
+    if (!libraryId || !todoTitle.trim() || todoBusy) return;
+    setTodoBusy(true);
+    try {
+      await window.mypub.addTodo(libraryId, todoTitle.trim());
+      setTodoTitle("");
+    } catch (error) {
+      setMessage(String(error));
+    } finally {
+      setTodoBusy(false);
+    }
+  }
+  async function setTodo(id: string, completed: boolean) {
+    const libraryId = desktop.snapshot?.state.library.id;
+    if (!libraryId || todoBusy) return;
+    setTodoBusy(true);
+    try {
+      await window.mypub.setTodoCompleted(libraryId, id, completed);
+    } catch (error) {
+      setMessage(String(error));
+    } finally {
+      setTodoBusy(false);
+    }
+  }
+  const todos = desktop.snapshot?.state.todos ?? [];
+  const pendingTodos = todos.filter(item => !item.completed_at);
+  const visibleTodos = (showCompletedTodos ? todos : pendingTodos)
+    .slice().sort((a, b) => Number(Boolean(a.completed_at)) - Number(Boolean(b.completed_at)) || b.created_at.localeCompare(a.created_at));
   const pdfPublication = pdfId ? model?.publications.get(pdfId) : undefined;
   const pdfAction =
     pdfPublication && model
@@ -2547,6 +2598,37 @@ function App() {
             value={view.global}
             onChange={(e) => update({ global: e.target.value })}
           />
+          <div className="todo-anchor" ref={todoMenu}>
+            <button
+              className="todo-trigger"
+              aria-label={`To-Do, ${pendingTodos.length} pending items`}
+              aria-expanded={todoOpen}
+              aria-haspopup="dialog"
+              disabled={!desktop.snapshot}
+              onClick={() => setTodoOpen(open => !open)}
+            >
+              To-Do <span className="todo-badge">{pendingTodos.length}</span>
+            </button>
+            {todoOpen && <div className="todo-dropdown" role="dialog" aria-label="To-Do items">
+              <div className="todo-dropdown-head"><strong>To-Do</strong><small>{pendingTodos.length} pending</small></div>
+              <div className="todo-list">
+                {visibleTodos.length ? visibleTodos.map(item => {
+                  const publication = item.publication_id && desktop.snapshot?.state.publications.find(p => p.id === item.publication_id);
+                  return <div className="todo-item" key={item.id}>
+                    <input type="checkbox" aria-label={`Complete ${item.title}`} checked={!!item.completed_at} disabled={todoBusy} onChange={event => void setTodo(item.id, event.target.checked)} />
+                    <div><span className={item.completed_at ? "todo-completed" : undefined}>{item.title}</span>
+                      {publication && <button className="link todo-publication" onClick={() => { setTodoOpen(false); visit("publications", { focusId: publication.id, expanded: [publication.id], archive: "all" }); }}>{publication.title}</button>}
+                    </div>
+                  </div>;
+                }) : <p className="todo-empty">No pending items.</p>}
+              </div>
+              <label className="todo-show-completed"><input type="checkbox" checked={showCompletedTodos} onChange={event => setShowCompletedTodos(event.target.checked)} /> Show completed</label>
+              <form className="todo-add" onSubmit={event => void addTodo(event)}>
+                <input aria-label="New To-Do item" placeholder="Add a task…" value={todoTitle} maxLength={500} onChange={event => setTodoTitle(event.target.value)} />
+                <button type="submit" disabled={!todoTitle.trim() || todoBusy}>Add</button>
+              </form>
+            </div>}
+          </div>
           <span className="local-label">LOCAL LIBRARY</span>
         </header>
         {desktop.error && (

@@ -116,6 +116,14 @@ test("wrong folders are never initialized and no watcher loop follows local outp
   assert.equal(relevantChange("catalog/publications/2025/x.json"), true);
   assert.equal(relevantChange("catalog/paper_files/2025/x.pdf"), true);
 });
+test("To-Do actions refresh the viewer snapshot", async t => {
+  const { paper, service } = await setup(t);
+  const libraryId = service.state.snapshot!.state.library.id;
+  const id = await service.todoAction({ action: "todo-add", libraryId, title: "Review final PDF", publicationId: paper.id });
+  assert.equal(service.state.snapshot!.state.todos.find(item => item.id === id)?.publication_id, paper.id);
+  await service.todoAction({ action: "todo-set", libraryId, todoId: id, completed: true });
+  assert.ok(service.state.snapshot!.state.todos.find(item => item.id === id)?.completed_at);
+});
 test("file opening rejects LFS pointers, missing binaries and escaping symlinks; citations use the core exporter", async (t) => {
   const { root, catalog, paper, service } = await setup(t);
   service.setActive(false);

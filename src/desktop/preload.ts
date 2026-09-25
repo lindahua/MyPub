@@ -11,6 +11,8 @@ const api: DesktopAPI = {
   loadPaperPdf: (library, publication, attachment) =>
     ipcRenderer.invoke("mypub:paper-pdf", library, publication, attachment),
   openURL: (url) => ipcRenderer.invoke("mypub:url", url),
+  addTodo: (library, title, publication) => ipcRenderer.invoke("mypub:todo-add", library, title, publication),
+  setTodoCompleted: (library, id, completed) => ipcRenderer.invoke("mypub:todo-set", library, id, completed),
   onState: (callback) => {
     const listener = (_event: Electron.IpcRendererEvent, state: DesktopState) =>
       callback(state);

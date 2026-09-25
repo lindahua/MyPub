@@ -23,6 +23,7 @@ import {
 import { DEFAULT_PAGE_SIZES } from "./pagination.js";
 import type { PageSizes } from "./pagination.js";
 import type { DesktopState, WorkerResponse } from "./types.js";
+import type { WorkerCommand } from "./types.js";
 
 const directory = dirname(fileURLToPath(import.meta.url));
 const rendererURL = "mypub://app/index.html";
@@ -144,6 +145,19 @@ function action(
     });
   });
 }
+function todoAction(command: Omit<Extract<WorkerCommand, { action: "todo-add" }>, "id"> | Omit<Extract<WorkerCommand, { action: "todo-set" }>, "id">): Promise<string> {
+  if (!worker || current.snapshot?.state.library.id !== command.libraryId)
+    return Promise.reject(new Error("Library is not ready or changed"));
+  const id = ++sequence;
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      pending.delete(id);
+      reject(new Error("Catalog operation timed out. Try again."));
+    }, 30000);
+    pending.set(id, { resolve, reject, timer });
+    worker!.postMessage({ id, ...command });
+  });
+}
 const maxPdfBytes = 100 * 1024 * 1024;
 function assertPdf(bytes: Uint8Array): Uint8Array {
   if (
@@ -204,6 +218,13 @@ function setupIPC(): void {
     )
       throw new Error("Only HTTP(S) links are supported");
     await shell.openExternal(url.href);
+  });
+  handle("mypub:todo-add", (library, title, publication) =>
+    todoAction({ action: "todo-add", libraryId: stringArg(library), title: stringArg(title), ...(publication ? { publicationId: stringArg(publication) } : {}) }),
+  );
+  handle("mypub:todo-set", (library, id, completed) => {
+    if (typeof completed !== "boolean") throw new Error("Invalid completion state");
+    return todoAction({ action: "todo-set", libraryId: stringArg(library), todoId: stringArg(id), completed });
   });
 }
 void app

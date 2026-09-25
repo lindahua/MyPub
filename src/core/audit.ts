@@ -113,13 +113,13 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     } catch (e) { if ((e as NodeJS.ErrnoException).code !== "ENOENT") failure(path, e); }
   }
   await file("catalog/library.json", "library"); await file("catalog/config/author.json", "owner"); await file("catalog/gscholar/profile.json", "gscholar_profile", true);
-  for (const [dir, kind] of [["publications", "publication"], ["authors", "author"], ["venues", "venue"], ["reviews", "review"], ["gscholar/entries", "gscholar_entry"]] as const) await walk(`catalog/${dir}`, kind);
+  for (const [dir, kind] of [["publications", "publication"], ["authors", "author"], ["venues", "venue"], ["reviews", "review"], ["gscholar/entries", "gscholar_entry"], ["todos", "todo"]] as const) await walk(`catalog/${dir}`, kind);
   const groups = new Map<string, Row[]>();
   for (const r of rows) if (validUuid(r.value.id)) groups.set(r.value.id, [...(groups.get(r.value.id) ?? []), r]);
   for (const [id, group] of groups) if (group.length > 1) { add("DUPLICATE_UUID", "error", `Duplicate UUID ${id}`, group); result.counts_complete = false; for (const row of group) result.skipped.push({ path: row.path, check: "semantic comparisons", reason: "Ambiguous UUID" }); }
   const usable = rows.filter(r => r.valid && (!r.value.id || groups.get(String(r.value.id))?.length === 1));
   const collection = (kind: RecordKind) => usable.filter(r => r.kind === kind).map(r => r.value);
-  const state = { library: collection("library")[0], owner: collection("owner")[0], publications: collection("publication"), authors: collection("author"), venues: collection("venue"), reviews: collection("review"), gscholar_entries: collection("gscholar_entry"), ...(collection("gscholar_profile")[0] ? { gscholar_profile: collection("gscholar_profile")[0] } : {}) } as unknown as CatalogState;
+  const state = { library: collection("library")[0], owner: collection("owner")[0], publications: collection("publication"), authors: collection("author"), venues: collection("venue"), reviews: collection("review"), gscholar_entries: collection("gscholar_entry"), todos: collection("todo"), ...(collection("gscholar_profile")[0] ? { gscholar_profile: collection("gscholar_profile")[0] } : {}) } as unknown as CatalogState;
   const ownerRows = (...ids: string[]): Row[] => ids.flatMap(id => groups.get(id) ?? []);
   const warn = (code: string, message: string, id: string, field?: string) => add(code, "warning", message, ownerRows(id), field);
   const groupedUniqueRules = new Set(["DUPLICATE_CITATION_KEY", "DUPLICATE_IDENTIFIER", "DUPLICATE_SCHOLAR_ID"]);

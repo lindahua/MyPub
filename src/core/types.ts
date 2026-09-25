@@ -41,6 +41,7 @@ export interface Publication extends RecordBase {
   relations: Relation[]; attachments: Attachment[]; primary_attachment_id?: string; archived_at?: string;
 }
 export interface Library extends RecordBase { name: string; }
+export interface TodoItem extends RecordBase { title: string; publication_id?: string; completed_at?: string; }
 export interface OwnerConfig { schema_version: 2; self_author_id?: string; }
 export interface CitationSample { observed_at: string; count: number | null; estimated?: boolean; source_review_id: string; }
 export interface AnnualCitations { observed_at: string; counts: Record<string, number | null>; source_review_id: string; }
@@ -72,7 +73,7 @@ export interface Review extends RecordBase {
 }
 export interface CatalogState {
   library: Library; owner: OwnerConfig; publications: Publication[]; authors: AuthorIdentity[]; venues: VenueIdentity[];
-  gscholar_profile?: ScholarProfile; gscholar_entries: ScholarEntry[]; reviews: Review[];
+  gscholar_profile?: ScholarProfile; gscholar_entries: ScholarEntry[]; reviews: Review[]; todos: TodoItem[];
 }
 export type EntityRecord = Publication | AuthorIdentity | VenueIdentity | ScholarEntry | Review;
 export interface IncomingRelation { source_id: string; source_title: string; type: RelationType; label: string; note?: string; }
@@ -86,7 +87,7 @@ export interface ProgressEvent { phase: string; message: string; current?: numbe
 export type ProgressHandler = (event: ProgressEvent) => void;
 export interface SyncConflict {
   schema_version: 2; id: string; kind: "record" | "path" | "identifier" | "key" | "reference" | "attachment";
-  record_type?: EntityType | "review" | "owner"; record_id?: string; path?: string; base: unknown | null; ours: unknown | null; theirs: unknown | null;
+  record_type?: EntityType | "review" | "owner" | "todo"; record_id?: string; path?: string; base: unknown | null; ours: unknown | null; theirs: unknown | null;
   details?: Record<string, unknown>; created_at: string;
 }
 export interface CommitResult { state: "committed" | "no-changes"; commit?: string; message?: string; }
@@ -105,6 +106,6 @@ export interface NativeExport {
   format: "mypub-native"; format_version: 1; exported_at: string;
   source_library: Pick<Library, "id" | "name" | "schema_version">; selection: { publication_ids: string[] };
   publications: Publication[]; authors: AuthorIdentity[]; venues: VenueIdentity[]; gscholar_profile: ScholarProfile | null;
-  gscholar_entries: ScholarEntry[]; reviews: Review[];
+  gscholar_entries: ScholarEntry[]; reviews: Review[]; todos?: TodoItem[];
 }
 export interface HistoryEvent { commit: string; parents: string[]; committer: { name: string; email: string; time: string }; author: { name: string; email: string }; subject: string; paths: string[]; }

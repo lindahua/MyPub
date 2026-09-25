@@ -81,7 +81,8 @@ const review = object({ ...base, summary: text, kind: enumeration("import", "cha
 const profile = object({ schema_version: enumeration(2), profile_id: text, captures: array(object({ captured_at: timestamp, coverage, source_review_id: id, observed_entry_ids: array(id, true), totals: optional(object({ citations: optional(count), h_index: optional(count), i10_index: optional(count) })) })), created_at: timestamp, updated_at: timestamp });
 const library = object({ ...base, name: text });
 const owner = object({ schema_version: enumeration(2), self_author_id: optional(id) });
-export const recordRules = { publication, author, venue, gscholar_entry: scholar, gscholar_profile: profile, review, library, owner };
+const todo = object({ ...base, title: text, publication_id: optional(id), completed_at: optional(timestamp) });
+export const recordRules = { publication, author, venue, gscholar_entry: scholar, gscholar_profile: profile, review, library, owner, todo };
 export type RecordKind = keyof typeof recordRules;
 export function recordIssues(kind: RecordKind, value: unknown, path?: string): ValidationIssue[] {
   const errors: string[] = []; recordRules[kind].check(value, "", errors);

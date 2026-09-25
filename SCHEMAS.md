@@ -676,6 +676,23 @@ A terminal (`accepted` or `rejected`) historical `create` proposal is an audit s
 
 Acceptance is optimistic: `current` and the target revision must still match before applying. A review never embeds transient confidence as accepted truth. Overall state is `accepted`/`rejected` only when every proposal has that state, `partially_accepted` when terminal decisions differ or some remain, `deferred` when all undecided proposals are deferred, and otherwise `pending`.
 
+## 9.1 Shared To-Do items
+
+Path: `catalog/todos/<title-slug>_<uuid-prefix>.json`. To-Do items are catalog records and synchronize through Git. They are not publication lifecycle status or review proposals.
+
+```json
+{
+  "schema_version": 2,
+  "id": "f65978e5-ec8b-492d-9d44-6ec59bdc813e",
+  "title": "Check final journal issue and PDF",
+  "publication_id": "b6f75c51-98f3-4e9c-af55-16dafb11a7cb",
+  "created_at": "2026-09-25T09:00:00Z",
+  "updated_at": "2026-09-25T09:00:00Z"
+}
+```
+
+`schema_version`, `id`, `title`, `created_at`, and `updated_at` are required with the common version, UUID, non-empty text, and timestamp rules. `publication_id` is an optional UUID referencing a retained publication. `completed_at` is an optional UTC timestamp; absence means pending and presence means completed. Reopening removes `completed_at`. Items are retained rather than deleted, and the pending badge counts records without `completed_at`.
+
 ## 10. Machine-local settings
 
 Path: `local/settings.json`. This file is not synchronized.
@@ -827,7 +844,8 @@ Native export is a single lossless dependency-closed envelope for catalog record
   "venues": [],
   "gscholar_profile": null,
   "gscholar_entries": [],
-  "reviews": []
+  "reviews": [],
+  "todos": []
 }
 ```
 
@@ -843,6 +861,7 @@ Native export is a single lossless dependency-closed envelope for catalog record
 | `gscholar_profile` | required profile object or `null` | Profile context when any entries are included; otherwise `null`. |
 | `gscholar_entries` | required entry array | Referenced Scholar entries. |
 | `reviews` | required review array | Evidence referenced by included records, plus referenced review chains. |
+| `todos` | optional To-Do array | Linked tasks for selected publications. A full-library export also includes unlinked tasks. Omission in older version-1 envelopes means no tasks. |
 
 Managed attachment bytes are not embedded. Their manifests remain in publications; an export option may place verified bytes using their repository-relative manifest paths, including `paper_files/`. Import always previews library-ID, UUID, key, normalized identifier, path, and attachment collisions. It never overwrites or silently merges destination records.
 

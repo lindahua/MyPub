@@ -215,6 +215,19 @@ export class LibraryService {
       this.actionNow(action, libraryId, publicationId, attachmentId),
     );
   }
+  async todoAction(command: { action: "todo-add"; libraryId: string; title: string; publicationId?: string } | { action: "todo-set"; libraryId: string; todoId: string; completed: boolean }): Promise<string> {
+    const result = await this.enqueue(async () => {
+      if (this.stopped) throw new Error("Library changed or closed");
+      const state = await this.catalog.read();
+      if (state.library.id !== command.libraryId) throw new Error("The selected library changed. Please try again.");
+      const item = command.action === "todo-add"
+        ? await this.catalog.addTodo(command.title, command.publicationId)
+        : await this.catalog.setTodoCompleted(command.todoId, command.completed);
+      return item.id;
+    });
+    await this.refresh();
+    return result;
+  }
   private async actionNow(
     action: "citation" | "attachment" | "paper-pdf",
     libraryId: string,
