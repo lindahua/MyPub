@@ -108,6 +108,21 @@ test("audit checks ICLR paper URLs against the correct proceedings source by yea
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("audit accepts PMLR page PDFs for CoRL, including PMLR's GitHub files", async () => {
+  const f = await fixture(); try {
+    const venue = { name: "Conference on Robot Learning" };
+    const direct = await f.c.add({ citation_key: "corl-direct", type: "conference", title: "Direct PDF", authors: [{ name: "Jane Doe" }], venue, paper_url: "https://proceedings.mlr.press/v164/wang22i/wang22i.pdf" });
+    const github = await f.c.add({ citation_key: "corl-github", type: "conference", title: "GitHub PDF", authors: [{ name: "Jane Doe" }], venue, paper_url: "https://raw.githubusercontent.com/mlresearch/v270/main/assets/xu25c/xu25c.pdf" });
+    const other = await f.c.add({ citation_key: "corl-other", type: "conference", title: "Other PDF", authors: [{ name: "Jane Doe" }], venue, paper_url: "https://arxiv.org/pdf/2410.13860" });
+    let findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => [direct.id, github.id].some(id => x.record_ids.includes(id)) && x.code === "CORL_PAPER_URL_SOURCE"));
+    assert.ok(findings.some(x => x.record_ids.includes(other.id) && x.code === "CORL_PAPER_URL_SOURCE"));
+    await f.c.archive(other.id);
+    findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(other.id) && x.code === "CORL_PAPER_URL_SOURCE"));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("active ICML conference papers may omit a DOI without a warning", async () => {
   const f = await fixture(); try {
     const icml = await f.c.add({ citation_key: "icml-no-doi", type: "conference", title: "ICML paper", authors: [{ name: "Jane Doe" }], venue: { name: "International Conference on Machine Learning" } });

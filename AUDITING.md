@@ -150,6 +150,10 @@ when its `paper_url` is not the ICLR Proceedings PDF for 2024 onward, or the
 matching OpenReview forum PDF for an older edition not hosted by ICLR
 Proceedings.
 
+An active CoRL conference record receives `CORL_PAPER_URL_SOURCE` as a warning
+when its `paper_url` is outside the PMLR PDF sources, including PDF files linked
+from PMLR pages and hosted in PMLR's `mlresearch` GitHub repository.
+
 For arXiv-backed preprints, existing stronger requirements remain errors: a base
 arXiv ID, complete retrieved version history, and original publication/submission
 dates are required.

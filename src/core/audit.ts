@@ -178,6 +178,7 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     const venue = p.venue?.venue_id ? resolveIdentity(state.venues, p.venue.venue_id) : undefined;
     const iclr = p.type === "conference" && (venue?.venue_key === "iclr" || p.venue?.name === "International Conference on Learning Representations");
     const icml = p.type === "conference" && (venue?.venue_key === "icml" || p.venue?.name === "International Conference on Machine Learning");
+    const corl = p.type === "conference" && (venue?.venue_key === "corl" || p.venue?.name === "Conference on Robot Learning");
     if (!p.archived_at && iclr && !p.identifiers.openreview) {
       add("PUB_MISSING_OPENREVIEW", "warning", "ICLR paper has no verified OpenReview forum ID", ownerRows(p.id), "/identifiers/openreview", undefined, "publication");
     } else if (!p.archived_at && !iclr && !icml && !p.identifiers.doi) {
@@ -191,6 +192,12 @@ export async function auditRepository(root: string): Promise<AuditResult> {
         ? url.hostname === "openreview.net" && url.pathname === "/pdf" && (!p.identifiers.openreview || url.searchParams.get("id") === p.identifiers.openreview)
         : url.hostname === "proceedings.iclr.cc" && !!proceedingsPath && (!p.venue?.event_year || Number(proceedingsPath[1]) === p.venue.event_year);
       if (!expected) add("ICLR_PAPER_URL_SOURCE", "warning", older ? "Older ICLR paper URL should be its OpenReview forum PDF" : "ICLR paper URL should be its proceedings PDF", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
+    }
+    if (!p.archived_at && corl && p.paper_url) {
+      const url = new URL(p.paper_url);
+      const pmlr = url.hostname === "proceedings.mlr.press" && /^\/v\d+\/.+\.pdf$/i.test(url.pathname);
+      const pmlrGitHub = url.hostname === "raw.githubusercontent.com" && /^\/mlresearch\/v\d+\//i.test(url.pathname) && url.pathname.toLowerCase().endsWith(".pdf");
+      if (!pmlr && !pmlrGitHub) add("CORL_PAPER_URL_SOURCE", "warning", "CoRL paper URL should be the PDF linked from its PMLR page", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
     }
     if (!p.archived_at) {
       const missing = (test: boolean, code: string, field: string) => { if (test) warn(code, `Missing expected ${field}`, p.id, `/${field}`); };
