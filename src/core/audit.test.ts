@@ -140,6 +140,22 @@ test("audit checks active IJCV paper URLs against the Springer PDF for their DOI
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("audit requires IEEE Transactions paper URLs to match official PDF buttons", async () => {
+  const f = await fixture(); try {
+    const base = { type: "journal" as const, authors: [{ name: "Jane Doe" }], venue: { name: "IEEE Transactions on Pattern Analysis and Machine Intelligence" }, official_url: "https://ieeexplore.ieee.org/document/4775283/" };
+    const correct = await f.c.add({ ...base, citation_key: "ieee-correct", title: "Publisher PDF button", paper_url: "https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=4775283" });
+    const author = await f.c.add({ ...base, citation_key: "ieee-author", title: "Author PDF URL", paper_url: "https://author.example/paper.pdf" });
+    const wrong = await f.c.add({ ...base, citation_key: "ieee-wrong", title: "Wrong document", paper_url: "https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1234567" });
+    let findings = (await f.c.audit()).findings.filter(x => x.code === "IEEE_TRANSACTIONS_PAPER_URL_SOURCE");
+    assert.ok(!findings.some(x => x.record_ids.includes(correct.id)));
+    assert.ok(findings.some(x => x.record_ids.includes(author.id)));
+    assert.ok(findings.some(x => x.record_ids.includes(wrong.id)));
+    await f.c.archive(author.id);
+    findings = (await f.c.audit()).findings.filter(x => x.code === "IEEE_TRANSACTIONS_PAPER_URL_SOURCE");
+    assert.ok(!findings.some(x => x.record_ids.includes(author.id)));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("audit checks SIGGRAPH paper URLs against their ACM View PDF links", async () => {
   const f = await fixture(); try {
     const venue = { name: "ACM SIGGRAPH 2026 Conference Papers" };

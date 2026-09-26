@@ -180,6 +180,7 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     const icml = p.type === "conference" && (venue?.venue_key === "icml" || p.venue?.name === "International Conference on Machine Learning");
     const corl = p.type === "conference" && (venue?.venue_key === "corl" || p.venue?.name === "Conference on Robot Learning");
     const ijcv = p.type === "journal" && (venue?.venue_key === "ijcv" || p.venue?.name === "International Journal of Computer Vision");
+    const ieeeTransactions = p.type === "journal" && /^IEEE Transactions\b/i.test(p.venue?.name ?? "");
     const siggraph = p.type === "conference" && (venue?.venue_key === "siggraph" || /siggraph|special interest group on computer graphics/i.test(p.venue?.name ?? ""));
     if (!p.archived_at && iclr && !p.identifiers.openreview) {
       add("PUB_MISSING_OPENREVIEW", "warning", "ICLR paper has no verified OpenReview forum ID", ownerRows(p.id), "/identifiers/openreview", undefined, "publication");
@@ -206,6 +207,12 @@ export async function auditRepository(root: string): Promise<AuditResult> {
       const expected = doi && `https://link.springer.com/content/pdf/${doi}.pdf`;
       if (!p.paper_url || !expected || p.paper_url !== expected)
         add("IJCV_PAPER_URL_SOURCE", "warning", "IJCV paper URL should be the matching Springer Download PDF link", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
+    }
+    if (!p.archived_at && ieeeTransactions) {
+      const documentId = p.official_url && /^https:\/\/ieeexplore\.ieee\.org\/document\/(\d+)\/?$/i.exec(p.official_url)?.[1];
+      const expected = documentId && `https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=${documentId}`;
+      if (!expected || p.paper_url !== expected)
+        add("IEEE_TRANSACTIONS_PAPER_URL_SOURCE", "warning", "IEEE Transactions paper URL should be the PDF button link on its official IEEE Xplore page", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
     }
     if (!p.archived_at && siggraph) {
       const doi = p.identifiers.doi && normalizeDoi(p.identifiers.doi);
