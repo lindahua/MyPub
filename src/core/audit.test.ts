@@ -140,6 +140,22 @@ test("audit checks active IJCV paper URLs against the Springer PDF for their DOI
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("audit checks SIGGRAPH paper URLs against their ACM View PDF links", async () => {
+  const f = await fixture(); try {
+    const venue = { name: "ACM SIGGRAPH 2026 Conference Papers" };
+    const correct = await f.c.add({ citation_key: "siggraph-correct", type: "conference", title: "SIGGRAPH PDF", authors: [{ name: "Jane Doe" }], venue, identifiers: { doi: "10.1145/3799902.3811054" }, paper_url: "https://dl.acm.org/doi/pdf/10.1145/3799902.3811054" });
+    const preprint = await f.c.add({ citation_key: "siggraph-preprint", type: "conference", title: "SIGGRAPH preprint", authors: [{ name: "Jane Doe" }], venue, identifiers: { doi: "10.1145/3721238.3730643" }, paper_url: "https://arxiv.org/pdf/2408.13252" });
+    const missing = await f.c.add({ citation_key: "siggraph-missing", type: "conference", title: "SIGGRAPH without PDF", authors: [{ name: "Jane Doe" }], venue });
+    let findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(correct.id) && x.code === "SIGGRAPH_PAPER_URL_SOURCE"));
+    assert.ok(findings.some(x => x.record_ids.includes(preprint.id) && x.code === "SIGGRAPH_PAPER_URL_SOURCE"));
+    assert.ok(findings.some(x => x.record_ids.includes(missing.id) && x.code === "SIGGRAPH_PAPER_URL_SOURCE"));
+    await f.c.archive(preprint.id);
+    findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(preprint.id) && x.code === "SIGGRAPH_PAPER_URL_SOURCE"));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("active ICML conference papers may omit a DOI without a warning", async () => {
   const f = await fixture(); try {
     const icml = await f.c.add({ citation_key: "icml-no-doi", type: "conference", title: "ICML paper", authors: [{ name: "Jane Doe" }], venue: { name: "International Conference on Machine Learning" } });

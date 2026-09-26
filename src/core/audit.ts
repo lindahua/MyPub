@@ -180,6 +180,7 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     const icml = p.type === "conference" && (venue?.venue_key === "icml" || p.venue?.name === "International Conference on Machine Learning");
     const corl = p.type === "conference" && (venue?.venue_key === "corl" || p.venue?.name === "Conference on Robot Learning");
     const ijcv = p.type === "journal" && (venue?.venue_key === "ijcv" || p.venue?.name === "International Journal of Computer Vision");
+    const siggraph = p.type === "conference" && (venue?.venue_key === "siggraph" || /siggraph|special interest group on computer graphics/i.test(p.venue?.name ?? ""));
     if (!p.archived_at && iclr && !p.identifiers.openreview) {
       add("PUB_MISSING_OPENREVIEW", "warning", "ICLR paper has no verified OpenReview forum ID", ownerRows(p.id), "/identifiers/openreview", undefined, "publication");
     } else if (!p.archived_at && !iclr && !icml && !p.identifiers.doi) {
@@ -205,6 +206,12 @@ export async function auditRepository(root: string): Promise<AuditResult> {
       const expected = doi && `https://link.springer.com/content/pdf/${doi}.pdf`;
       if (!p.paper_url || !expected || p.paper_url !== expected)
         add("IJCV_PAPER_URL_SOURCE", "warning", "IJCV paper URL should be the matching Springer Download PDF link", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
+    }
+    if (!p.archived_at && siggraph) {
+      const doi = p.identifiers.doi && normalizeDoi(p.identifiers.doi);
+      const expected = doi && `https://dl.acm.org/doi/pdf/${doi}`;
+      if (!p.paper_url || !expected || p.paper_url !== expected)
+        add("SIGGRAPH_PAPER_URL_SOURCE", "warning", "SIGGRAPH paper URL should be the matching ACM View PDF link", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
     }
     if (!p.archived_at) {
       const missing = (test: boolean, code: string, field: string) => { if (test) warn(code, `Missing expected ${field}`, p.id, `/${field}`); };
