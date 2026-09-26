@@ -23,11 +23,12 @@ export function publicationFromInput(input: AddPublicationInput): Publication {
   if (value.identifiers?.doi) value.identifiers.doi = normalizeDoi(value.identifiers.doi);
   if (value.identifiers?.arxiv) value.identifiers.arxiv = normalizeArxiv(value.identifiers.arxiv);
   if (value.identifiers?.isbn) value.identifiers.isbn = value.identifiers.isbn.replace(/[- ]/g, "").toUpperCase();
+  if (value.identifiers?.openreview) value.identifiers.openreview = value.identifiers.openreview.trim();
   assertRecord("publication", value); return value;
 }
 export function findPublication(s: CatalogState, ref: string): Publication {
   const exact = s.publications.find((p) => p.id === ref || p.citation_key === ref); if (exact) return exact;
-  const matches = s.publications.filter((p) => p.identifiers.doi === normalizeDoi(ref) || p.identifiers.arxiv === normalizeArxiv(ref));
+  const matches = s.publications.filter((p) => p.identifiers.doi === normalizeDoi(ref) || p.identifiers.arxiv === normalizeArxiv(ref) || p.identifiers.openreview === ref);
   if (!matches.length) throw new MyPubError(`Publication not found: ${ref}`, "NOT_FOUND");
   if (matches.length > 1) throw new MyPubError(`Publication reference is ambiguous: ${ref}`, "AMBIGUOUS", matches.map((p) => p.id));
   return matches[0]!;
@@ -144,7 +145,7 @@ export class Catalog {
     return this.withDatabase(db => {
       const exact = db.prepare("SELECT json FROM publications WHERE id=? OR citation_key=?").get(ref, ref);
       if (exact) return JSON.parse(exact.json as string) as Publication;
-      const matches = db.prepare("SELECT DISTINCT p.id,p.json FROM publications p JOIN identifiers i ON i.publication_id=p.id WHERE (i.provider='doi' AND i.value=?) OR (i.provider='arxiv' AND i.value=?)").all(normalizeDoi(ref), normalizeArxiv(ref));
+      const matches = db.prepare("SELECT DISTINCT p.id,p.json FROM publications p JOIN identifiers i ON i.publication_id=p.id WHERE (i.provider='doi' AND i.value=?) OR (i.provider='arxiv' AND i.value=?) OR (i.provider='openreview' AND i.value=?)").all(normalizeDoi(ref), normalizeArxiv(ref), ref);
       if (!matches.length) throw new MyPubError(`Publication not found: ${ref}`, "NOT_FOUND");
       if (matches.length > 1) throw new MyPubError(`Publication reference is ambiguous: ${ref}`, "AMBIGUOUS", matches.map(p => p.id));
       return JSON.parse(matches[0]!.json as string) as Publication;
@@ -154,7 +155,7 @@ export class Catalog {
   async add(input: AddPublicationInput): Promise<Publication> { return this.change((s) => { const p = publicationFromInput(input); s.publications.push(p); resolvePublicationAuthors(s, [p]); return p; }); }
   async resolveAuthors(): Promise<ReturnType<typeof resolvePublicationAuthors>> { return this.change(s => resolvePublicationAuthors(s, s.publications)); }
   async update(ref: string, patch: Partial<Omit<Publication, "schema_version" | "id" | "created_at">>, expected?: string): Promise<Publication> {
-    return this.change((s) => { const p = findPublication(s, ref); if (expected && fingerprint(p) !== expected) throw new MyPubError("Publication changed", "STALE_REVISION"); for (const field of ["id", "schema_version", "created_at", "updated_at", "status", "dates"]) if (Object.hasOwn(patch, field)) throw new MyPubError(`Cannot update ${field}`, "SCHEMA_INVALID"); const updated = clean({ ...p, ...patch }); if (updated.identifiers?.doi) updated.identifiers.doi = normalizeDoi(updated.identifiers.doi); if (updated.identifiers?.arxiv) updated.identifiers.arxiv = normalizeArxiv(updated.identifiers.arxiv); touch(updated); s.publications[s.publications.indexOf(p)] = updated; return updated; });
+    return this.change((s) => { const p = findPublication(s, ref); if (expected && fingerprint(p) !== expected) throw new MyPubError("Publication changed", "STALE_REVISION"); for (const field of ["id", "schema_version", "created_at", "updated_at", "status", "dates"]) if (Object.hasOwn(patch, field)) throw new MyPubError(`Cannot update ${field}`, "SCHEMA_INVALID"); const updated = clean({ ...p, ...patch }); if (updated.identifiers?.doi) updated.identifiers.doi = normalizeDoi(updated.identifiers.doi); if (updated.identifiers?.arxiv) updated.identifiers.arxiv = normalizeArxiv(updated.identifiers.arxiv); if (updated.identifiers?.openreview) updated.identifiers.openreview = updated.identifiers.openreview.trim(); touch(updated); s.publications[s.publications.indexOf(p)] = updated; return updated; });
   }
   async archive(ref: string): Promise<Publication> { return this.change((s) => { const p = findPublication(s, ref); if (p.archived_at) return p; const links = scholarEntryIds(p); const previous = p.gscholar_entry_id === undefined ? undefined : clean(p.gscholar_entry_id); const revision = fingerprint(p); p.archived_at = now(); delete p.gscholar_entry_id; touch(p); if (links.length) { const target = { entity_type: "publication" as const, entity_id: p.id }; s.reviews.push(manualReview(`Unlink Scholar while archiving ${p.title}`, [target], [{ id: uuid(), target, operation: "unlink", path: "/gscholar_entry_id", expected_revision: revision, current: previous, candidate_ids: links, state: "accepted", decided_at: now() }])); } return p; }); }
   async restorePublication(ref: string): Promise<Publication> { return this.change((s) => { const p = findPublication(s, ref); delete p.archived_at; touch(p); return p; }); }
@@ -163,6 +164,7 @@ export class Catalog {
   async addAttachment(ref: string, source: string, role: AttachmentRole, label?: string, primary = false): Promise<Attachment> {
     const data = await readFile(resolve(source)); const filename = basename(source); const hash = createHash("sha256").update(data).digest("hex");
     return this.change((s, binary) => { const p = findPublication(s, ref); const existing = p.attachments.find((a) => a.sha256 === hash); if (existing) return existing;
+      if (role === "paper") { const conflict = s.publications.find(q => q.id !== p.id && q.type !== p.type && (["journal", "conference"].includes(p.type) || ["journal", "conference"].includes(q.type)) && q.attachments.some(a => a.role === "paper" && a.sha256 === hash)); if (conflict) throw new MyPubError(`PDF bytes already belong to ${conflict.type} publication ${conflict.citation_key}`, "PAPER_MISMATCH"); }
       const id = uuid(); const path = role === "paper" && extname(filename).toLowerCase() === ".pdf" && !p.attachments.some(a => a.path.startsWith(PAPER_FILES)) ? paperFilePath(s, p) : `attachments/${p.id}/${id}/${filename}`; const mime: Record<string, string> = { ".pdf": "application/pdf", ".mp4": "video/mp4", ".mov": "video/quicktime", ".zip": "application/zip", ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation" };
       const a: Attachment = { id, role, ...(label ? { label } : {}), original_filename: filename, media_type: mime[extname(filename).toLowerCase()] ?? "application/octet-stream", size_bytes: data.length, storage: "git-lfs", path, sha256: hash };
       p.attachments.push(a); if (primary || !p.primary_attachment_id && role === "paper") p.primary_attachment_id = id; touch(p); binary.set(path, data); return a;

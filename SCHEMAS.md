@@ -1,6 +1,6 @@
 # MyPub JSON schemas
 
-This document is the official specification of JSON files written or consumed by MyPub. It defines catalog schema version 2, including field forms, meanings, invariants, and cross-record constraints. [DESIGN.md](DESIGN.md) defines product behavior and workflows; where it shows abbreviated examples, this document controls the file format. Runtime validators and TypeScript types must implement this document without weakening it.
+This document is the official specification of JSON files written or consumed by MyPub. It defines catalog schema version 2, including field forms, meanings, invariants, and cross-record constraints. [LOCATORS.md](LOCATORS.md) specifies publication URL requirements. [DESIGN.md](DESIGN.md) defines product behavior and workflows; where it shows abbreviated examples, this document controls the file format. Runtime validators and TypeScript types must implement this document without weakening it.
 
 The core and CLI implement schema version 2 directly. No production version-1 catalogs exist, so v1 compatibility and migration are out of scope (section 15). Unsupported catalog versions are rejected before mutation. DESIGN.md identifies remaining workflow refinements.
 
@@ -155,11 +155,11 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `authorship_note` | optional non-empty string | Readable publication-level statement about credited contribution/correspondence. It does not create roles by itself. |
 | `venue` | optional publication venue | Exact publication-specific venue wording and optional identity link. Absence means no venue is recorded. |
 | `official_url` | optional absolute URI | Official landing page for this publication, showing its title, authors, and abstract. Belongs to this specific publication/version, not a related conference/journal record. |
-| `paper_url` | optional absolute URI | Direct link to the paper file, normally a PDF. Not a landing page, project page, or local attachment path. |
+| `paper_url` | optional absolute URI | Direct link to the paper file, normally a PDF, or a verified publisher eReader displaying that paper and exposing its PDF download as specified in LOCATORS.md. Not a generic landing page, project page, or local attachment path. |
 | `abstract` | optional non-empty string | The publication’s abstract as plain text; preserve paragraphs and mathematical notation. Omit when unknown, rather than using an empty string or `null`. This is bibliographic content, distinct from private `notes`. |
 | `publication_date` | optional local date | Main bibliographic date, with the supplied year/month/day precision. For journal papers, this is the issue publication date; for arXiv-backed preprints, the first-version date. See section 4.4. |
 | `submission_date`, `acceptance_date`, `online_date`, `issued_date` | optional local dates | Independently supported lifecycle dates; see section 4.4. They are not required to record a publication date. |
-| `identifiers` | required identifier object | Identifiers belonging to this publication. `{}` is valid. Related-version identifiers do not belong here. |
+| `identifiers` | required identifier object | Identifiers belonging to this publication. A missing DOI on an active record raises an audit warning except for ICLR and ICML conference papers; active ICLR conference papers use `openreview`. Related-version identifiers do not belong here. |
 | `arxiv_versions` | required non-empty array for an arXiv-backed `type: preprint`; otherwise absent | Complete observed arXiv history from v1 through the latest retrieved version; see section 4.5. A non-arXiv preprint does not use this field. |
 | `volume` | optional non-empty string | Bibliographic volume, preserved as text (for example `42` or `S1`). |
 | `issue` | optional non-empty string | Bibliographic issue/number, preserved as text. |
@@ -171,14 +171,14 @@ Path: `catalog/publications/<year-or-unknown_year>/<title-slug>_<uuid-prefix>.js
 | `relations` | required array of relations | Outgoing publication relations stored only on this source publication. |
 | `attachments` | required array of attachments | Managed file manifests. Attachment IDs are unique across the library. |
 | `primary_attachment_id` | optional UUID | ID of one attachment in this record, normally the default paper to open. It must not name another publication's attachment. |
-| `archived_at` | optional timestamp | Presence means the publication is archived (soft-deleted). Archived publications must omit `gscholar_entry_id`; archiving removes every confirmed Scholar association in the same reviewed transaction. Removed on restoration; absence means active in the catalog, without implying a publication lifecycle status. |
+| `archived_at` | optional timestamp | Presence means the publication is archived (soft-deleted). Archived publications must omit `gscholar_entry_id`; archiving removes every confirmed Scholar association in the same reviewed transaction. Removed on restoration; absence means active in the catalog, without implying a publication lifecycle status. A confirmed archived duplicate may instead be removed completely after live references are resolved and its DOI, if any, is retained on the active canonical record. |
 | `created_at`, `updated_at` | required timestamps | Local record lifecycle; see section 2.2. |
 
-`official_url` and `paper_url` are independently optional; omit unknown values. Keep additional resources in `extra_urls`. Do not classify an arbitrary existing URL by array position or assume a URL is a direct paper link just because it contains “pdf”; verify its target or use a trusted provider’s explicit link. A direct file URL need not end in `.pdf` and may redirect to the file. These remote links do not download or register managed attachments. For arXiv, use `https://arxiv.org/abs/<id>` and `https://arxiv.org/pdf/<id>` for the latest version. Native JSON and CSV preserve both named fields; BibTeX exports the official page as `url` and also uses explicit `official_url`/`paper_url` extension fields to preserve their roles. An unclassified imported BibTeX/CSV `url` remains in `extra_urls`. Missing source values never erase existing named links. URL format is validated locally; page contents and file availability require source verification.
+The publication locator requirements for `official_url`, `paper_url`, and `extra_urls`, including venue-specific rules, are specified in [LOCATORS.md](LOCATORS.md). The field forms and catalog-wide validation rules remain in this document.
 
 There is no publication `status` field in version 2. Do not substitute a required status-like field or infer publication stage from absence of `archived_at`.
 
-`pages` and `article_number` may coexist only when the source genuinely supplies both distinct values. Primary DOI identifiers must be unique among retained publication records after normalization. Duplicate normalized arXiv IDs are admitted and retained on distinct publication UUIDs; section 16 reports them as audit errors without blocking storage or synchronization. ISBN need not be unique because several chapters may share a book ISBN.
+`pages` and `article_number` may coexist only when the source genuinely supplies both distinct values. Primary DOI identifiers must be unique among retained publication records after normalization. A DOI encoded in a recognized official publisher or DOI resolver URL must agree with `identifiers.doi`; a contradiction blocks writes. arXiv preprints use their own arXiv-issued DOI (`10.48550/arxiv.<base-id>`), rather than a related conference or journal DOI. Active ICLR conference papers use a unique, case-sensitive OpenReview forum ID as their paper-level identifier and do not raise a missing-DOI warning. The ICLR yearly proceedings ISBN describes the collected volume and must not be used as a unique paper identifier. Active ICML main-conference papers may omit a DOI without a missing-DOI warning; when a DOI exists, record and validate it normally. Other active records without a DOI raise audit warnings and do not prevent admission or unrelated writes; archived records without a DOI do not warn. Duplicate normalized arXiv IDs are admitted and retained on distinct publication UUIDs; section 16 reports them as audit errors without blocking storage or synchronization. ISBN need not be unique because several chapters may share a book ISBN.
 
 ### 4.2 Author credit
 
@@ -240,6 +240,7 @@ The identifier object permits:
 | `doi` | DOI string without `doi:` or resolver URL, trimmed and ASCII-lowercased; for example `10.1000/example`. |
 | `arxiv` | Base arXiv identifier without `arXiv:`, URL, `.pdf`, or version suffix; ASCII-lowercased. Legacy category IDs remain valid. |
 | `isbn` | ISBN-10 or ISBN-13 string with hyphens/spaces removed; `X` is uppercase. Syntax/checksum is validated. |
+| `openreview` | Case-sensitive OpenReview forum ID from `https://openreview.net/forum?id=<id>`, without the URL or `id=` prefix; for example `xI71dsS3o4`. IDs must be unique across retained publications. |
 
 Every present identifier is a non-empty string. `{}` is valid.
 
@@ -341,6 +342,7 @@ Path: `catalog/venues/<preferred-name-slug>_<uuid-prefix>.json`.
   "kind": "journal",
   "preferred_name": "Journal of Example Research",
   "abbreviation": "J. Example Res.",
+  "flagged": true,
   "aliases": ["JER", "J. Example Research"],
   "urls": [
     { "url": "https://example.org/journal", "role": "homepage" }
@@ -358,6 +360,7 @@ Path: `catalog/venues/<preferred-name-slug>_<uuid-prefix>.json`.
 | `kind` | required enum | `journal`, `conference`, `workshop`, `repository`, or `other`. |
 | `preferred_name` | required non-empty string | Default identity display name. It need not be unique. |
 | `abbreviation` | optional non-empty string | Default abbreviated display; it need not be unique. |
+| `flagged` | optional boolean | `true` marks a venue as important to this library; absent or `false` means unflagged. |
 | `aliases` | required unique string array | Curated historical/alternative names; omit the preferred name itself. |
 | `urls` | required array of venue URL objects | Labeled identity-level resources; see section 6.1. Use `[]` when none are recorded. |
 | `disambiguation_note` | optional non-empty string | Human aid for distinguishing similarly named venues. |
@@ -640,7 +643,7 @@ An acknowledged audit warning is an accepted, evidence-only `kind: "change"` rev
 | `decided_at` | optional timestamp | Time the overall review reached accepted/rejected state. Required for those terminal states; omitted while pending/deferred/partial. |
 | `created_at`, `updated_at` | required timestamps | Review lifecycle. Evidence timestamps retain their separate source meanings. |
 
-A target contains required `entity_type` and optional `entity_id`. Entity type is `library`, `publication`, `author`, `venue`, `gscholar_profile`, or `gscholar_entry`. `entity_id` is required except for `library` and `gscholar_profile`, whose fixed record is identified by type. A target may name a proposed not-yet-created UUID.
+A target contains required `entity_type` and optional `entity_id`. Entity type is `library`, `publication`, `author`, `venue`, `gscholar_profile`, or `gscholar_entry`. `entity_id` is required except for `library` and `gscholar_profile`, whose fixed record is identified by type. A target may name a proposed not-yet-created UUID. Historical decided reviews and evidence-only reviews may retain UUIDs of publications later removed through explicit duplicate-record resolution. An open proposal must still target a retained record or a proposed creation; live catalog relations and To-Do links cannot point to removed publications.
 
 ### 9.2 Evidence
 
@@ -880,6 +883,8 @@ Structural validation checks each file against its record schema. Blocking seman
 - one `library.json`, optional one owner configuration, and optional one Scholar profile;
 - exactly one active file per full record UUID and conforming derived paths;
 - unique publication citation keys, author keys, venue keys, normalized primary DOI IDs, author identifiers, attachment IDs, and `(profile_id, scholar_id)` pairs;
+- agreement between a stored DOI and a DOI encoded in a recognized `official_url` path;
+- active journal and conference records have no preprint-hosted `official_url` or `extra_urls` entries unless their main `paper_url` still points to a preprint pending source correction;
 - all publication, author, venue, Scholar, review, primary-attachment, redirect, and source-evidence references resolve;
 - no self relation, duplicate relation, forbidden symmetric duplicate, directed relation cycle, or redirect cycle;
 - no repeated resolved author in a publication and no duplicate controlled role on a credit;
@@ -891,7 +896,13 @@ Structural validation checks each file against its record schema. Blocking seman
 
 Warnings identify usable but review-worthy states: unresolved author or venue links, an empty byline, singleton co-first/co-last roles, a singleton equal-contribution group, suspicious date ordering, archived link targets, case-confusable keys, stale Scholar observations, unavailable local attachment bytes, and filenames needing repair. Warnings do not redefine stored semantics.
 
-Auditing is distinct from these admission checks. Each normalized arXiv ID assigned to several retained publications produces a `duplicate_arxiv_id` finding with severity `error`, `blocks_write: false`, the normalized identifier, and all affected publication UUIDs. Include archived publications. These records remain valid to save, import, export, migrate, and synchronize. An audit error must be visible and require reviewed resolution, but must not be promoted into a uniqueness rejection by an importer, index, sync routine, or database constraint. Index arXiv IDs as a non-unique lookup returning all candidates. UUID collisions, dangling links, malformed identifiers, and duplicate DOI IDs remain blocking errors.
+Auditing is distinct from these admission checks. An active publication without a DOI produces `PUB_MISSING_DOI` with severity `warning`, except for ICLR and ICML conference papers. An active ICLR conference publication without an OpenReview forum ID produces `PUB_MISSING_OPENREVIEW` instead; ICML conference papers have no substitute paper identifier requirement. Archived publications produce neither missing-identifier warning. Each normalized arXiv ID assigned to several retained publications produces a `duplicate_arxiv_id` finding with severity `error`, `blocks_write: false`, the normalized identifier, and all affected publication UUIDs. Include archived publications in the duplicate arXiv check. These records remain valid to save, import, export, migrate, and synchronize. An audit finding must be visible, but missing DOIs and duplicate arXiv IDs must not be promoted into uniqueness rejections by an importer, index, sync routine, or database constraint. Index arXiv IDs as a non-unique lookup returning all candidates. UUID collisions, dangling links, malformed identifiers, duplicate DOI IDs, duplicate OpenReview forum IDs, and disagreement between `identifiers.openreview` and an official OpenReview forum URL remain blocking errors.
+
+Auditing also reports `SHARED_PAPER_BYTES` when a journal or conference paper-role attachment has the same SHA-256 as a paper on a publication of another type. Each finding identifies the hash and affected publication records. A preprint and workshop may share bytes without this finding. This is an audit-only error so existing catalogs remain readable and editable while venue-specific files are found and reviewed. New website and manual journal/conference paper registrations reject cross-type byte reuse; an arXiv PDF URL may be used for a preprint or workshop record.
+
+`PUBLISHED_ARXIV_PAPER_URL` reports a journal or conference publication whose `paper_url` points to an arXiv PDF, even when no duplicate attachment exists. Workshop records are exempt. It is also audit-only; correcting the link requires a verified URL for that publication's own file.
+
+`ICLR_PAPER_URL_SOURCE` warns when an active ICLR conference publication has a `paper_url` that is not the verified ICLR Proceedings PDF for editions from 2024 onward or the matching OpenReview forum PDF for an earlier edition not hosted by ICLR Proceedings. Do not construct a proceedings URL without a verified paper page and file.
 
 The `mypub audit` command reports these findings alongside the structural, completeness, linked-endpoint, and cardinality checks in [AUDITING.md](AUDITING.md). Shared Scholar entries are audit-only errors; a publication may link multiple entries. `mypub validate` checks blocking format/reference constraints. Import/sync/migration admission must not be gated on a clean audit exit code. Audit reads current JSON without updating records or the index, with `--details` and `--json` output. `mypub audit acknowledge FINDING_FINGERPRINT --reason TEXT` is a separate explicit mutation that writes the accepted review described above. Default output omits acknowledged warnings from the actionable list and counts them separately; detailed and JSON output retain them with the acknowledging review ID. Exit codes are 0 (warnings allowed), 4 (audit errors), 1 (operationally incomplete), and 2 (usage). Accepted corrections, acknowledgements, and their evidence live in reviews and Git. Resolve a duplicate by supported identifier correction/removal, reviewed relation/ownership correction, or an explicit duplicate-record resolution, never by automatically merging equal IDs or suppressing one record.
 

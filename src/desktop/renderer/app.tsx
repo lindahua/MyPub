@@ -540,6 +540,15 @@ function RecordDetails({
                     arXiv: {pub.identifiers.arxiv}
                   </LinkButton>
                 )}
+                {pub.identifiers.openreview &&
+                  pub.official_url !==
+                    `https://openreview.net/forum?id=${pub.identifiers.openreview}` && (
+                    <LinkButton
+                      url={`https://openreview.net/forum?id=${pub.identifiers.openreview}`}
+                    >
+                      OpenReview: {pub.identifiers.openreview}
+                    </LinkButton>
+                  )}
                 {pub.extra_urls
                   .filter(
                     (url) => url !== pub.official_url && url !== pub.paper_url,

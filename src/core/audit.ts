@@ -7,6 +7,7 @@ import { auditState, resolveIdentity, validateState } from "./validation.js";
 import { catalogFiles, publicationYear } from "./paths.js";
 import { scholarEntryIds } from "./scholar-links.js";
 import { fingerprint } from "./utils.js";
+import { officialUrlDoi } from "./doi.js";
 
 export interface RepoAuditFinding {
   code: string; severity: "error" | "warning"; aspect: string; message: string;
@@ -122,10 +123,11 @@ export async function auditRepository(root: string): Promise<AuditResult> {
   const state = { library: collection("library")[0], owner: collection("owner")[0], publications: collection("publication"), authors: collection("author"), venues: collection("venue"), reviews: collection("review"), gscholar_entries: collection("gscholar_entry"), todos: collection("todo"), ...(collection("gscholar_profile")[0] ? { gscholar_profile: collection("gscholar_profile")[0] } : {}) } as unknown as CatalogState;
   const ownerRows = (...ids: string[]): Row[] => ids.flatMap(id => groups.get(id) ?? []);
   const warn = (code: string, message: string, id: string, field?: string) => add(code, "warning", message, ownerRows(id), field);
-  const groupedUniqueRules = new Set(["DUPLICATE_CITATION_KEY", "DUPLICATE_IDENTIFIER", "DUPLICATE_SCHOLAR_ID"]);
+  const groupedUniqueRules = new Set(["DUPLICATE_CITATION_KEY", "DUPLICATE_IDENTIFIER", "DUPLICATE_OPENREVIEW_ID", "DUPLICATE_SCHOLAR_ID"]);
   for (const [code, field, pairs] of [
     ["DUPLICATE_CITATION_KEY", "/citation_key", state.publications.map(p => [p.citation_key, p.id])],
     ["DUPLICATE_IDENTIFIER", "/identifiers/doi", state.publications.filter(p => p.identifiers.doi).map(p => [p.identifiers.doi!, p.id])],
+    ["DUPLICATE_OPENREVIEW_ID", "/identifiers/openreview", state.publications.filter(p => p.identifiers.openreview).map(p => [p.identifiers.openreview!, p.id])],
     ["DUPLICATE_SCHOLAR_ID", "/scholar_id", state.gscholar_entries.map(g => [g.scholar_id.startsWith(`${g.profile_id}:`) ? g.scholar_id : `${g.profile_id}:${g.scholar_id}`, g.id])],
   ] as const) {
     const grouped = new Map<string, string[]>();
@@ -149,6 +151,23 @@ export async function auditRepository(root: string): Promise<AuditResult> {
       add(f.code, "error", `Duplicate arXiv identifier ${f.identifier}`, ownerRows(...f.publication_ids), "/identifiers/arxiv", f.identifier);
       result.findings.at(-1)!.blocks_write = false;
     }
+    const paperHashes = new Map<string, Publication[]>();
+    for (const publication of state.publications)
+      for (const attachment of publication.attachments.filter(a => a.role === "paper"))
+        paperHashes.set(attachment.sha256, [...(paperHashes.get(attachment.sha256) ?? []), publication]);
+    for (const [sha256, publications] of paperHashes) {
+      const distinct = [...new Map(publications.map(p => [p.id, p])).values()];
+      if (distinct.length < 2 || new Set(distinct.map(p => p.type)).size < 2 || !distinct.some(p => p.type === "journal" || p.type === "conference")) continue;
+      add("SHARED_PAPER_BYTES", "error", "A journal or conference publication shares PDF bytes with another publication type", ownerRows(...distinct.map(p => p.id)), "/attachments", sha256, "publication");
+      result.findings.at(-1)!.blocks_write = false;
+    }
+    for (const publication of state.publications) {
+      if (!["journal", "conference"].includes(publication.type) || !publication.paper_url) continue;
+      const url = new URL(publication.paper_url);
+      if (!(url.hostname === "arxiv.org" || url.hostname.endsWith(".arxiv.org")) || !/^\/pdf\//i.test(url.pathname)) continue;
+      add("PUBLISHED_ARXIV_PAPER_URL", "error", "Journal or conference record points its paper URL to an arXiv PDF", ownerRows(publication.id), "/paper_url", publication.paper_url, "publication");
+      result.findings.at(-1)!.blocks_write = false;
+    }
     for (const [path, value] of catalogFiles(state)) {
       const row = usable.find(r => r.value === value);
       if (row && row.path !== path) warn("PATH_MISMATCH", `Expected ${path}`, String(row.value.id));
@@ -156,17 +175,32 @@ export async function auditRepository(root: string): Promise<AuditResult> {
   } else { result.counts_complete = false; result.skipped.push({ path: "catalog", check: "structural cross-record validation", reason: "Invalid library or owner configuration" }); }
 
   for (const p of state.publications) {
+    const venue = p.venue?.venue_id ? resolveIdentity(state.venues, p.venue.venue_id) : undefined;
+    const iclr = p.type === "conference" && (venue?.venue_key === "iclr" || p.venue?.name === "International Conference on Learning Representations");
+    const icml = p.type === "conference" && (venue?.venue_key === "icml" || p.venue?.name === "International Conference on Machine Learning");
+    if (!p.archived_at && iclr && !p.identifiers.openreview) {
+      add("PUB_MISSING_OPENREVIEW", "warning", "ICLR paper has no verified OpenReview forum ID", ownerRows(p.id), "/identifiers/openreview", undefined, "publication");
+    } else if (!p.archived_at && !iclr && !icml && !p.identifiers.doi) {
+      add("PUB_MISSING_DOI", "warning", "Publication has no verified DOI", ownerRows(p.id), "/identifiers/doi", officialUrlDoi(p), "publication");
+    }
+    if (!p.archived_at && iclr && p.paper_url) {
+      const url = new URL(p.paper_url);
+      const older = p.venue?.event_year !== undefined && p.venue.event_year < 2024;
+      const proceedingsPath = /^\/paper_files\/paper\/(\d{4})\/file\/[^/]+\.pdf$/i.exec(url.pathname);
+      const expected = older
+        ? url.hostname === "openreview.net" && url.pathname === "/pdf" && (!p.identifiers.openreview || url.searchParams.get("id") === p.identifiers.openreview)
+        : url.hostname === "proceedings.iclr.cc" && !!proceedingsPath && (!p.venue?.event_year || Number(proceedingsPath[1]) === p.venue.event_year);
+      if (!expected) add("ICLR_PAPER_URL_SOURCE", "warning", older ? "Older ICLR paper URL should be its OpenReview forum PDF" : "ICLR paper URL should be its proceedings PDF", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
+    }
     if (!p.archived_at) {
       const missing = (test: boolean, code: string, field: string) => { if (test) warn(code, `Missing expected ${field}`, p.id, `/${field}`); };
       missing(!p.publication_date, "PUB_MISSING_DATE", "publication_date");
       missing(["journal", "conference", "workshop", "book-chapter"].includes(p.type) && !p.venue, "PUB_MISSING_VENUE", "venue");
       missing(p.type === "journal" && !p.volume, "PUB_MISSING_VOLUME", "volume");
       missing(p.type === "journal" && !p.pages && !p.article_number, "PUB_MISSING_PAGES", "pages or article_number");
-      missing(p.type === "journal" && !p.identifiers.doi, "PUB_MISSING_DOI", "identifiers/doi");
       missing(p.type === "book-chapter" && !p.identifiers.doi && !p.identifiers.isbn, "PUB_MISSING_BOOK_IDENTIFIER", "DOI or ISBN");
       missing(!Object.values(p.identifiers).length && !p.official_url && !p.paper_url, "PUB_MISSING_LOCATOR", "identifier or URL");
     }
-    const venue = p.venue?.venue_id ? resolveIdentity(state.venues, p.venue.venue_id) : undefined;
     if (venue?.archived_at) warn("ARCHIVED_VENUE", "Venue identity is archived", p.id, "/venue");
     const expected = p.type === "preprint" ? "repository" : p.type;
     if (venue && ["journal", "conference", "workshop", "repository"].includes(expected) && venue.kind !== "other" && venue.kind !== expected) add("PUB_VENUE_TYPE", "error", "Publication type conflicts with venue kind", ownerRows(p.id, venue.id), "/venue", [p.type, venue.kind]);

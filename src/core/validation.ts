@@ -3,6 +3,15 @@ import { paperFilePaths, PAPER_FILES } from "./paper-files.js";
 import { recordIssues, validOrcid } from "./schemas.js";
 import { fingerprint, normalizeArxiv, normalizeDoi } from "./utils.js";
 import { scholarEntryIds } from "./scholar-links.js";
+import { officialUrlDoi } from "./doi.js";
+import { openReviewForumId } from "./openreview.js";
+
+const PREPRINT_HOSTS = ["arxiv.org", "biorxiv.org", "medrxiv.org", "ssrn.com", "preprints.org", "researchsquare.com"];
+function isPreprintUrl(value: string | undefined): boolean {
+  if (!value) return false;
+  const host = new URL(value).hostname.toLowerCase();
+  return PREPRINT_HOSTS.some(domain => host === domain || host.endsWith(`.${domain}`));
+}
 
 export function reviewState(review: Review): Review["state"] {
   if (!review.proposals.length) return review.state;
@@ -36,6 +45,7 @@ export function validateState(s: CatalogState): ValidationResult {
   unique(s.authors.map((r) => [r.author_key, r.id]), "DUPLICATE_AUTHOR_KEY");
   unique(s.venues.map((r) => [r.venue_key, r.id]), "DUPLICATE_VENUE_KEY");
   unique(s.publications.filter((p) => p.identifiers.doi).map((p) => [normalizeDoi(p.identifiers.doi!), p.id]), "DUPLICATE_IDENTIFIER");
+  unique(s.publications.filter((p) => p.identifiers.openreview).map((p) => [p.identifiers.openreview!, p.id]), "DUPLICATE_OPENREVIEW_ID");
   unique(s.gscholar_entries.map((g) => [g.scholar_id.startsWith(`${g.profile_id}:`) ? g.scholar_id : `${g.profile_id}:${g.scholar_id}`, g.id]), "DUPLICATE_SCHOLAR_ID");
   for (const t of s.todos) reference(t.publication_id, "publication", t.id);
   const external: Array<[string, string]> = [];
@@ -57,6 +67,16 @@ export function validateState(s: CatalogState): ValidationResult {
   const allAttachments: Array<[string, string]> = [];
   const paperPaths = paperFilePaths(s); const attachmentPaths = new Set<string>();
   for (const p of s.publications) {
+    if (!p.archived_at && (p.type === "journal" || p.type === "conference") && !isPreprintUrl(p.paper_url)) {
+      for (const [field, url] of [["official_url", p.official_url], ...p.extra_urls.map((url, index) => [`extra_urls[${index}]`, url])] as Array<[string, string | undefined]>)
+        if (isPreprintUrl(url)) issue("PUBLISHED_PREPRINT_URL", `Remove preprint link from published publication ${field}`, p.id);
+    }
+    const urlDoi = officialUrlDoi(p);
+    if (urlDoi && p.identifiers.doi && normalizeDoi(p.identifiers.doi) !== urlDoi)
+      issue("OFFICIAL_URL_DOI_MISMATCH", `Official URL DOI ${urlDoi} differs from publication DOI ${p.identifiers.doi}`, p.id);
+    const forumId = openReviewForumId(p.official_url);
+    if (forumId && p.identifiers.openreview && p.identifiers.openreview !== forumId)
+      issue("OFFICIAL_URL_OPENREVIEW_MISMATCH", `Official URL forum ID ${forumId} differs from publication ID ${p.identifiers.openreview}`, p.id);
     reference(p.venue?.venue_id, "venue", p.id); scholarEntryIds(p).forEach(id => reference(id, "gscholar_entry", p.id));
     if (p.archived_at && scholarEntryIds(p).length) issue("ARCHIVED_SCHOLAR_LINK", "Archived publications cannot have confirmed Scholar links", p.id);
     if (p.venue && !p.venue.venue_id) issue("UNRESOLVED_VENUE", "Venue identity is unresolved", p.id, "warning");
@@ -159,7 +179,11 @@ export function validateState(s: CatalogState): ValidationResult {
         }
       }
     }
-    for (const t of r.targets) if (!hasTarget(t.entity_type, t.entity_id) && !r.proposals.some((p) => p.operation === "create" && p.target.entity_id === t.entity_id)) issue("REVIEW_TARGET", "Target must resolve or have a creation proposal", r.id);
+    for (const t of r.targets) {
+      const openProposal = r.proposals.some((p) => p.target.entity_type === t.entity_type && p.target.entity_id === t.entity_id && ["pending", "deferred"].includes(p.state));
+      if (openProposal && !hasTarget(t.entity_type, t.entity_id) && !r.proposals.some((p) => p.operation === "create" && p.target.entity_id === t.entity_id))
+        issue("REVIEW_TARGET", "Open proposal target must resolve or have a creation proposal", r.id);
+    }
   }
   return { valid: !issues.some((i) => i.severity === "error"), issues, publication_count: s.publications.length };
 }

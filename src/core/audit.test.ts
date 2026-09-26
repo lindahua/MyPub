@@ -14,7 +14,7 @@ import { acknowledgeAuditWarning } from "./reviews.js";
 async function fixture() {
   const root = await mkdtemp(join(tmpdir(), "mypub-audit-")); const c = new Catalog({ root }); await c.initialize();
   const author = await addAuthor(c, { author_key: "self", preferred_name: "Jane Doe" }); await configureOwner(c, author.id, "profile");
-  const p = await c.add({ citation_key: "paper", type: "preprint", title: "New title", authors: [{ name: "Jane Doe", author_id: author.id }], publication_date: "2024-01-01", submission_date: "2024-01-01", identifiers: { arxiv: "2401.00001" }, arxiv_versions: [{ version: 1, submission_date: "2024-01-01", title: "Old title", authors: ["Jane Doe"], abstract: "Old" }, { version: 2, submission_date: "2024-02-01", title: "New title", authors: ["Jane Doe"], abstract: "New" }] });
+  const p = await c.add({ citation_key: "paper", type: "preprint", title: "New title", authors: [{ name: "Jane Doe", author_id: author.id }], publication_date: "2024-01-01", submission_date: "2024-01-01", identifiers: { arxiv: "2401.00001", doi: "10.48550/arxiv.2401.00001" }, arxiv_versions: [{ version: 1, submission_date: "2024-01-01", title: "Old title", authors: ["Jane Doe"], abstract: "Old" }, { version: 2, submission_date: "2024-02-01", title: "New title", authors: ["Jane Doe"], abstract: "New" }] });
   const input = join(root, "capture.json"); await writeFile(input, JSON.stringify({ profile_id: "profile", captured_at: "2025-01-01T00:00:00Z", coverage: "partial", entries: [{ scholar_id: "entry", title: "Old title", authors: ["J. Doe"], authors_completeness: "partial", year: 2024, citation_count: null }] }));
   await importScholarSnapshot(c, input);
   const g = (await c.read()).gscholar_entries[0]!;
@@ -58,6 +58,63 @@ test("accepted review records acknowledge an exact audit warning", async () => {
     const normal = cli(f.root); assert.doesNotMatch(normal.stdout, /WARNING SCHOLAR_AUTHORS_PARTIAL/);
     const details = cli(f.root, "--details"); assert.match(details.stdout, new RegExp(`Acknowledged by: ${review.id}`));
     const repeated = cli(f.root, "acknowledge", finding.fingerprint, "--reason", "again"); assert.notEqual(repeated.status, 0);
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("publications without DOIs are admitted and audited as warnings", async () => {
+  const f = await fixture(); try {
+    const p = await f.c.add({ citation_key: "no-doi", type: "conference", title: "No assigned DOI yet", authors: [{ name: "Jane Doe" }] });
+    let result = await f.c.audit();
+    const finding = result.findings.find(x => x.code === "PUB_MISSING_DOI" && x.record_ids.includes(p.id));
+    assert.equal(finding?.severity, "warning");
+    assert.equal(result.errors, 0);
+    assert.equal(cli(f.root).status, 0);
+    await f.c.archive(p.id);
+    result = await f.c.audit();
+    assert.ok(!result.findings.some(x => x.code === "PUB_MISSING_DOI" && x.record_ids.includes(p.id)));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("active ICLR papers use OpenReview forum IDs in place of DOI warnings", async () => {
+  const f = await fixture(); try {
+    const venue = { name: "International Conference on Learning Representations" };
+    const identified = await f.c.add({ citation_key: "iclr-forum", type: "conference", title: "ICLR paper", authors: [{ name: "Jane Doe" }], venue, identifiers: { openreview: "xI71dsS3o4" }, official_url: "https://proceedings.iclr.cc/paper_files/paper/2025/hash/example-Abstract-Conference.html" });
+    const unresolved = await f.c.add({ citation_key: "iclr-unresolved", type: "conference", title: "Another ICLR paper", authors: [{ name: "Jane Doe" }], venue });
+    let findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(identified.id) && ["PUB_MISSING_DOI", "PUB_MISSING_OPENREVIEW"].includes(x.code)));
+    assert.ok(findings.some(x => x.record_ids.includes(unresolved.id) && x.code === "PUB_MISSING_OPENREVIEW"));
+    assert.ok(!findings.some(x => x.record_ids.includes(unresolved.id) && x.code === "PUB_MISSING_DOI"));
+    await f.c.archive(unresolved.id); findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(unresolved.id) && ["PUB_MISSING_DOI", "PUB_MISSING_OPENREVIEW"].includes(x.code)));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("audit checks ICLR paper URLs against the correct proceedings source by year", async () => {
+  const f = await fixture(); try {
+    const venue = { name: "International Conference on Learning Representations", event_year: 2025 };
+    const outside = await f.c.add({ citation_key: "iclr-outside", type: "conference", title: "Outside PDF", authors: [{ name: "Jane Doe" }], venue, identifiers: { openreview: "outside123" }, paper_url: "https://openreview.net/pdf?id=outside123" });
+    const proceedings = await f.c.add({ citation_key: "iclr-proceedings", type: "conference", title: "Proceedings PDF", authors: [{ name: "Jane Doe" }], venue, identifiers: { openreview: "proceedings123" }, paper_url: "https://proceedings.iclr.cc/paper_files/paper/2025/file/example-Paper-Conference.pdf" });
+    const older = await f.c.add({ citation_key: "iclr-older", type: "conference", title: "Older PDF", authors: [{ name: "Jane Doe" }], venue: { ...venue, event_year: 2022 }, identifiers: { openreview: "older123" }, paper_url: "https://openreview.net/pdf?id=older123" });
+    let findings = (await f.c.audit()).findings;
+    assert.ok(findings.some(x => x.record_ids.includes(outside.id) && x.code === "ICLR_PAPER_URL_SOURCE"));
+    assert.ok(!findings.some(x => x.record_ids.includes(proceedings.id) && x.code === "ICLR_PAPER_URL_SOURCE"));
+    assert.ok(!findings.some(x => x.record_ids.includes(older.id) && x.code === "ICLR_PAPER_URL_SOURCE"));
+    await f.c.change(s => { s.publications.find(p => p.id === older.id)!.paper_url = "https://openreview.net/pdf?id=some_other_paper"; });
+    findings = (await f.c.audit()).findings;
+    assert.ok(findings.some(x => x.record_ids.includes(older.id) && x.code === "ICLR_PAPER_URL_SOURCE"));
+    await f.c.archive(outside.id);
+    findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(outside.id) && x.code === "ICLR_PAPER_URL_SOURCE"));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
+test("active ICML conference papers may omit a DOI without a warning", async () => {
+  const f = await fixture(); try {
+    const icml = await f.c.add({ citation_key: "icml-no-doi", type: "conference", title: "ICML paper", authors: [{ name: "Jane Doe" }], venue: { name: "International Conference on Machine Learning" } });
+    const workshop = await f.c.add({ citation_key: "icml-workshop-no-doi", type: "workshop", title: "ICML workshop paper", authors: [{ name: "Jane Doe" }], venue: { name: "International Conference on Machine Learning" } });
+    const findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(icml.id) && x.code === "PUB_MISSING_DOI"));
+    assert.ok(findings.some(x => x.record_ids.includes(workshop.id) && x.code === "PUB_MISSING_DOI"));
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
@@ -114,7 +171,7 @@ test("precision, archived completeness, current revisions and independent compar
   const f = await fixture(); try {
     const p = await f.c.add({ citation_key: "dates", type: "journal", title: "Dates", authors: [], submission_date: "2024", acceptance_date: "2024-01", publication_date: "2024", issued_date: "2024-06" });
     let r = await f.c.audit(); assert.ok(!r.findings.some(x => x.record_ids.includes(p.id) && ["DATE_ORDER", "PUB_ISSUE_DATE"].includes(x.code)));
-    await f.c.archive(p.id); r = await f.c.audit(); assert.ok(!r.findings.some(x => x.record_ids.includes(p.id) && ["PUB_MISSING_DOI", "EMPTY_BYLINE", "PUB_MISSING_VOLUME"].includes(x.code)));
+    await f.c.archive(p.id); r = await f.c.audit(); assert.ok(!r.findings.some(x => x.record_ids.includes(p.id) && x.code === "PUB_MISSING_DOI")); assert.ok(!r.findings.some(x => x.record_ids.includes(p.id) && ["EMPTY_BYLINE", "PUB_MISSING_VOLUME"].includes(x.code)));
     const value = JSON.parse(await readFile(f.path(f.p.id), "utf8")); value.title = "Different current title"; await writeFile(f.path(f.p.id), JSON.stringify(value));
     const g = JSON.parse(await readFile(f.path(f.g.id), "utf8")); g.title = "Unrelated title"; g.year = 2023; g.authors = ["Someone Else"]; await writeFile(f.path(f.g.id), JSON.stringify(g));
     r = await f.c.audit(); for (const code of ["ARXIV_CURRENT_VERSION", "LINK_TITLE", "LINK_YEAR", "LINK_AUTHORS"]) assert.ok(r.findings.some(x => x.code === code), code);

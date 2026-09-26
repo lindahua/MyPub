@@ -127,13 +127,28 @@ For active publications, apply these additional completeness checks:
 | Venue is present but has no `venue_id` | Warning |
 | Missing journal volume | Warning |
 | Journal has neither pages nor article number | Warning |
-| Missing DOI on a journal publication | Warning |
 | Book chapter has neither DOI nor ISBN | Warning |
 | No DOI, arXiv ID, ISBN, official URL, or paper URL | Warning |
 
 Journal issue numbers are optional because some journals do not use them. Missing
 abstract, tags, notes, attachments, author roles, Scholar links, and optional
 lifecycle dates do not produce warnings by themselves.
+
+A missing DOI on an active publication is a warning except for ICLR and ICML
+conference papers. ICLR uses the OpenReview forum ID as its paper-level
+identifier; an active ICLR paper without that ID receives
+`PUB_MISSING_OPENREVIEW` instead. ICML has no substitute paper identifier
+requirement. Any DOI assigned to an ICML paper remains subject to normal
+uniqueness and official-URL consistency checks. Archived
+publications produce neither missing-identifier warning. Missing identifiers do
+not prevent admission or synchronization. Duplicate normalized DOIs and
+duplicate OpenReview forum IDs remain blocking errors across active and archived
+publications.
+
+An active ICLR conference record receives `ICLR_PAPER_URL_SOURCE` as a warning
+when its `paper_url` is not the ICLR Proceedings PDF for 2024 onward, or the
+matching OpenReview forum PDF for an older edition not hosted by ICLR
+Proceedings.
 
 For arXiv-backed preprints, existing stronger requirements remain errors: a base
 arXiv ID, complete retrieved version history, and original publication/submission
@@ -145,6 +160,7 @@ dates are required.
 | --- | --- |
 | Duplicate citation key | Error |
 | Duplicate normalized DOI | Error |
+| DOI contradicts a DOI encoded in a recognized official publication URL | Error; blocks writes |
 | Duplicate normalized arXiv ID | Error; remains nonblocking |
 | Author, venue, relation target, or referenced evidence record does not resolve | Error |
 | Resolved author identity appears in multiple credit positions | Error |

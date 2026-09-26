@@ -21,11 +21,11 @@ export interface AuthorIdentity extends RecordBase {
 export interface VenueUrl { url: string; role: "homepage" | "proceedings" | "submission" | "other"; label?: string; }
 export interface VenueIdentity extends RecordBase {
   venue_key: string; kind: "journal" | "conference" | "workshop" | "repository" | "other";
-  preferred_name: string; abbreviation?: string; aliases: string[]; urls: VenueUrl[];
+  preferred_name: string; abbreviation?: string; aliases: string[]; urls: VenueUrl[]; flagged?: boolean;
   disambiguation_note?: string; archived_at?: string; merged_into?: string;
 }
 export interface PublicationVenue { name: string; venue_id?: string; event_year?: number; }
-export interface PublicationIdentifiers { doi?: string; arxiv?: string; isbn?: string; }
+export interface PublicationIdentifiers { doi?: string; arxiv?: string; isbn?: string; openreview?: string; }
 export interface Relation { type: RelationType; target_id: string; note?: string; }
 export interface Attachment {
   id: string; role: AttachmentRole; label?: string; original_filename: string; media_type: string;

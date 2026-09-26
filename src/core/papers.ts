@@ -56,6 +56,15 @@ const normalizeTitle = (value: string) =>
     .replace(/[^\p{L}\p{N}]/gu, "");
 const hash = (bytes: Buffer) =>
   createHash("sha256").update(bytes).digest("hex");
+const isPreprintPdf = (url: string) => {
+  const parsed = new URL(url);
+  return (parsed.hostname === "arxiv.org" || parsed.hostname.endsWith(".arxiv.org")) && /^\/pdf\//i.test(parsed.pathname);
+};
+const requiresDistinctPaper = (type: Publication["type"]) => type === "journal" || type === "conference";
+const usablePaperUrl = (p: Publication) =>
+  p.paper_url && (!requiresDistinctPaper(p.type) || !isPreprintPdf(p.paper_url))
+    ? p.paper_url
+    : undefined;
 async function directory(c: Catalog, id?: string): Promise<string> {
   if (id !== undefined && !validUuid(id))
     throw new MyPubError("Invalid download ID", "DOWNLOAD_INVALID");
@@ -149,15 +158,17 @@ export async function discoverPaper(
   transport = paperTransport(),
 ): Promise<PaperCandidate[]> {
   const p = await c.get(ref);
-  if (p.paper_url)
+  if (usablePaperUrl(p))
     return [
       {
-        url: webUrl(p.paper_url),
+        url: webUrl(p.paper_url!),
         identity: false,
         evidence: "record paper_url; content identity requires review",
       },
     ];
-  return discoverOfficial(p, transport);
+  return (await discoverOfficial(p, transport)).filter(
+    (candidate) => !requiresDistinctPaper(p.type) || !isPreprintPdf(candidate.url),
+  );
 }
 async function discoverOfficial(
   p: Publication,
@@ -210,6 +221,8 @@ async function stageUnlocked(
       "Cannot download for archived publication",
       "PAPER_ARCHIVED",
     );
+  if (sourceUrl && requiresDistinctPaper(p.type) && isPreprintPdf(webUrl(sourceUrl)))
+    throw new MyPubError("An arXiv PDF is not a journal or conference paper file", "PAPER_MISMATCH");
   const revision = fingerprint(p);
   const existing = (await listDownloads(c)).find(
     (m) =>
@@ -230,10 +243,10 @@ async function stageUnlocked(
           evidence: "explicit download URL; identity requires review",
         },
       ]
-    : p.paper_url
+    : usablePaperUrl(p)
       ? [
           {
-            url: webUrl(p.paper_url),
+            url: webUrl(p.paper_url!),
             identity: false,
             evidence: "record paper_url; identity requires review",
           },
@@ -242,6 +255,8 @@ async function stageUnlocked(
   let response;
   let candidate: PaperCandidate;
   function select() {
+    if (requiresDistinctPaper(p.type))
+      candidates = candidates.filter((item) => !isPreprintPdf(item.url));
     if (candidates.length !== 1)
       throw new MyPubError(
         candidates.length
@@ -263,7 +278,7 @@ async function stageUnlocked(
   } catch (e) {
     if (
       sourceUrl ||
-      !p.paper_url ||
+      !usablePaperUrl(p) ||
       !p.official_url ||
       (e instanceof MyPubError && e.code === "PAPER_BLOCKED")
     ) {
@@ -393,10 +408,18 @@ export async function registerDownload(
     const bytes = await bytesFor(c, m);
     if (!pdfEnvelope(bytes))
       throw new MyPubError("Invalid PDF envelope", "PAPER_INVALID");
+    if (requiresDistinctPaper((await c.get(m.publication_id)).type) &&
+        [m.requested_url, m.resolved_url].some(isPreprintPdf))
+      throw new MyPubError("An arXiv PDF cannot be registered as a journal or conference paper", "PAPER_MISMATCH");
     const attachment = await c.change((state, binary) => {
       const p = findPublication(state, m.publication_id);
       if (p.archived_at)
         throw new MyPubError("Publication archived", "PAPER_ARCHIVED");
+      const conflict = state.publications.find((other) => other.id !== p.id && other.type !== p.type &&
+        (requiresDistinctPaper(p.type) || requiresDistinctPaper(other.type)) &&
+        other.attachments.some((a) => a.role === "paper" && a.sha256 === m.sha256));
+      if (conflict)
+        throw new MyPubError(`PDF bytes already belong to ${conflict.type} publication ${conflict.citation_key}`, "PAPER_MISMATCH");
       const existing = p.attachments.find((a) => a.sha256 === m.sha256);
       if (existing) {
         binary.set(existing.path, bytes);
@@ -543,15 +566,17 @@ export async function downloadPapers(
                   evidence: "explicit download URL",
                 },
               ]
-            : p.paper_url
+            : usablePaperUrl(p)
               ? [
                   {
-                    url: webUrl(p.paper_url),
+                  url: webUrl(p.paper_url!),
                     identity: false,
                     evidence: "record paper_url",
                   },
                 ]
-              : await discoverOfficial(p, transport),
+              : (await discoverOfficial(p, transport)).filter(
+                  (candidate) => !requiresDistinctPaper(p.type) || !isPreprintPdf(candidate.url),
+                ),
         });
       else {
         const m = await stagePaper(c, p, transport, options.sourceUrl);

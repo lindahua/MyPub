@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { mkdtemp, readFile, rm, writeFile, access } from "node:fs/promises";
 import { join } from "node:path";
+import { randomUUID } from "node:crypto";
 import { tmpdir } from "node:os";
 import { PDFDocument } from "pdf-lib";
 import { Catalog } from "./catalog.js";
@@ -64,6 +65,39 @@ test("download stages only, verifies, registers atomically and retries registrat
     access(join(root, "local/downloads", m.id, "paper.pdf")),
   );
   assert.equal((await c.validate()).valid, true);
+});
+
+test("published papers cannot reuse arXiv PDFs or a preprint's PDF bytes", async (t) => {
+  const { c, p, root } = await setup(t);
+  const bytes = await pdf("Example Paper");
+  const preprint = await c.add({ citation_key: "preprint", type: "preprint", title: "Example Paper", authors: [{ name: "Ada" }] });
+  const source = join(root, "preprint.pdf");
+  await writeFile(source, bytes);
+  const original = await c.addAttachment(preprint.id, source, "paper");
+  await assert.rejects(downloadPaper(c, p.id, transport(bytes), "https://arxiv.org/pdf/1234.56789"), /arXiv PDF/);
+  await c.update(p.id, { paper_url: "https://arxiv.org/pdf/1234.56789" });
+  const m = await downloadPaper(c, p.id, transport(bytes));
+  assert.equal(m.requested_url, "https://publisher.test/paper");
+  assert.equal((await verifyDownload(c, m.id)).state, "verified");
+  await assert.rejects(registerDownload(c, m.id), /already belong/);
+  assert.equal((await c.get(p.id)).attachments.length, 0);
+  await assert.rejects(c.addAttachment(p.id, source, "paper"), /already belong/);
+  const workshop = await c.add({ citation_key: "workshop", type: "workshop", title: "Example Paper", authors: [{ name: "Ada" }], paper_url: "https://arxiv.org/pdf/1234.56789" });
+  const workshopStage = await downloadPaper(c, workshop.id, transport(bytes));
+  assert.equal((await verifyDownload(c, workshopStage.id)).state, "verified");
+  await registerDownload(c, workshopStage.id);
+  assert.equal((await c.audit()).findings.filter(f => f.code === "SHARED_PAPER_BYTES").length, 0);
+  const attachmentId = randomUUID();
+  const path = `attachments/${p.id}/${attachmentId}/preprint.pdf`;
+  await c.change((state, binary) => {
+    state.publications.find(row => row.id === p.id)!.attachments.push({ ...original, id: attachmentId, path });
+    binary.set(path, bytes);
+  });
+  assert.equal((await c.validate()).valid, true);
+  const findings = (await c.audit()).findings.filter(f => f.code === "SHARED_PAPER_BYTES");
+  assert.equal(findings.length, 1);
+  assert.deepEqual(findings[0]!.record_ids, [p.id, preprint.id, workshop.id].sort());
+  assert.equal((await c.audit()).findings.filter(f => f.code === "PUBLISHED_ARXIV_PAPER_URL").length, 1);
 });
 
 test("uncertain PDFs need explicit acceptance and retain existing primary", async (t) => {
