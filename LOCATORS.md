@@ -82,4 +82,4 @@ For CoRL proceedings records, `official_url` is the matching PMLR paper page (`h
 
 For IEEE ICIP records, `official_url` is the matching IEEE Xplore document page (`https://ieeexplore.ieee.org/document/<number>`); verify DOI, title, authors, conference, and year, and preserve a former DOI resolver in `extra_urls`.
 
-For IEEE/RSJ IROS conference records, `official_url` is the matching IEEE Xplore document page (`https://ieeexplore.ieee.org/document/<number>`). Verify the title, DOI, conference, and year before assigning it. Preserve former DOI resolver links in `extra_urls` and keep the DOI identifier.
+For IEEE/RSJ IROS conference records, `official_url` is the matching IEEE Xplore document page (`https://ieeexplore.ieee.org/document/<number>`). Verify the title, DOI, conference, and year before assigning it. Use the direct publisher PDF file exposed by that page's **PDF** button as `paper_url` when available; verify and register its file. Preserve former DOI resolver links in `extra_urls` and keep the DOI identifier.
