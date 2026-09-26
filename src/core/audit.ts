@@ -213,6 +213,12 @@ export async function auditRepository(root: string): Promise<AuditResult> {
       if (!p.paper_url || !expected || p.paper_url !== expected)
         add("SIGGRAPH_PAPER_URL_SOURCE", "warning", "SIGGRAPH paper URL should be the matching ACM View PDF link", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
     }
+    if (!p.archived_at && !siggraph && p.official_url && new URL(p.official_url).hostname === "dl.acm.org") {
+      const doi = p.identifiers.doi && normalizeDoi(p.identifiers.doi);
+      const expected = doi && [`https://dl.acm.org/doi/pdf/${doi}`, `https://dl.acm.org/doi/epdf/${doi}`];
+      if (!p.paper_url || !expected || !expected.includes(p.paper_url))
+        add("ACM_PAPER_URL_SOURCE", "warning", "ACM Digital Library paper URL should be its matching PDF or eReader link", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
+    }
     if (!p.archived_at) {
       const missing = (test: boolean, code: string, field: string) => { if (test) warn(code, `Missing expected ${field}`, p.id, `/${field}`); };
       missing(!p.publication_date, "PUB_MISSING_DATE", "publication_date");

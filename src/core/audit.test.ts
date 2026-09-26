@@ -156,6 +156,23 @@ test("audit checks SIGGRAPH paper URLs against their ACM View PDF links", async 
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("audit checks ACM Digital Library paper URLs for active non-SIGGRAPH records", async () => {
+  const f = await fixture(); try {
+    const base = { type: "conference" as const, authors: [{ name: "Jane Doe" }], venue: { name: "ACM Conference" } };
+    const good = await f.c.add({ ...base, citation_key: "acm-pdf", title: "Publisher PDF", identifiers: { doi: "10.1145/1234.5678" }, official_url: "https://dl.acm.org/doi/10.1145/1234.5678", paper_url: "https://dl.acm.org/doi/pdf/10.1145/1234.5678" });
+    const reader = await f.c.add({ ...base, citation_key: "acm-reader", title: "Publisher reader", identifiers: { doi: "10.1145/1234.5679" }, official_url: "https://dl.acm.org/doi/10.1145/1234.5679", paper_url: "https://dl.acm.org/doi/epdf/10.1145/1234.5679" });
+    const wrong = await f.c.add({ ...base, citation_key: "acm-wrong", title: "Wrong PDF", identifiers: { doi: "10.1145/1234.5680" }, official_url: "https://dl.acm.org/doi/10.1145/1234.5680", paper_url: "https://dl.acm.org/doi/pdf/10.1145/1234.5678" });
+    const missing = await f.c.add({ ...base, citation_key: "acm-missing", title: "No PDF", identifiers: { doi: "10.1145/1234.5681" }, official_url: "https://dl.acm.org/doi/10.1145/1234.5681" });
+    let findings = (await f.c.audit()).findings.filter(x => x.code === "ACM_PAPER_URL_SOURCE");
+    assert.ok(!findings.some(x => x.record_ids.includes(good.id) || x.record_ids.includes(reader.id)));
+    assert.ok(findings.some(x => x.record_ids.includes(wrong.id)));
+    assert.ok(findings.some(x => x.record_ids.includes(missing.id)));
+    await f.c.archive(wrong.id);
+    findings = (await f.c.audit()).findings.filter(x => x.code === "ACM_PAPER_URL_SOURCE");
+    assert.ok(!findings.some(x => x.record_ids.includes(wrong.id)));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("active ICML conference papers may omit a DOI without a warning", async () => {
   const f = await fixture(); try {
     const icml = await f.c.add({ citation_key: "icml-no-doi", type: "conference", title: "ICML paper", authors: [{ name: "Jane Doe" }], venue: { name: "International Conference on Machine Learning" } });
