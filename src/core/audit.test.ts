@@ -123,6 +123,23 @@ test("audit accepts PMLR page PDFs for CoRL, including PMLR's GitHub files", asy
   } finally { await rm(f.root, { recursive: true, force: true }); }
 });
 
+test("audit checks active IJCV paper URLs against the Springer PDF for their DOI", async () => {
+  const f = await fixture(); try {
+    const venue = { name: "International Journal of Computer Vision" };
+    const identifiers = { doi: "10.1007/s11263-025-02428-0" };
+    const correct = await f.c.add({ citation_key: "ijcv-correct", type: "journal", title: "Correct IJCV PDF", authors: [{ name: "Jane Doe" }], venue, identifiers, paper_url: "https://link.springer.com/content/pdf/10.1007/s11263-025-02428-0.pdf" });
+    const missing = await f.c.add({ citation_key: "ijcv-missing", type: "journal", title: "Missing IJCV PDF", authors: [{ name: "Jane Doe" }], venue });
+    const preprint = await f.c.add({ citation_key: "ijcv-preprint", type: "journal", title: "Preprint URL", authors: [{ name: "Jane Doe" }], venue, paper_url: "https://arxiv.org/pdf/2401.07641" });
+    let findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(correct.id) && x.code === "IJCV_PAPER_URL_SOURCE"));
+    assert.ok(findings.some(x => x.record_ids.includes(missing.id) && x.code === "IJCV_PAPER_URL_SOURCE"));
+    assert.ok(findings.some(x => x.record_ids.includes(preprint.id) && x.code === "IJCV_PAPER_URL_SOURCE"));
+    await f.c.archive(preprint.id);
+    findings = (await f.c.audit()).findings;
+    assert.ok(!findings.some(x => x.record_ids.includes(preprint.id) && x.code === "IJCV_PAPER_URL_SOURCE"));
+  } finally { await rm(f.root, { recursive: true, force: true }); }
+});
+
 test("active ICML conference papers may omit a DOI without a warning", async () => {
   const f = await fixture(); try {
     const icml = await f.c.add({ citation_key: "icml-no-doi", type: "conference", title: "ICML paper", authors: [{ name: "Jane Doe" }], venue: { name: "International Conference on Machine Learning" } });

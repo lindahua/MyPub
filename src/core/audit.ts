@@ -6,7 +6,7 @@ import type { CatalogState, Publication, ScholarEntry } from "./types.js";
 import { auditState, resolveIdentity, validateState } from "./validation.js";
 import { catalogFiles, publicationYear } from "./paths.js";
 import { scholarEntryIds } from "./scholar-links.js";
-import { fingerprint } from "./utils.js";
+import { fingerprint, normalizeDoi } from "./utils.js";
 import { officialUrlDoi } from "./doi.js";
 
 export interface RepoAuditFinding {
@@ -179,6 +179,7 @@ export async function auditRepository(root: string): Promise<AuditResult> {
     const iclr = p.type === "conference" && (venue?.venue_key === "iclr" || p.venue?.name === "International Conference on Learning Representations");
     const icml = p.type === "conference" && (venue?.venue_key === "icml" || p.venue?.name === "International Conference on Machine Learning");
     const corl = p.type === "conference" && (venue?.venue_key === "corl" || p.venue?.name === "Conference on Robot Learning");
+    const ijcv = p.type === "journal" && (venue?.venue_key === "ijcv" || p.venue?.name === "International Journal of Computer Vision");
     if (!p.archived_at && iclr && !p.identifiers.openreview) {
       add("PUB_MISSING_OPENREVIEW", "warning", "ICLR paper has no verified OpenReview forum ID", ownerRows(p.id), "/identifiers/openreview", undefined, "publication");
     } else if (!p.archived_at && !iclr && !icml && !p.identifiers.doi) {
@@ -198,6 +199,12 @@ export async function auditRepository(root: string): Promise<AuditResult> {
       const pmlr = url.hostname === "proceedings.mlr.press" && /^\/v\d+\/.+\.pdf$/i.test(url.pathname);
       const pmlrGitHub = url.hostname === "raw.githubusercontent.com" && /^\/mlresearch\/v\d+\//i.test(url.pathname) && url.pathname.toLowerCase().endsWith(".pdf");
       if (!pmlr && !pmlrGitHub) add("CORL_PAPER_URL_SOURCE", "warning", "CoRL paper URL should be the PDF linked from its PMLR page", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
+    }
+    if (!p.archived_at && ijcv) {
+      const doi = p.identifiers.doi && normalizeDoi(p.identifiers.doi);
+      const expected = doi && `https://link.springer.com/content/pdf/${doi}.pdf`;
+      if (!p.paper_url || !expected || p.paper_url !== expected)
+        add("IJCV_PAPER_URL_SOURCE", "warning", "IJCV paper URL should be the matching Springer Download PDF link", ownerRows(p.id), "/paper_url", p.paper_url, "publication");
     }
     if (!p.archived_at) {
       const missing = (test: boolean, code: string, field: string) => { if (test) warn(code, `Missing expected ${field}`, p.id, `/${field}`); };
