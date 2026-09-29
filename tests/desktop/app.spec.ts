@@ -48,6 +48,11 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
   const author = await addAuthor(catalog, {
     author_key: "alice",
     preferred_name: "Alice Example",
+    identifiers: { orcid: "0000-0002-1825-0097" },
+  });
+  await addAuthor(catalog, {
+    author_key: "aaron",
+    preferred_name: "Aaron Zero",
   });
   const venue = await addVenue(catalog, {
     venue_key: "vision",
@@ -276,9 +281,13 @@ test("Electron loads SQLite, supports browsing/filters/right detail pane and ref
       .getByRole("navigation", { name: "Main navigation" })
       .getByRole("button", { name: "Authors", exact: true })
       .click();
+    await expect(page.getByRole("combobox", { name: "Sort results" })).toHaveValue("publications:desc");
+    await expect(page.locator("article.entry").first()).toContainText("Alice Example");
     await page
       .getByRole("button", { name: "Alice Example", exact: false })
       .click();
+    await expect(parent.getByRole("button", { name: "profile ↗" })).toBeVisible();
+    await expect(parent.getByRole("button", { name: "0000-0002-1825-0097 ↗" })).toBeVisible();
     await expect(
       page.getByRole("heading", {
         name: "Linked bibliography · 12 active publications",

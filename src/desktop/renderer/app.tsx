@@ -102,7 +102,9 @@ function freshView(page: Page): View {
         ? "date:desc"
         : page === "scholar"
           ? "citations:desc"
-          : "title:asc",
+          : page === "authors"
+            ? "publications:desc"
+            : "title:asc",
     expanded: [],
     showFilters: false,
     notes: false,
@@ -170,6 +172,24 @@ function Datum({ name, value }: { name: string; value: unknown }) {
       <dd>{pretty(value)}</dd>
     </div>
   );
+}
+function ProfileDatum({
+  name,
+  value,
+  url,
+}: {
+  name: string;
+  value: string | undefined;
+  url: string;
+}) {
+  return value ? (
+    <div className="datum">
+      <dt>{name}</dt>
+      <dd>
+        <LinkButton url={url}>{value}</LinkButton>
+      </dd>
+    </div>
+  ) : null;
 }
 function Empty({ children }: { children: React.ReactNode }) {
   return <div className="empty">{children}</div>;
@@ -711,6 +731,20 @@ function RecordDetails({
             />
             <Datum name="Kind" value={venue?.kind} />
             <Datum name="Abbreviation" value={venue?.abbreviation} />
+            {author && (
+              <>
+                <ProfileDatum
+                  name="Google Scholar"
+                  value={author.identifiers.google_scholar}
+                  url={`https://scholar.google.com/citations?user=${encodeURIComponent(author.identifiers.google_scholar ?? "")}`}
+                />
+                <ProfileDatum
+                  name="ORCID"
+                  value={author.identifiers.orcid}
+                  url={`https://orcid.org/${author.identifiers.orcid ?? ""}`}
+                />
+              </>
+            )}
             <Datum
               name="Archived"
               value={author?.archived_at ?? venue?.archived_at}
@@ -727,31 +761,21 @@ function RecordDetails({
               </EntityLink>
             </p>
           )}
-          <div className="actions">
-            {author?.identifiers.orcid && (
-              <LinkButton url={`https://orcid.org/${author.identifiers.orcid}`}>
-                ORCID {author.identifiers.orcid}
-              </LinkButton>
-            )}
-            {author?.identifiers.google_scholar && (
-              <LinkButton
-                url={`https://scholar.google.com/citations?user=${encodeURIComponent(author.identifiers.google_scholar)}`}
-              >
-                Scholar profile
-              </LinkButton>
-            )}
-            {venue?.urls.map((link) => (
-              <LinkButton key={link.url} url={link.url}>
-                {link.label ??
-                  {
-                    homepage: "Venue homepage",
-                    proceedings: "Proceedings",
-                    submission: "Submission",
-                    other: "Venue resource",
-                  }[link.role]}
-              </LinkButton>
-            ))}
-          </div>
+          {venue && (
+            <div className="actions">
+              {venue.urls.map((link) => (
+                <LinkButton key={link.url} url={link.url}>
+                  {link.label ??
+                    {
+                      homepage: "Venue homepage",
+                      proceedings: "Proceedings",
+                      submission: "Submission",
+                      other: "Venue resource",
+                    }[link.role]}
+                </LinkButton>
+              ))}
+            </div>
+          )}
           <h3>
             Linked bibliography · {row?.publicationIds.length ?? 0} active
             publications

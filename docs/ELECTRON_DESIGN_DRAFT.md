@@ -86,9 +86,9 @@ Saved views are useful but optional for a follow-up delivery. Store expressions,
 
 ## 6. Authors
 
-A searchable directory, sortable by name, linked publication count, or most recent publication year. Default excludes archived identities and merge tombstones. A–Z browsing uses reviewed family names where available and an Unspecified group otherwise; never guess surnames from the final token.
+A searchable directory, sorted by descending linked publication count by default and sortable by name or most recent publication year. Equal counts sort by preferred name. Default excludes archived identities and merge tombstones. A–Z browsing uses reviewed family names where available and an Unspecified group otherwise; never guess surnames from the final token.
 
-Each entry shows preferred name, identifying key/disambiguation, aliases, confirmed ORCID/Scholar profiles, and publication count. Details show a filtered bibliography grouped by year, credited spellings and roles per paper. Count each linked publication once; unresolved same-name credits appear as separately labeled candidates and never inflate confirmed bibliography counts. Merged identity links resolve to the survivor while preserving redirect context. Archived identities referenced by active publications remain accessible through those publications.
+Each entry shows preferred name, identifying key/disambiguation, aliases, confirmed ORCID/Scholar profiles, and publication count. Details show both confirmed profile IDs as direct links when present, plus a filtered bibliography grouped by year, credited spellings and roles per paper. Count each linked publication once; unresolved same-name credits appear as separately labeled candidates and never inflate confirmed bibliography counts. Merged identity links resolve to the survivor while preserving redirect context. Archived identities referenced by active publications remain accessible through those publications.
 
 ## 7. Venues
 

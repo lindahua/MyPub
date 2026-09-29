@@ -868,6 +868,8 @@ The viewer opens supported local PDF, image, text and video files through explic
 
 The viewer also has a top-bar To-Do button with a badge counting pending items in the open catalog. Its dropdown lists pending items, can show completed items, adds a plain-text task, toggles completion, and opens a linked publication when present. To-Do records live in `catalog/todos/` as shared JSON, so Git commit/sync carries them across computers. The badge is a task count, not a scheduled notification; the user must open MyPub to see it. Ordinary publication editing remains CLI-only.
 
+The Authors directory starts sorted by descending active linked-publication count, with preferred name and UUID as tie-breakers. The author detail pane displays confirmed Google Scholar and ORCID identifiers as direct profile links when available.
+
 The left sidebar ends with an accent-colored Quit MyPub button. It invokes the Electron main process through the validated preload/IPC bridge and quits the application, including when no library is open.
 
 Remaining refinements from the reviewed draft: optional table/density/theme switches, saved views, separate quick multi-select facets with facet counts, family-name alphabetical navigation, separate unresolved-venue directory, and signed installers. The general condition builder already covers combined year/venue/author/type/tag and Scholar constraints. No new on-disk GUI preference schema is introduced; browsing preferences remain in memory. The original clickable mockup is retained only as review context.
